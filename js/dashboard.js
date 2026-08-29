@@ -1033,6 +1033,14 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('receiptModal').classList.add('active');
   };
 
+  window.triggerAppPrint = function() {
+    if (window.electronAPI && window.electronAPI.print) {
+      window.electronAPI.print();
+    } else {
+      window.print();
+    }
+  };
+
   window.closeReceiptModal = function() {
     document.getElementById('receiptModal').classList.remove('active');
   };

@@ -361,6 +361,21 @@ ipcMain.on('open-parent-portal', () => openWindow('parent.html', 1100, 750));
 ipcMain.on('open-main-site',     () => openWindow('index.html', 1300, 800));
 ipcMain.handle('win-is-maximized', () => mainWindow ? mainWindow.isMaximized() : false);
 
+// ── IPC: PRINT DIALOG ─────────────────────────────────────────────────────────
+ipcMain.on('print-window', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender) || mainWindow;
+  if (win) {
+    win.webContents.print({
+      silent: false,
+      printBackground: true
+    }, (success, failureReason) => {
+      if (!success && failureReason !== 'cancelled') {
+        console.log('[Brainova Print Status]:', failureReason);
+      }
+    });
+  }
+});
+
 // ── IPC: AUTO UPDATER MANUAL TRIGGER ──────────────────────────────────────────
 ipcMain.on('check-for-updates', () => {
   if (app.isPackaged) {

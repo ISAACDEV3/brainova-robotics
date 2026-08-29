@@ -11,6 +11,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openMainSite:   () => ipcRenderer.send('open-main-site'),
   platform:       process.platform,
 
+  // ── Printing (Native Windows Print Dialog)
+  print:          () => ipcRenderer.send('print-window'),
+
   // ── Auth
   getCurrentUser: () => ipcRenderer.invoke('get-current-user'),
   logout:         () => ipcRenderer.send('logout'),
