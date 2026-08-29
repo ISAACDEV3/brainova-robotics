@@ -1,0 +1,75 @@
+{
+  "name": "brainova-robotics",
+  "version": "1.0.0",
+  "description": "Brainova Robotics Academy — Desktop Management Panel",
+  "main": "electron/main.js",
+  "author": "Brainova Robotics",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --x64",
+    "build-portable": "electron-builder --win portable --x64",
+    "deploy": "electron-builder --win --x64 --publish always"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "electron-store": "^8.1.0",
+    "electron-updater": "^6.3.9",
+    "qrcode": "^1.5.4"
+  },
+  "build": {
+    "appId": "com.brainova.robotics",
+    "productName": "Brainova Robotics",
+    "copyright": "Copyright © 2026 Brainova Robotics",
+    "directories": {
+      "output": "dist"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "ISAACDEV3",
+        "repo": "brainova-robotics"
+      }
+    ],
+    "files": [
+      "electron/**/*",
+      "assets/**/*",
+      "css/**/*",
+      "js/**/*",
+      "node_modules/**/*",
+      "dashboard.html",
+      "login.html",
+      "index.html",
+      "parent.html"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/images/robot.png",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Brainova Robotics",
+      "deleteAppDataOnUninstall": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

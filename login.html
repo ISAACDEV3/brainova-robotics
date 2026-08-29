@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>Brainova Robotics — تسجيل الدخول</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Cairo', sans-serif;
+    background: #070D19;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    overflow: hidden;
+    user-select: none;
+    -webkit-app-region: drag;
+  }
+
+  /* Drag region for frameless window */
+  .close-btn {
+    -webkit-app-region: no-drag;
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    border: none;
+    color: rgba(255,255,255,0.4);
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+  .close-btn:hover { background: #EF4444; color: #fff; }
+
+  .card {
+    -webkit-app-region: no-drag;
+    width: 380px;
+    background: #0E1A2E;
+    border: 1px solid rgba(56,189,248,0.15);
+    border-radius: 16px;
+    padding: 36px 32px 32px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+
+  /* Brand */
+  .brand { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .brand-logo { width: 64px; height: 64px; object-fit: contain; }
+  .brand-name {
+    font-size: 1.3rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+  }
+  .brand-name .yellow { color: #F5A623; }
+  .brand-name .blue   { color: #38BDF8; }
+  .brand-sub { font-size: 0.78rem; color: rgba(255,255,255,0.35); margin-top: -6px; }
+
+  /* Form */
+  .form { width: 100%; display: flex; flex-direction: column; gap: 14px; }
+
+  label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.45);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+  }
+
+  input {
+    width: 100%;
+    height: 40px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    padding: 0 12px;
+    color: #F1F5F9;
+    font-size: 0.9rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+    direction: ltr;
+    text-align: right;
+  }
+  input:focus { border-color: #38BDF8; }
+
+  .btn-login {
+    width: 100%;
+    height: 42px;
+    background: linear-gradient(135deg, #0284C7, #0369A1);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 4px;
+    transition: opacity 0.2s, transform 0.1s;
+    font-family: inherit;
+  }
+  .btn-login:hover   { opacity: 0.9; }
+  .btn-login:active  { transform: scale(0.98); }
+  .btn-login:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .error-msg {
+    font-size: 0.8rem;
+    color: #EF4444;
+    text-align: center;
+    min-height: 20px;
+    transition: opacity 0.3s;
+  }
+
+  .role-hint {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.25);
+    text-align: center;
+    line-height: 1.6;
+  }
+  .role-hint code {
+    color: rgba(56,189,248,0.7);
+    background: rgba(56,189,248,0.08);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+</style>
+</head>
+<body>
+
+  <!-- Close button for frameless window -->
+  <button class="close-btn" onclick="window.close()" title="إغلاق">✕</button>
+
+  <div class="card">
+    <!-- Brand -->
+    <div class="brand">
+      <img class="brand-logo" src="assets/images/robot.png" alt="Brainova">
+      <div class="brand-name">
+        <span class="yellow">BRAINOVA</span> <span class="blue">ROBOTICS</span>
+      </div>
+      <div class="brand-sub">نظام إدارة الأكاديمية</div>
+    </div>
+
+    <!-- Login Form -->
+    <div class="form">
+      <div>
+        <label>اسم المستخدم</label>
+        <input type="text" id="username" placeholder="admin" autocomplete="off">
+      </div>
+      <div>
+        <label>كلمة المرور</label>
+        <input type="password" id="password" placeholder="••••••••" autocomplete="off">
+      </div>
+      <div class="error-msg" id="errorMsg"></div>
+      <button class="btn-login" id="loginBtn" onclick="doLogin()">تسجيل الدخول</button>
+    </div>
+
+    <!-- Role hint -->
+    <div class="role-hint">
+      المدير: <code>admin</code> / <code>brainova2026</code>
+    </div>
+  </div>
+
+  <script>
+    const usernameEl = document.getElementById('username');
+    const passwordEl = document.getElementById('password');
+    const errorEl    = document.getElementById('errorMsg');
+    const loginBtn   = document.getElementById('loginBtn');
+
+    // Enter key support
+    [usernameEl, passwordEl].forEach(el => {
+      el.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+    });
+
+    async function doLogin() {
+      const username = usernameEl.value.trim();
+      const password = passwordEl.value;
+      if (!username || !password) {
+        showError('يرجى ملء جميع الحقول');
+        return;
+      }
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'جارٍ التحقق...';
+      errorEl.textContent = '';
+
+      try {
+        const result = await window.loginAPI.login(username, password);
+        if (result.ok) {
+          loginBtn.textContent = '✅ مرحباً ' + result.user.name;
+          setTimeout(() => window.loginAPI.proceed(), 400);
+        } else {
+          showError('اسم المستخدم أو كلمة المرور غير صحيحة');
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'تسجيل الدخول';
+        }
+      } catch (err) {
+        showError('حدث خطأ في الاتصال');
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'تسجيل الدخول';
+      }
+    }
+
+    function showError(msg) {
+      errorEl.textContent = msg;
+    }
+  </script>
+</body>
+</html>

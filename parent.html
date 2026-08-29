@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>بوابة ولي الأمر | Brainova Robotics</title>
+  <meta name="description" content="البوابة الرسمية لمتابعة مسيرة وحضور ورصيد ومشاريع طلاب مدرسة Brainova Robotics بأم البواقي.">
+  <link rel="icon" href="assets/images/robot.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    /* =========================================================
+       BRAINOVA ROBOTICS — PARENT PORTAL 2026
+       ========================================================= */
+    :root {
+      --bg-base:       #030712;
+      --bg-surface:    #070E22;
+      --bg-card:       rgba(10, 20, 48, 0.78);
+      --bg-card-hover: rgba(14, 28, 68, 0.88);
+      --bg-glass:      rgba(7, 15, 38, 0.82);
+      
+      --border-subtle: rgba(56, 189, 248, 0.08);
+      --border-glow:   rgba(56, 189, 248, 0.22);
+      --border-active: rgba(56, 189, 248, 0.45);
+      
+      --cyan:          #0EA5E9;
+      --cyan-bright:   #38BDF8;
+      --cyan-glow:     rgba(14, 165, 233, 0.15);
+      --indigo:        #6366F1;
+      --purple:        #8B5CF6;
+      --purple-glow:   rgba(139, 92, 246, 0.15);
+      --gold:          #F59E0B;
+      --gold-bright:   #FBBF24;
+      --gold-glow:     rgba(245, 158, 11, 0.15);
+      --emerald:       #10B981;
+      --emerald-glow:  rgba(16, 185, 129, 0.15);
+      --rose:          #F43F5E;
+
+      --text-main:     #F8FAFC;
+      --text-sub:      #94A3B8;
+      --text-muted:    #475569;
+      
+      --radius-xl:     24px;
+      --radius-lg:     18px;
+      --radius-md:     12px;
+      --radius-sm:     8px;
+
+      --shadow-premium: 0 20px 50px -10px rgba(0, 0, 0, 0.7), 0 0 40px -10px rgba(14, 165, 233, 0.12);
+      --shadow-card:    0 10px 30px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--bg-base);
+      color: var(--text-main);
+      font-family: 'Cairo', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Phone display LTR isolation */
+    .phone-text {
+      direction: ltr;
+      unicode-bidi: isolate;
+      display: inline-block;
+      font-family: 'Outfit', 'Cairo', sans-serif;
+      font-weight: 700;
+    }
+
+    /* Cosmic Glow Layers */
+    .cosmic-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .cosmic-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.6;
+      animation: orbFloat 20s infinite ease-in-out alternate;
+    }
+    .orb-1 {
+      width: 750px;
+      height: 750px;
+      background: radial-gradient(circle, rgba(14, 165, 233, 0.18), transparent 70%);
+      top: -250px;
+      right: -150px;
+      animation-duration: 22s;
+    }
+    .orb-2 {
+      width: 650px;
+      height: 650px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.14), transparent 70%);
+      bottom: -200px;
+      left: -150px;
+      animation-duration: 26s;
+    }
+    .orb-3 {
+      width: 450px;
+      height: 450px;
+      background: radial-gradient(circle, rgba(245, 158, 11, 0.08), transparent 70%);
+      top: 40%;
+      left: 30%;
+      animation-duration: 18s;
+    }
+
+    .cosmic-grid {
+      position: absolute;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+
+    @keyframes orbFloat {
+      0% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(-40px, 30px) scale(1.06); }
+      100% { transform: translate(30px, -40px) scale(0.96); }
+    }
+
+    /* Header Nav */
+    .premium-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 70px;
+      background: rgba(3, 7, 18, 0.88);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+    }
+    .premium-nav::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 15%;
+      right: 15%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--cyan-bright) 50%, transparent);
+      opacity: 0.4;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+    }
+    .brand-logo-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(99, 102, 241, 0.15));
+      border: 1px solid var(--border-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(14, 165, 233, 0.2);
+    }
+    .brand-logo-box img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+    }
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+    }
+    .brand-title span:first-child { color: var(--cyan-bright); }
+    .brand-title span:last-child { color: var(--gold); }
+    .brand-subtitle {
+      font-size: 0.72rem;
+      color: var(--text-sub);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .brand-subtitle::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 8px var(--emerald);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .user-pill {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-glow);
+      border-radius: 30px;
+      padding: 5px 16px 5px 6px;
+      box-shadow: 0 0 25px rgba(14, 165, 233, 0.1);
+    }
+    .user-pill-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--cyan), var(--indigo));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    .user-pill-name {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: var(--text-main);
+      display: block;
+    }
+    .user-pill-tag {
+      font-size: 0.68rem;
+      color: var(--cyan-bright);
+      font-weight: 600;
+    }
+
+    /* Buttons */
+    .btn-p {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: var(--radius-md);
+      border: none;
+      font-family: 'Cairo', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .btn-p-primary {
+      background: linear-gradient(135deg, var(--cyan) 0%, var(--indigo) 100%);
+      color: #FFFFFF;
+      box-shadow: 0 4px 20px rgba(14, 165, 233, 0.35);
+    }
+    .btn-p-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(14, 165, 233, 0.5);
+    }
+    .btn-p-outline {
+      background: rgba(14, 165, 233, 0.05);
+      color: var(--text-main);
+      border: 1px solid var(--border-glow);
+    }
+    .btn-p-outline:hover {
+      background: rgba(14, 165, 233, 0.12);
+      border-color: var(--border-active);
+      color: var(--cyan-bright);
+      transform: translateY(-2px);
+    }
+    .btn-p-danger {
+      background: rgba(244, 63, 94, 0.1);
+      color: #FDA4AF;
+      border: 1px solid rgba(244, 63, 94, 0.25);
+    }
+    .btn-p-danger:hover {
+      background: rgba(244, 63, 94, 0.2);
+      border-color: var(--rose);
+      color: #FFF;
+    }
+    .btn-p-wa {
+      background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+      color: #FFFFFF;
+      box-shadow: 0 4px 20px rgba(37, 211, 102, 0.3);
+    }
+    .btn-p-wa:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(37, 211, 102, 0.45);
+    }
+    .btn-p-sm {
+      padding: 7px 14px;
+      font-size: 0.8rem;
+      border-radius: var(--radius-sm);
+    }
+    .btn-p-full {
+      width: 100%;
+      padding: 13px 20px;
+      font-size: 0.95rem;
+      border-radius: var(--radius-md);
+    }
+
+    /* Input Fields */
+    .form-box {
+      margin-bottom: 18px;
+      text-align: right;
+    }
+    .form-lbl {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-sub);
+      margin-bottom: 7px;
+    }
+    .input-field-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .input-icon {
+      position: absolute;
+      right: 14px;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      pointer-events: none;
+      transition: color 0.2s;
+    }
+    .form-ctrl {
+      width: 100%;
+      background: rgba(3, 7, 18, 0.85);
+      border: 1px solid var(--border-glow);
+      border-radius: var(--radius-md);
+      padding: 12px 42px 12px 16px;
+      color: var(--text-main);
+      font-family: 'Cairo', sans-serif;
+      font-size: 0.92rem;
+      outline: none;
+      transition: all 0.2s;
+      text-align: right;
+    }
+    .form-ctrl:focus {
+      border-color: var(--cyan-bright);
+      background: rgba(6, 14, 34, 0.95);
+      box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15), 0 0 20px rgba(14, 165, 233, 0.1);
+    }
+    .form-ctrl:focus + .input-icon,
+    .form-ctrl:focus ~ .input-icon {
+      color: var(--cyan-bright);
+    }
+    select.form-ctrl {
+      appearance: none;
+      cursor: pointer;
+    }
+
+    /* Alerts */
+    .msg-banner {
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: none;
+      align-items: center;
+      gap: 10px;
+    }
+    .msg-error {
+      background: rgba(244, 63, 94, 0.1);
+      border: 1px solid rgba(244, 63, 94, 0.3);
+      color: #FB7185;
+    }
+    .msg-success {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34D399;
+    }
+
+    /* =========================================================
+       AUTH SECTION
+       ========================================================= */
+    #authPage {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      min-height: calc(100vh - 70px);
+    }
+
+    .auth-split-grid {
+      display: grid;
+      grid-template-columns: 1fr 450px;
+      gap: 50px;
+      max-width: 1060px;
+      width: 100%;
+      align-items: center;
+    }
+
+    /* Showcase (Left) */
+    .auth-showcase {
+      padding: 10px 0;
+    }
+    .portal-tag-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(99, 102, 241, 0.08));
+      border: 1px solid var(--border-glow);
+      border-radius: 30px;
+      padding: 6px 16px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: var(--cyan-bright);
+      margin-bottom: 24px;
+    }
+    .pulsing-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--cyan-bright);
+      box-shadow: 0 0 10px var(--cyan-bright);
+      animation: pulseDot 2s infinite;
+    }
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    .auth-showcase h1 {
+      font-size: 2.7rem;
+      font-weight: 900;
+      line-height: 1.22;
+      margin-bottom: 18px;
+      letter-spacing: -0.03em;
+    }
+    .auth-showcase h1 .gradient-text {
+      background: linear-gradient(135deg, var(--cyan-bright) 0%, var(--indigo) 60%, var(--purple) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .auth-showcase p {
+      font-size: 0.98rem;
+      color: var(--text-sub);
+      line-height: 1.8;
+      margin-bottom: 30px;
+    }
+
+    .showcase-features {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .feature-chip {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.25s;
+    }
+    .feature-chip:hover {
+      border-color: var(--border-glow);
+      background: var(--bg-card-hover);
+      transform: translateY(-2px);
+    }
+    .chip-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+    .chip-text strong {
+      font-size: 0.85rem;
+      font-weight: 800;
+      display: block;
+      color: var(--text-main);
+    }
+    .chip-text span {
+      font-size: 0.72rem;
+      color: var(--text-sub);
+    }
+
+    /* Glass Card (Right) */
+    .auth-glass-card {
+      background: var(--bg-glass);
+      backdrop-filter: blur(28px) saturate(180%);
+      -webkit-backdrop-filter: blur(28px) saturate(180%);
+      border: 1px solid var(--border-glow);
+      border-radius: var(--radius-xl);
+      padding: 38px 32px;
+      box-shadow: var(--shadow-premium);
+      position: relative;
+      overflow: hidden;
+    }
+    .auth-glass-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 10%;
+      right: 10%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--cyan-bright) 50%, transparent);
+      opacity: 0.6;
+    }
+
+    /* Tabs */
+    .tab-pills {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: rgba(3, 7, 18, 0.8);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 4px;
+      gap: 4px;
+      margin-bottom: 26px;
+    }
+    .tab-pill-btn {
+      padding: 10px 8px;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: 'Cairo', sans-serif;
+      font-weight: 700;
+      font-size: 0.84rem;
+      cursor: pointer;
+      transition: all 0.22s;
+    }
+    .tab-pill-btn.active {
+      background: linear-gradient(135deg, var(--cyan), var(--indigo));
+      color: #FFFFFF;
+      box-shadow: 0 4px 16px rgba(14, 165, 233, 0.35);
+    }
+
+    .form-header-title {
+      font-size: 1.25rem;
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+    .form-header-sub {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      margin-bottom: 22px;
+      line-height: 1.55;
+    }
+
+    .row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .separator-text {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 18px 0;
+    }
+    .separator-text::before, .separator-text::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-subtle);
+    }
+    .separator-text span {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .auth-footer-note {
+      text-align: center;
+      margin-top: 22px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+    .auth-footer-note a {
+      color: var(--cyan-bright);
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .auth-footer-note a:hover {
+      text-decoration: underline;
+    }
+
+    /* =========================================================
+       PORTAL DASHBOARD
+       ========================================================= */
+    #portalPage {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      position: relative;
+      z-index: 1;
+    }
+
+    .dashboard-subnav {
+      position: sticky;
+      top: 70px;
+      z-index: 90;
+      background: rgba(3, 7, 18, 0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      overflow-x: auto;
+    }
+    .subnav-tab {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 20px;
+      border: none;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: 'Cairo', sans-serif;
+      font-weight: 700;
+      font-size: 0.86rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .subnav-tab:hover {
+      color: var(--text-main);
+    }
+    .subnav-tab.active {
+      color: var(--cyan-bright);
+      border-bottom-color: var(--cyan-bright);
+    }
+
+    .portal-main-body {
+      max-width: 1040px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 32px 24px 60px;
+      flex: 1;
+    }
+
+    /* Student Hero Card */
+    .student-hero-banner {
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(99, 102, 241, 0.05) 50%, rgba(10, 20, 48, 0.95) 100%);
+      border: 1px solid var(--border-glow);
+      border-radius: var(--radius-xl);
+      padding: 28px 32px;
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-premium);
+    }
+    .student-hero-banner::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--cyan-bright) 40%, var(--purple) 80%, transparent);
+      opacity: 0.6;
+    }
+    .student-avatar-box {
+      width: 86px;
+      height: 86px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.25), rgba(99, 102, 241, 0.2));
+      border: 2px solid var(--border-active);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 42px;
+      flex-shrink: 0;
+      box-shadow: 0 0 35px rgba(14, 165, 233, 0.25);
+      position: relative;
+    }
+    .avatar-level-tag {
+      position: absolute;
+      bottom: -6px;
+      right: -6px;
+      background: var(--gold);
+      color: #000;
+      font-size: 0.65rem;
+      font-weight: 900;
+      padding: 2px 6px;
+      border-radius: 10px;
+      border: 2px solid var(--bg-base);
+    }
+
+    .student-main-details {
+      flex: 1;
+      min-width: 220px;
+    }
+    .level-badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 30px;
+      font-size: 0.74rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(99, 102, 241, 0.15));
+      border: 1px solid var(--border-glow);
+      color: var(--cyan-bright);
+      margin-bottom: 8px;
+    }
+    .student-title-name {
+      font-size: 1.75rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .student-meta-row {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      font-size: 0.84rem;
+      color: var(--text-sub);
+    }
+    .student-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .student-meta-item strong {
+      color: var(--text-main);
+    }
+    .id-copy-badge {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--cyan-bright);
+      background: rgba(14, 165, 233, 0.1);
+      padding: 2px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(14, 165, 233, 0.2);
+    }
+
+    .hero-action-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Level Progress Strip */
+    .level-progress-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .level-progress-info {
+      flex: 1;
+      min-width: 200px;
+    }
+    .level-progress-title {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-sub);
+      margin-bottom: 6px;
+    }
+    .progress-track {
+      height: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 10px;
+      background: linear-gradient(90deg, var(--cyan), var(--indigo), var(--purple));
+      box-shadow: 0 0 12px rgba(14, 165, 233, 0.5);
+      transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* 4 Core Stat Cards */
+    .stats-matrix-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .stat-matrix-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-matrix-box:hover {
+      border-color: var(--border-glow);
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-card);
+    }
+    .stat-glow-orb {
+      position: absolute;
+      bottom: -20px;
+      right: -20px;
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      opacity: 0.15;
+      filter: blur(15px);
+      pointer-events: none;
+    }
+    .stat-matrix-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    .stat-matrix-label {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+      display: block;
+    }
+    .stat-matrix-val {
+      font-size: 1.45rem;
+      font-weight: 900;
+      line-height: 1.1;
+    }
+
+    /* Section Cards */
+    .section-shell {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      margin-bottom: 22px;
+      box-shadow: var(--shadow-card);
+    }
+    .section-shell-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border-subtle);
+      background: rgba(3, 7, 18, 0.5);
+    }
+    .section-shell-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1rem;
+      font-weight: 800;
+    }
+    .section-icon-badge {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    .section-tag {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-weight: 700;
+    }
+
+    /* Tables */
+    .premium-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+    }
+    .premium-table th {
+      background: rgba(3, 7, 18, 0.6);
+      color: var(--text-muted);
+      font-size: 0.74rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 14px 20px;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .premium-table td {
+      padding: 15px 20px;
+      border-bottom: 1px solid rgba(56, 189, 248, 0.05);
+      vertical-align: middle;
+    }
+    .premium-table tr:last-child td {
+      border-bottom: none;
+    }
+    .premium-table tbody tr:hover td {
+      background: rgba(14, 165, 233, 0.03);
+    }
+
+    /* Status Pills */
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+    .status-pill-present {
+      background: rgba(16, 185, 129, 0.12);
+      color: #34D399;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+    .status-pill-late {
+      background: rgba(245, 158, 11, 0.12);
+      color: #FCD34D;
+      border: 1px solid rgba(245, 158, 11, 0.25);
+    }
+    .status-pill-excused {
+      background: rgba(139, 92, 246, 0.12);
+      color: #A78BFA;
+      border: 1px solid rgba(139, 92, 246, 0.25);
+    }
+    .status-pill-absent {
+      background: rgba(244, 63, 94, 0.12);
+      color: #FB7185;
+      border: 1px solid rgba(244, 63, 94, 0.25);
+    }
+
+    /* Skills Grid */
+    .skills-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      padding: 24px;
+    }
+    .skill-metric-card {
+      background: rgba(10, 20, 48, 0.6);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      transition: all 0.25s;
+    }
+    .skill-metric-card:hover {
+      border-color: var(--border-glow);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+    .skill-card-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .skill-card-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(99, 102, 241, 0.1));
+      border: 1px solid var(--border-glow);
+      flex-shrink: 0;
+    }
+    .skill-card-title {
+      font-size: 0.92rem;
+      font-weight: 800;
+      margin-bottom: 2px;
+    }
+    .skill-card-score {
+      font-size: 0.74rem;
+      color: var(--emerald);
+      font-weight: 800;
+    }
+    .skill-progress-track {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .skill-progress-fill {
+      height: 100%;
+      border-radius: 10px;
+      background: linear-gradient(90deg, var(--cyan), var(--indigo));
+      box-shadow: 0 0 10px rgba(14, 165, 233, 0.4);
+      transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .skill-card-desc {
+      font-size: 0.78rem;
+      color: var(--text-sub);
+      line-height: 1.55;
+    }
+
+    /* WhatsApp Card */
+    .whatsapp-vip-card {
+      background: linear-gradient(135deg, rgba(37, 211, 102, 0.08) 0%, rgba(10, 20, 48, 0.95) 100%);
+      border: 1px solid rgba(37, 211, 102, 0.25);
+      border-radius: var(--radius-xl);
+      padding: 26px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 18px;
+      margin-top: 28px;
+      box-shadow: 0 10px 40px rgba(37, 211, 102, 0.08);
+    }
+    .vip-card-title {
+      font-size: 1.1rem;
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+    .vip-card-sub {
+      font-size: 0.84rem;
+      color: var(--text-sub);
+    }
+
+    /* Teacher Note Card */
+    .teacher-note-card {
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.12) 0%, rgba(30, 41, 59, 0.7) 100%);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 16px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 0 20px rgba(14, 165, 233, 0.08);
+      backdrop-filter: blur(12px);
+      transition: border-color 0.3s;
+    }
+    .teacher-note-card:hover {
+      border-color: rgba(56, 189, 248, 0.6);
+    }
+    .teacher-note-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .teacher-note-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 14px;
+      border-radius: 20px;
+      background: rgba(14, 165, 233, 0.2);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: var(--cyan-bright);
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .teacher-note-date {
+      font-size: 0.78rem;
+      color: var(--text-sub);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .teacher-note-body {
+      font-size: 0.98rem;
+      line-height: 1.8;
+      color: #F1F5F9;
+      white-space: pre-line;
+    }
+    .note-timeline-item {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(56, 189, 248, 0.15);
+      border-radius: 14px;
+      padding: 16px 20px;
+      margin-bottom: 14px;
+      transition: all 0.2s;
+    }
+    .note-timeline-item:hover {
+      border-color: rgba(56, 189, 248, 0.35);
+      background: rgba(15, 23, 42, 0.85);
+    }
+
+    /* Empty state */
+    .empty-placeholder {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-muted);
+    }
+    .empty-placeholder-icon {
+      font-size: 3rem;
+      opacity: 0.35;
+      display: block;
+      margin-bottom: 12px;
+    }
+    .empty-placeholder-title {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--text-sub);
+      margin-bottom: 4px;
+    }
+
+    /* Footer */
+    .premium-footer {
+      position: relative;
+      z-index: 1;
+      background: rgba(3, 7, 18, 0.9);
+      border-top: 1px solid var(--border-subtle);
+      padding: 22px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+    .footer-links {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    .footer-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover {
+      color: var(--cyan-bright);
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .auth-split-grid {
+        grid-template-columns: 1fr;
+        gap: 28px;
+      }
+      .showcase-features {
+        grid-template-columns: 1fr;
+      }
+      .auth-showcase h1 {
+        font-size: 2.2rem;
+      }
+      .premium-nav, .dashboard-subnav {
+        padding: 0 18px;
+      }
+      .portal-main-body {
+        padding: 20px 16px 48px;
+      }
+      .student-hero-banner {
+        padding: 22px;
+      }
+      .row-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @keyframes spinCircle {
+      to { transform: rotate(360deg); }
+    }
+    .spinner-circle {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #FFF;
+      border-radius: 50%;
+      animation: spinCircle 0.7s linear infinite;
+      display: none;
+    }
+
+    /* Modal for ID card */
+    .portal-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(12px);
+      z-index: 999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .portal-modal-backdrop.active {
+      display: flex;
+    }
+    .portal-modal-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-glow);
+      border-radius: var(--radius-xl);
+      max-width: 480px;
+      width: 100%;
+      padding: 28px;
+      box-shadow: var(--shadow-premium);
+      text-align: center;
+      position: relative;
+    }
+    .id-card-preview {
+      background: linear-gradient(135deg, #0A1633 0%, #030818 100%);
+      border: 2px solid var(--cyan);
+      border-radius: 16px;
+      padding: 20px;
+      margin: 18px 0;
+      color: #FFF;
+      box-shadow: 0 8px 30px rgba(14, 165, 233, 0.25);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Cosmic Background -->
+  <div class="cosmic-layer" aria-hidden="true">
+    <div class="cosmic-grid"></div>
+    <div class="cosmic-orb orb-1"></div>
+    <div class="cosmic-orb orb-2"></div>
+    <div class="cosmic-orb orb-3"></div>
+  </div>
+
+  <!-- Header Nav -->
+  <header class="premium-nav">
+    <a href="index.html" class="nav-brand">
+      <div class="brand-logo-box">
+        <img src="assets/images/robot.png" alt="Brainova Robot Logo">
+      </div>
+      <div class="brand-text">
+        <div class="brand-title"><span>BRAIN</span><span>OVA</span> ROBOTICS</div>
+        <div class="brand-subtitle">بوابة ولي الأمر الذكية</div>
+      </div>
+    </a>
+    <div class="nav-actions">
+      <div class="user-pill" id="navUserInfo">
+        <div class="user-pill-avatar">🤖</div>
+        <div class="user-pill-info">
+          <span class="user-pill-name" id="navUserName">—</span>
+          <span class="user-pill-tag">ولي أمر الطالب</span>
+        </div>
+      </div>
+      <a href="index.html" class="btn-p btn-p-outline btn-p-sm">🏠 الرئيسية</a>
+      <button onclick="parentLogout()" class="btn-p btn-p-danger btn-p-sm" id="navLogoutBtn" style="display:none;">خروج 🚪</button>
+    </div>
+  </header>
+
+  <!-- ================= AUTH SECTION ================= -->
+  <div id="authPage">
+    <div class="auth-split-grid">
+
+      <!-- Left Showcase -->
+      <div class="auth-showcase">
+        <div class="portal-tag-pill">
+          <span class="pulsing-dot"></span>
+          بوابة أولياء الأمور المعتمدة 2026
+        </div>
+        <h1>بوابتك الذكية<br><span class="gradient-text">لمتابعة تميز ابنك</span><br>في الروبوتيك والذكاء الاصطناعي</h1>
+        <p>منصة رقمية متقدمة تمنحك متابعة حية وفورية لحضور طفلك، رصيده المالي، تقييمات الأساتذة، ومصفوفة المهارات والمشاريع المنجزة في مخابر Brainova Robotics.</p>
+        
+        <div class="showcase-features">
+          <div class="feature-chip">
+            <div class="chip-icon" style="background: rgba(16, 185, 129, 0.15); color: #34D399;">📅</div>
+            <div class="chip-text">
+              <strong>سجل الحضور الفوري</strong>
+              <span>توثيق كل حصة بملاحظة الأستاذ</span>
+            </div>
+          </div>
+          <div class="feature-chip">
+            <div class="chip-icon" style="background: rgba(14, 165, 233, 0.15); color: #38BDF8;">🎟️</div>
+            <div class="chip-text">
+              <strong>رصيد الحصص المتبقية</strong>
+              <span>متابعة دقيقة لكل اشتراك ودفعة</span>
+            </div>
+          </div>
+          <div class="feature-chip">
+            <div class="chip-icon" style="background: rgba(245, 158, 11, 0.15); color: #FBBF24;">🏆</div>
+            <div class="chip-text">
+              <strong>مصفوفة الكفاءات</strong>
+              <span>معدل التقدم البرمجي والميكانيكي</span>
+            </div>
+          </div>
+          <div class="feature-chip">
+            <div class="chip-icon" style="background: rgba(37, 211, 102, 0.15); color: #25D366;">💬</div>
+            <div class="chip-text">
+              <strong>تواصل واتساب مباشر</strong>
+              <span>رسالة جاهزة للأستاذ والإدارة</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Auth Card -->
+      <div class="auth-glass-card">
+        <!-- Tab Selector -->
+        <div class="tab-pills">
+          <button class="tab-pill-btn active" id="tabBtnLogin" onclick="switchAuthMode('login')">🔐 تسجيل الدخول</button>
+          <button class="tab-pill-btn" id="tabBtnRegister" onclick="switchAuthMode('register')">✨ حساب ولي جديد</button>
+        </div>
+
+        <!-- 1. LOGIN FORM -->
+        <form id="parentLoginForm" onsubmit="handleParentLogin(event)">
+          <div class="form-header-title">أهلاً بعودتك 👋</div>
+          <p class="form-header-sub">أدخل بيانات الحساب الموجودة على وصل التسديد الحراري، أو امسح كود QR.</p>
+
+          <div class="form-box">
+            <label class="form-lbl">اسم المستخدم أو رقم الهاتف</label>
+            <div class="input-field-wrap">
+              <input type="text" id="parentUser" class="form-ctrl" autocomplete="username" required>
+              <span class="input-icon">👤</span>
+            </div>
+          </div>
+
+          <div class="form-box">
+            <label class="form-lbl">كلمة المرور</label>
+            <div class="input-field-wrap">
+              <input type="password" id="parentPass" class="form-ctrl" placeholder="••••••••" autocomplete="current-password" required>
+              <span class="input-icon">🔒</span>
+            </div>
+          </div>
+
+          <div class="msg-banner msg-error" id="loginError">
+            <span>⚠️</span> اسم المستخدم أو كلمة المرور غير صحيحة.
+          </div>
+
+          <button type="submit" class="btn-p btn-p-primary btn-p-full" id="loginSubmitBtn">
+            <div class="spinner-circle" id="loginSpinner"></div>
+            <span id="loginBtnLabel">دخول إلى بوابتي 🚀</span>
+          </button>
+
+          <div class="separator-text"><span>أو</span></div>
+
+          <button type="button" class="btn-p btn-p-outline btn-p-full" onclick="switchAuthMode('register')">
+            ✨ إنشاء حساب ولي أمر جديد
+          </button>
+        </form>
+
+        <!-- 2. REGISTER FORM -->
+        <form id="parentRegisterForm" onsubmit="handleParentRegister(event)" style="display:none;">
+          <div class="form-header-title">إنشاء حساب ولي جديد 🤖</div>
+          <p class="form-header-sub">سجّل بياناتك لمتابعة حضور ومستوى طفلك في Brainova Robotics.</p>
+
+          <div class="form-box">
+            <label class="form-lbl">اسم ولي الأمر (الاسم واللقب)</label>
+            <div class="input-field-wrap">
+              <input type="text" id="regParentName" class="form-ctrl" required>
+              <span class="input-icon">👨‍💼</span>
+            </div>
+          </div>
+
+          <div class="form-box">
+            <label class="form-lbl">رقم الهاتف (واتساب)</label>
+            <div class="input-field-wrap">
+              <input type="tel" id="regParentPhone" class="form-ctrl" required>
+              <span class="input-icon">📞</span>
+            </div>
+          </div>
+
+          <div class="form-box">
+            <label class="form-lbl">اسم الطالب (الابن / الابنة)</label>
+            <div class="input-field-wrap">
+              <input type="text" id="regStudentName" class="form-ctrl" required>
+              <span class="input-icon">👶</span>
+            </div>
+          </div>
+
+          <div class="form-box">
+            <label class="form-lbl">المستوى التعليمي / الفئة العمرية</label>
+            <div class="input-field-wrap">
+              <select id="regStudentLevel" class="form-ctrl">
+                <option value="المستوى الأول: Explorer (5 - 7 سنوات)">👶 المستوى الأول: Explorer (5 - 7 سنوات)</option>
+                <option value="المستوى الثاني: Builder (8 - 11 سنة)" selected>🚀 المستوى الثاني: Builder (8 - 11 سنة)</option>
+                <option value="المستوى الثالث: Innovator (12 - 15 سنة)">🤖 المستوى الثالث: Innovator (12 - 15 سنة)</option>
+                <option value="المستوى الرابع: Master (16 - 18 سنة)">⚡ المستوى الرابع: Master (16 - 18 سنة)</option>
+              </select>
+              <span class="input-icon">🎓</span>
+            </div>
+          </div>
+
+          <div class="row-2">
+            <div class="form-box">
+              <label class="form-lbl">اسم مستخدم للحساب</label>
+              <div class="input-field-wrap">
+                <input type="text" id="regUsername" class="form-ctrl" autocomplete="username" required>
+                <span class="input-icon">👤</span>
+              </div>
+            </div>
+            <div class="form-box">
+              <label class="form-lbl">كلمة المرور</label>
+              <div class="input-field-wrap">
+                <input type="password" id="regPassword" class="form-ctrl" placeholder="••••••••" autocomplete="new-password" minlength="4" required>
+                <span class="input-icon">🔑</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="msg-banner msg-error" id="registerError"></div>
+          <div class="msg-banner msg-success" id="registerSuccessMsg">
+            <span>🎉</span> تم إنشاء الحساب بنجاح! جاري توجيهك للبوابة...
+          </div>
+
+          <button type="submit" class="btn-p btn-p-primary btn-p-full" id="registerSubmitBtn">
+            <div class="spinner-circle" id="registerSpinner"></div>
+            <span id="registerBtnLabel">✨ إنشاء الحساب ودخول البوابة</span>
+          </button>
+
+          <div class="separator-text"><span>لديك حساب مسبقاً؟</span></div>
+
+          <button type="button" class="btn-p btn-p-outline btn-p-full" onclick="switchAuthMode('login')">
+            🔐 تسجيل الدخول
+          </button>
+        </form>
+
+        <div class="auth-footer-note">
+          للمساعدة والدعم التقني:
+          <a href="https://wa.me/213791194633" target="_blank"><span class="phone-text">0791 19 46 33</span></a>
+          &nbsp;·&nbsp;
+          <a href="mailto:brainovarobotics@gmail.com">brainovarobotics@gmail.com</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= PORTAL DASHBOARD ================= -->
+  <div id="portalPage">
+
+    <!-- Sub Navigation Bar -->
+    <nav class="dashboard-subnav">
+      <button class="subnav-tab active" id="tabBtnAtt" onclick="switchPortalTab('attendance')">
+        <span>📅</span> سجل الحضور والغياب
+      </button>
+      <button class="subnav-tab" id="tabBtnNotes" onclick="switchPortalTab('notes')">
+        <span>📝</span> توجيهات وملاحظات الأستاذ
+      </button>
+      <button class="subnav-tab" id="tabBtnPayments" onclick="switchPortalTab('payments')">
+        <span>🧾</span> الدفعات والوصولات
+      </button>
+      <button class="subnav-tab" id="tabBtnSkills" onclick="switchPortalTab('skills')">
+        <span>🤖</span> المهارات والمشاريع
+      </button>
+      <button class="subnav-tab" id="tabBtnCard" onclick="openStudentIdModal()">
+        <span>🪪</span> بطاقة الطالب الرقمية
+      </button>
+    </nav>
+
+    <div class="portal-main-body">
+
+      <!-- Student Hero Banner -->
+      <div class="student-hero-banner">
+        <div class="student-avatar-box">
+          🤖
+          <span class="avatar-level-tag" id="pHeroLevelTag">BUILDER</span>
+        </div>
+        <div class="student-main-details">
+          <div class="level-badge-pill" id="pLevelBadge">المستوى الثاني: Builder</div>
+          <h1 class="student-title-name" id="pStudentName">اسم الطالب</h1>
+          <div class="student-meta-row">
+            <div class="student-meta-item">
+              <span>👥 الفوج:</span>
+              <strong id="pGroupName">الفوج أ (صباح)</strong>
+            </div>
+            <div class="student-meta-item">
+              <span>👨‍🏫 المشرف:</span>
+              <strong id="pEducator">أ. أحمد بن مسعود</strong>
+            </div>
+            <div class="student-meta-item">
+              <span>🆔 المعرف:</span>
+              <strong class="id-copy-badge" id="pStudentId">#BR-001</strong>
+            </div>
+          </div>
+        </div>
+        <div class="hero-action-buttons">
+          <button onclick="openStudentIdModal()" class="btn-p btn-p-outline btn-p-sm">
+            🪪 عرض البطاقة الرقمية
+          </button>
+          <button onclick="parentLogout()" class="btn-p btn-p-danger btn-p-sm">
+            خروج 🚪
+          </button>
+        </div>
+      </div>
+
+      <!-- Level Progression Bar -->
+      <div class="level-progress-card">
+        <div class="level-progress-info">
+          <div class="level-progress-title">
+            <span>🏆 التقدم نحو المستوى التالي (Next Rank Level)</span>
+            <strong id="pRankProgressPct" style="color: var(--cyan-bright);">75% مكتمل</strong>
+          </div>
+          <div class="progress-track">
+            <div class="progress-bar-fill" id="pRankProgressBar" style="width: 75%;"></div>
+          </div>
+        </div>
+        <a id="pPortalLink" href="#" target="_blank" class="btn-p btn-p-outline btn-p-sm">
+          🔗 نسخ رابط الدخول المباشر
+        </a>
+      </div>
+
+      <!-- Teacher / School Special Note Card -->
+      <div class="teacher-note-card" id="pTeacherNoteCard">
+        <div class="teacher-note-header">
+          <div class="teacher-note-badge">
+            <span>👨‍🏫</span>
+            <span>توجيه وملاحظة الأستاذ المشرف لولي الأمر</span>
+          </div>
+          <span class="teacher-note-date" id="pTeacherNoteDate">تحديث مستمر</span>
+        </div>
+        <div class="teacher-note-body" id="pTeacherNoteContent">
+          <!-- Text rendered by JS -->
+        </div>
+      </div>
+
+      <!-- 4 Core Matrix Stats -->
+      <div class="stats-matrix-grid">
+        <div class="stat-matrix-box">
+          <div class="stat-glow-orb" style="background: var(--emerald);"></div>
+          <div class="stat-matrix-icon" style="background: var(--emerald-glow); color: var(--emerald);">
+            🎟️
+          </div>
+          <div>
+            <span class="stat-matrix-label">الحصص المتبقية</span>
+            <div class="stat-matrix-val" id="pSessionsRemaining" style="color: var(--emerald);">—</div>
+          </div>
+        </div>
+
+        <div class="stat-matrix-box">
+          <div class="stat-glow-orb" style="background: var(--cyan);"></div>
+          <div class="stat-matrix-icon" style="background: var(--cyan-glow); color: var(--cyan-bright);">
+            💰
+          </div>
+          <div>
+            <span class="stat-matrix-label">الرصيد المالي المتاح</span>
+            <div class="stat-matrix-val" id="pBalance" style="color: var(--cyan-bright);">—</div>
+          </div>
+        </div>
+
+        <div class="stat-matrix-box">
+          <div class="stat-glow-orb" style="background: var(--gold);"></div>
+          <div class="stat-matrix-icon" style="background: var(--gold-glow); color: var(--gold-bright);">
+            📊
+          </div>
+          <div>
+            <span class="stat-matrix-label">نسبة الالتزام والحضور</span>
+            <div class="stat-matrix-val" id="pAttendanceRate" style="color: var(--gold-bright);">100%</div>
+          </div>
+        </div>
+
+        <div class="stat-matrix-box">
+          <div class="stat-glow-orb" style="background: var(--purple);"></div>
+          <div class="stat-matrix-icon" style="background: var(--purple-glow); color: #C084FC;">
+            🏆
+          </div>
+          <div>
+            <span class="stat-matrix-label">الأوسمة والكفاءات</span>
+            <div class="stat-matrix-val" id="pBadgesCount" style="color: #C084FC;">4 أوسمة</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= TAB 1: ATTENDANCE ================= -->
+      <div id="portalTabAttendance">
+        <div class="section-shell">
+          <div class="section-shell-head">
+            <div class="section-shell-title">
+              <div class="section-icon-badge" style="background: var(--emerald-glow); color: var(--emerald);">📅</div>
+              سجل الحضور والغياب التفصيلي
+            </div>
+            <span class="section-tag">توثيق الحصص الفعلية</span>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="premium-table">
+              <thead>
+                <tr>
+                  <th>تاريخ الحصة</th>
+                  <th>الفوج / القاعة</th>
+                  <th style="text-align:center;">حالة الحضور</th>
+                  <th>ملاحظات وتوجيهات الأستاذ</th>
+                </tr>
+              </thead>
+              <tbody id="pAttendanceBody">
+                <tr><td colspan="4"><div class="empty-placeholder"><span class="empty-placeholder-icon">📅</span><div class="empty-placeholder-title">لا توجد سجلات حضور بعد</div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= TAB 2: PAYMENTS ================= -->
+      <div id="portalTabPayments" style="display:none;">
+        <div class="section-shell">
+          <div class="section-shell-head">
+            <div class="section-shell-title">
+              <div class="section-icon-badge" style="background: var(--cyan-glow); color: var(--cyan-bright);">🧾</div>
+              سجل الدفعات والوصولات الحرارية
+            </div>
+            <span class="section-tag">سجل العمليات المالية</span>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="premium-table">
+              <thead>
+                <tr>
+                  <th>رقم الوصل</th>
+                  <th>تاريخ التسديد</th>
+                  <th>المبلغ المدفوع</th>
+                  <th>الحصص المكتسبة</th>
+                  <th>طريقة الدفع</th>
+                </tr>
+              </thead>
+              <tbody id="pPaymentsBody">
+                <tr><td colspan="5"><div class="empty-placeholder"><span class="empty-placeholder-icon">🧾</span><div class="empty-placeholder-title">لا توجد وصولات دفع مسجلة</div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= TAB 3: SKILLS ================= -->
+      <div id="portalTabSkills" style="display:none;">
+        <div class="section-shell">
+          <div class="section-shell-head">
+            <div class="section-shell-title">
+              <div class="section-icon-badge" style="background: var(--purple-glow); color: #C084FC;">🤖</div>
+              مصفوفة المهارات والمشاريع التقنية
+            </div>
+            <span class="section-tag">الكفاءات المكتسبة والتقييم</span>
+          </div>
+          <div class="skills-cards-grid" id="pSkillsGrid">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= TAB 4: TEACHER NOTES ================= -->
+      <div id="portalTabNotes" style="display:none;">
+        <div class="section-shell">
+          <div class="section-shell-head">
+            <div class="section-shell-title">
+              <div class="section-icon-badge" style="background: rgba(14, 165, 233, 0.15); color: var(--cyan-bright);">📝</div>
+              سجل ملاحظات وتوجيهات الأستاذ المشرف
+            </div>
+            <span class="section-tag">التواصل والمتابعة الفردية</span>
+          </div>
+          <div id="pNotesTabContent" style="padding: 10px 0;">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- VIP WhatsApp & Support Action Card -->
+      <div class="whatsapp-vip-card">
+        <div>
+          <div class="vip-card-title">💬 هل لديك أي استفسار حول مستوى ابنك؟</div>
+          <div class="vip-card-sub">تواصل مباشرة مع إدارة مدرسة Brainova أو الأستاذ المشرف عبر واتساب.</div>
+        </div>
+        <a id="pWhatsAppBtn" href="https://wa.me/213791194633" target="_blank" rel="noopener" class="btn-p btn-p-wa">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          محادثة واتساب الإدارة
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Digital Student ID Card Modal -->
+  <div class="portal-modal-backdrop" id="studentCardModal" onclick="if(event.target===this)closeStudentIdModal()">
+    <div class="portal-modal-box">
+      <div style="font-size:1.2rem; font-weight:800; margin-bottom:4px;">🪪 بطاقة الطالب الذكية الرقمية</div>
+      <p style="font-size:0.8rem; color:var(--text-sub);">بطاقة العضوية الرسمية لمدرسة Brainova Robotics</p>
+      
+      <div class="id-card-preview" id="idCardModalContent">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(56,189,248,0.2); padding-bottom:10px; margin-bottom:12px;">
+          <div style="font-size:0.9rem; font-weight:900; color:var(--cyan-bright);">BRAINOVA ROBOTICS</div>
+          <span style="font-size:0.7rem; color:var(--gold); font-weight:700;">STUDENT PASS</span>
+        </div>
+        <div style="font-size:1.3rem; font-weight:900; margin-bottom:4px;" id="modalCardStudentName">—</div>
+        <div style="font-size:0.8rem; color:#94A3B8; margin-bottom:12px;" id="modalCardStudentLevel">—</div>
+        <div style="display:flex; justify-content:center; margin:10px 0;">
+          <img id="modalCardQr" src="" alt="Student QR Code" style="width:120px; height:120px; border-radius:10px; background:#fff; padding:6px;">
+        </div>
+        <div style="font-family:'JetBrains Mono', monospace; font-size:0.85rem; color:var(--cyan-bright);" id="modalCardStudentId">—</div>
+      </div>
+
+      <div style="display:flex; gap:10px; justify-content:center;">
+        <button onclick="window.print()" class="btn-p btn-p-primary btn-p-sm">🖨️ طباعة البطاقة</button>
+        <button onclick="closeStudentIdModal()" class="btn-p btn-p-outline btn-p-sm">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="premium-footer">
+    <div>
+      © 2026 <strong style="color:var(--cyan-bright);">Brainova Robotics</strong>
+    </div>
+    <div class="footer-links">
+      <a href="tel:0791194633">📞 <span class="phone-text">0791 19 46 33</span></a>
+      <a href="mailto:brainovarobotics@gmail.com">✉️ brainovarobotics@gmail.com</a>
+      <a href="index.html">🏠 الموقع الرئيسي</a>
+    </div>
+  </footer>
+
+  <script src="js/parent.js"></script>
+  <script src="electron/titlebar.js"></script>
+</body>
+</html>

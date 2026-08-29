@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brainova Robotics | مدرسة الروبوتيك - أم البواقي</title>
+  <meta name="description" content="Brainova Robotics - بيئة تعليمية متخصصة في الروبوتيك، تكوّن الأطفال والشباب على تصميم وبرمجة الروبوتات في أم البواقي، الجزائر">
+  <meta name="keywords" content="روبوتيك, برمجة, أطفال, أم البواقي, الجزائر, Scratch, Arduino, mBot2, LEGO SPIKE, robotics school algeria">
+  <link rel="icon" href="assets/images/robot.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ========== NAVIGATION ========== -->
+  <nav id="navbar" class="nav">
+    <div class="container nav__inner">
+      <a href="#hero" class="nav__logo">
+        <span class="nav__logo-icon">🤖</span>
+        <span class="nav__logo-text">Brainova <span class="accent">Robotics</span></span>
+      </a>
+      <ul class="nav__links" id="navLinks">
+        <li><a href="#hero" data-i18n="nav_home">الرئيسية</a></li>
+        <li><a href="#about" data-i18n="nav_about">من نحن</a></li>
+        <li><a href="#levels" data-i18n="nav_levels">المستويات</a></li>
+        <li><a href="#equipment" data-i18n="nav_equipment">المختبر</a></li>
+        <li><a href="#videos" data-i18n="nav_videos">الفيديوهات</a></li>
+        <li><a href="#gallery" data-i18n="nav_gallery">المعرض</a></li>
+        <li><a href="#team" data-i18n="nav_team">فريقنا</a></li>
+        <li><a href="#contact" data-i18n="nav_contact">اتصل بنا</a></li>
+      </ul>
+      <div class="nav__actions">
+        <button class="lang-switch" id="langSwitch" aria-label="Switch Language">
+          <span class="lang-switch__current">FR</span>
+        </button>
+        <a href="#registration" class="btn btn--small btn--primary" data-i18n="nav_register">سجّل الآن</a>
+        <button class="nav__toggle" id="navToggle" aria-label="Toggle Menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ========== HERO ========== -->
+  <section id="hero" class="hero">
+    <div class="hero__bg">
+      <div class="circuit-lines"></div>
+      <div class="hero__particles" id="heroParticles"></div>
+    </div>
+    <div class="container hero__content">
+      <div class="hero__text">
+        <div class="hero__badge" data-i18n="hero_badge">🏫 مدرسة الروبوتيك — أم البواقي</div>
+        <h1 class="hero__title">
+          <span class="hero__title-main">Brainova</span>
+          <span class="hero__title-sub accent">Robotics</span>
+        </h1>
+        <p class="hero__subtitle" data-i18n="hero_subtitle">بيئة تعليمية متخصصة في الروبوتيك، تكوّن الأطفال والشباب على تصميم وبرمجة الروبوتات، استعدادًا لعالم الذكاء الاصطناعي.</p>
+        <div class="hero__cta">
+          <a href="#registration" class="btn btn--primary btn--glow" data-i18n="hero_register">سجّل ابنك الآن</a>
+          <a href="#levels" class="btn btn--outline" data-i18n="hero_discover">اكتشف برامجنا</a>
+        </div>
+        <div class="hero__stats">
+          <div class="hero__stat">
+            <span class="hero__stat-number" data-count="50">0</span>+
+            <span class="hero__stat-label" data-i18n="stat_students">طالب تم تدريبهم</span>
+          </div>
+          <div class="hero__stat">
+            <span class="hero__stat-number" data-count="6">0</span>
+            <span class="hero__stat-label" data-i18n="stat_levels">مستويات تعليمية</span>
+          </div>
+          <div class="hero__stat">
+            <span class="hero__stat-number" data-count="12">0</span>
+            <span class="hero__stat-label" data-i18n="stat_group">طالب في كل فوج</span>
+          </div>
+        </div>
+      </div>
+      <div class="hero__visual">
+        <div class="hero__robot">
+          <div class="robot-glow"></div>
+          <svg class="robot-svg" viewBox="0 0 200 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="100" y1="10" x2="100" y2="40" stroke="#00BCD4" stroke-width="3"/>
+            <circle cx="100" cy="8" r="6" fill="#00E5FF" class="robot-antenna-light"/>
+            <rect x="50" y="40" width="100" height="70" rx="20" fill="#0A1628" stroke="#00BCD4" stroke-width="2"/>
+            <circle cx="75" cy="75" r="12" fill="#00E5FF" class="robot-eye"/>
+            <circle cx="125" cy="75" r="12" fill="#00E5FF" class="robot-eye"/>
+            <circle cx="75" cy="75" r="5" fill="#fff"/>
+            <circle cx="125" cy="75" r="5" fill="#fff"/>
+            <rect x="80" y="92" width="40" height="4" rx="2" fill="#00BCD4"/>
+            <rect x="40" y="115" width="120" height="80" rx="15" fill="#0A1628" stroke="#00BCD4" stroke-width="2"/>
+            <circle cx="100" cy="150" r="15" fill="none" stroke="#00E5FF" stroke-width="1.5" stroke-dasharray="4 3"/>
+            <circle cx="100" cy="150" r="6" fill="#00BCD4"/>
+            <rect x="10" y="125" width="25" height="50" rx="10" fill="#0A1628" stroke="#00BCD4" stroke-width="2"/>
+            <rect x="165" y="125" width="25" height="50" rx="10" fill="#0A1628" stroke="#00BCD4" stroke-width="2"/>
+            <rect x="60" y="200" width="25" height="35" rx="8" fill="#0A1628" stroke="#00BCD4" stroke-width="2"/>
+            <rect x="115" y="200" width="25" height="35" rx="8" fill="#0A1628" stroke="#00BCD4" stroke-width="2"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div class="hero__scroll">
+      <span data-i18n="hero_scroll">اكتشف المزيد</span>
+      <div class="scroll-arrow"></div>
+    </div>
+  </section>
+
+  <!-- ========== ABOUT ========== -->
+  <section id="about" class="section section--dark">
+    <div class="container">
+      <div class="section__header">
+        <span class="section__tag" data-i18n="about_tag">تعرّف علينا</span>
+        <h2 class="section__title" data-i18n="about_title">من نحن</h2>
+      </div>
+      <div class="about__grid">
+        <div class="about__content">
+          <p class="about__text" data-i18n="about_text1">
+            <strong>Brainova Robotics</strong> هي مدرسة متخصصة في تعليم الروبوتيك والبرمجة للأطفال والشباب في أم البواقي، الجزائر. نوفر بيئة تعليمية آمنة، حديثة ومحفزة للإبداع.
+          </p>
+          <p class="about__text" data-i18n="about_text2">
+            نؤمن بأن التعلم يبدأ من الأساس، لذلك لا يشترط أي خبرة مسبقة. يبدأ الطالب رحلته من الصفر ثم يتدرج تدريجيًا حتى يصبح قادرًا على تصميم وبرمجة روبوتات ذكية وتنفيذ مشاريع متقدمة.
+          </p>
+          <div class="about__features">
+            <div class="about__feature">
+              <span class="about__feature-icon">🎯</span>
+              <span data-i18n="about_feat1">الفئة العمرية: 6 إلى 16 سنة</span>
+            </div>
+            <div class="about__feature">
+              <span class="about__feature-icon">👥</span>
+              <span data-i18n="about_feat2">12 طالبًا فقط في كل فوج</span>
+            </div>
+            <div class="about__feature">
+              <span class="about__feature-icon">🎓</span>
+              <span data-i18n="about_feat3">شهادة إنجاز رسمية</span>
+            </div>
+            <div class="about__feature">
+              <span class="about__feature-icon">🏆</span>
+              <span data-i18n="about_feat4">تحضير للمسابقات الوطنية والدولية</span>
+            </div>
+          </div>
+        </div>
+        <div class="about__visual">
+          <div class="about__image-grid">
+            <div class="about__img-card about__img-card--1">
+              <img src="assets/images/spike1.jpg" alt="حصة روبوتيك">
+            </div>
+            <div class="about__img-card about__img-card--2">
+              <img src="assets/images/microbit3.jpg" alt="برمجة">
+            </div>
+            <div class="about__img-card about__img-card--3">
+              <img src="assets/images/comp1.jpg" alt="مشاريع ومسابقات">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== LEARNING PATH ========== -->
+  <section id="learning-path" class="section">
+    <div class="container">
+      <div class="section__header">
+        <span class="section__tag" data-i18n="path_tag">رحلة التعلم</span>
+        <h2 class="section__title" data-i18n="path_title">المسار التعليمي</h2>
+        <p class="section__subtitle" data-i18n="path_subtitle">يتعلم الطالب مهارات متدرجة تبدأ من الأساسيات وصولاً إلى المشاريع المتقدمة والمسابقات</p>
+      </div>
+      <div class="path__timeline">
+        <div class="path__item"><div class="path__icon">🧠</div><span>أساسيات التفكير المنطقي</span></div>
+        <div class="path__item"><div class="path__icon">🎮</div><span>البرمجة باستخدام Scratch</span></div>
+        <div class="path__item"><div class="path__icon">🕹️</div><span>تصميم الألعاب والمشاريع التعليمية</span></div>
+        <div class="path__item"><div class="path__icon">🤖</div><span>برمجة الروبوتات باستخدام mBlock</span></div>
+        <div class="path__item"><div class="path__icon">⚙️</div><span>التحكم بالمحركات والحساسات</span></div>
+        <div class="path__item"><div class="path__icon">🏎️</div><span>برمجة روبوتات mBot2</span></div>
+        <div class="path__item"><div class="path__icon">🐼</div><span>مشاريع Codey Rocky</span></div>
+        <div class="path__item"><div class="path__icon">🧱</div><span>مشاريع LEGO® Education SPIKE Essential</span></div>
+        <div class="path__item"><div class="path__icon">🔧</div><span>مشاريع LEGO® Education SPIKE Prime</span></div>
+        <div class="path__item"><div class="path__icon">🐍</div><span>البرمجة باستخدام Python</span></div>
+        <div class="path__item"><div class="path__icon">💻</div><span>تطوير المشاريع بلغة C++ و JavaScript</span></div>
+        <div class="path__item"><div class="path__icon">🚀</div><span>تصميم وتنفيذ مشاريع روبوتية متقدمة</span></div>
+        <div class="path__item"><div class="path__icon">🏆</div><span>الاستعداد للمسابقات الوطنية والدولية</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== LEVELS WITH REAL WORKSHOP PHOTOS ========== -->
+  <section id="levels" class="section section--dark">
+    <div class="container">
+      <div class="section__header">
+        <span class="section__tag" data-i18n="levels_tag">6 مستويات متدرجة</span>
+        <h2 class="section__title" data-i18n="levels_title">مستويات الدراسة</h2>
+        <p class="section__subtitle" data-i18n="levels_subtitle">ينقسم البرنامج إلى ستة مستويات متدرجة، كل مستوى يبني على ما قبله</p>
+      </div>
+      <div class="levels__grid">
+        <!-- Level 1 -->
+        <div class="level-card" data-level="1">
+          <div class="level-card__number">01</div>
+          <img src="assets/images/spike1.jpg" alt="Level 1 Explorer" class="level-card__img">
+          <div class="level-card__body">
+            <span class="level-card__badge">Level 1</span>
+            <h3 class="level-card__name">Explorer</h3>
+            <span class="level-card__name-ar" data-i18n="level1_name">المستكشف (6-8 سنوات)</span>
+            <ul class="level-card__list">
+              <li>التعرف على الحاسوب</li>
+              <li>التفكير المنطقي</li>
+              <li>Scratch للمبتدئين</li>
+            </ul>
+          </div>
+        </div>
+        <!-- Level 2 -->
+        <div class="level-card" data-level="2">
+          <div class="level-card__number">02</div>
+          <img src="assets/images/spike5.jpg" alt="Level 2 Builder" class="level-card__img">
+          <div class="level-card__body">
+            <span class="level-card__badge">Level 2</span>
+            <h3 class="level-card__name">Builder</h3>
+            <span class="level-card__name-ar" data-i18n="level2_name">الباني (8-10 سنوات)</span>
+            <ul class="level-card__list">
+              <li>مشاريع Scratch</li>
+              <li>أساسيات الروبوتيك</li>
+              <li>برمجة mBot2</li>
+            </ul>
+          </div>
+        </div>
+        <!-- Level 3 -->
+        <div class="level-card" data-level="3">
+          <div class="level-card__number">03</div>
+          <img src="assets/images/microbit3.jpg" alt="Level 3 Creator" class="level-card__img">
+          <div class="level-card__body">
+            <span class="level-card__badge">Level 3</span>
+            <h3 class="level-card__name">Creator</h3>
+            <span class="level-card__name-ar" data-i18n="level3_name">المبدع (10-12 سنة)</span>
+            <ul class="level-card__list">
+              <li>مشاريع Micro:bit و Arduino</li>
+              <li>الحساسات والمحركات</li>
+              <li>البرمجة بلغة C++</li>
+            </ul>
+          </div>
+        </div>
+        <!-- Level 4 -->
+        <div class="level-card" data-level="4">
+          <div class="level-card__number">04</div>
+          <img src="assets/images/spikeprime7.jpg" alt="Level 4 Innovator" class="level-card__img">
+          <div class="level-card__body">
+            <span class="level-card__badge">Level 4</span>
+            <h3 class="level-card__name">Innovator</h3>
+            <span class="level-card__name-ar" data-i18n="level4_name">المبتكر (11-14 سنة)</span>
+            <ul class="level-card__list">
+              <li>LEGO® Education SPIKE Prime</li>
+              <li>مشاريع STEM المتقدمة</li>
+              <li>الرؤية والذكاء الاصطناعي</li>
+            </ul>
+          </div>
+        </div>
+        <!-- Level 5 -->
+        <div class="level-card" data-level="5">
+          <div class="level-card__number">05</div>
+          <img src="assets/images/spikeprime15.jpg" alt="Level 5 Engineer" class="level-card__img">
+          <div class="level-card__body">
+            <span class="level-card__badge">Level 5</span>
+            <h3 class="level-card__name">Engineer</h3>
+            <span class="level-card__name-ar" data-i18n="level5_name">المهندس (12-15 سنة)</span>
+            <ul class="level-card__list">
+              <li>برمجة Python المتقدمة</li>
+              <li>روبوتات IoT والتحكم اللاسلكي</li>
+              <li>مشاريع روبوتية مستقلة</li>
+            </ul>
+          </div>
+        </div>
+        <!-- Level 6 -->
+        <div class="level-card" data-level="6">
+          <div class="level-card__number">06</div>
+          <img src="assets/images/comp1.jpg" alt="Level 6 Robotics Expert" class="level-card__img">
+          <div class="level-card__body">
+            <span class="level-card__badge">Level 6</span>
+            <h3 class="level-card__name">Robotics Expert</h3>
+            <span class="level-card__name-ar" data-i18n="level6_name">خبير الروبوتيك والمسابقات (13-16 سنة)</span>
+            <ul class="level-card__list">
+              <li>تصميم وبرمجة روبوتات المسابقات</li>
+              <li>خوارزميات التحكم PID</li>
+              <li>التحضير للمسابقات الوطنية والدولية</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== SKILLS ========== -->
+  <section id="skills" class="section">
+    <div class="container">
+      <div class="section__header">
+        <span class="section__tag" data-i18n="skills_tag">ماذا سيتعلم ابنك؟</span>
+        <h2 class="section__title" data-i18n="skills_title">المهارات التي يكتسبها الطالب</h2>
+        <p class="section__subtitle" data-i18n="skills_subtitle">بنهاية البرنامج يكون الطالب قد اكتسب مهارات أساسية ومتقدمة</p>
+      </div>
+      <div class="skills__grid">
+        <div class="skill-card"><div class="skill-card__icon">🧠</div><h4 class="skill-card__title">التفكير المنطقي</h4></div>
+        <div class="skill-card"><div class="skill-card__icon">💻</div><h4 class="skill-card__title">البرمجة</h4></div>
+        <div class="skill-card"><div class="skill-card__icon">🤖</div><h4 class="skill-card__title">تصميم الروبوتات</h4></div>
+        <div class="skill-card"><div class="skill-card__icon">💡</div><h4 class="skill-card__title">الإبداع والابتكار</h4></div>
+        <div class="skill-card"><div class="skill-card__icon">🧩</div><h4 class="skill-card__title">حل المشكلات</h4></div>
+        <div class="skill-card"><div class="skill-card__icon">👥</div><h4 class="skill-card__title">العمل الجماعي</h4></div>
+        <div class="skill-card"><div class="skill-card__icon">📋</div><h4 class="skill-card__title">إدارة المشاريع</h4></div>
+        <div class="skill-card"><div class="skill-card__icon">⚙️</div><h4 class="skill-card__title">التفكير الهندسي</h4></div>
+        <div class="skill-card"><div class="skill-card__icon">🎤</div><h4 class="skill-card__title">مهارات العرض والتواصل</h4></div>
+        <div class="skill-card"><div class="skill-card__icon">⭐</div><h4 class="skill-card__title">الثقة بالنفس</h4></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== EQUIPMENT & LAB ========== -->
+  <section id="equipment" class="section section--dark">
+    <div class="container">
+      <div class="section__header">
+        <span class="section__tag" data-i18n="equip_tag">تجهيزاتنا</span>
+        <h2 class="section__title" data-i18n="equip_title">المختبرات والمعدات</h2>
+        <p class="section__subtitle" data-i18n="equip_subtitle">يضم مختبر Brainova Robotics أحدث التجهيزات التعليمية</p>
+      </div>
+      <div class="equipment__grid">
+        <div class="equip-card">
+          <img src="assets/images/spike2.jpg" alt="mBot2" class="equip-card__img">
+          <div class="equip-card__content">
+            <h4 class="equip-card__name">Makeblock mBot2</h4>
+            <p class="equip-card__desc">روبوت تعليمي متقدم للبرمجة والذكاء الاصطناعي والحساسات المشفرة.</p>
+          </div>
+        </div>
+        <div class="equip-card">
+          <img src="assets/images/spikeprime1.jpg" alt="SPIKE Prime" class="equip-card__img">
+          <div class="equip-card__content">
+            <h4 class="equip-card__name">LEGO® SPIKE™ Prime</h4>
+            <p class="equip-card__desc">حقائب هندسية متطورة لتركيب التروس والمحركات وبرمجة الحلول الذكية.</p>
+          </div>
+        </div>
+        <div class="equip-card">
+          <img src="assets/images/microbit1.jpg" alt="Micro:bit" class="equip-card__img">
+          <div class="equip-card__content">
+            <h4 class="equip-card__name">Micro:bit & Arduino Labs</h4>
+            <p class="equip-card__desc">لوحات تحكم دقيقة ودوائر إلكترونية متكاملة لتعليم برمجة الحساسات.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== VIDEOS SECTION: 2 HD VIDEOS ========== -->
+  <section id="videos" class="section">
+    <div class="container">
+      <div class="section__header">
+        <span class="section__tag">فيديوهات حصرية</span>
+        <h2 class="section__title">🎥 فيديوهات الورشات والمسابقات</h2>
+        <p class="section__subtitle">شاهد أداء روبوتات طلابنا أثناء حل التحديات الميدانية على حلبات المسابقات الرسمية</p>
+      </div>
+      <div class="video__grid">
+        <!-- Video 1 -->
+        <div class="video-card">
+          <video src="assets/videos/comp_video1.mp4" controls preload="metadata" poster="assets/images/comp1.jpg"></video>
+          <div class="video-card__info">
+            <h3 class="video-card__title">تحدي الروبوت الذاتي وتجاوز العوائق</h3>
+            <p class="video-card__desc">مقطع يوثق حركة الروبوت المبرمج ذاتياً لتنفيذ المهام الميدانية في زمن قياسي.</p>
+          </div>
+        </div>
+        <!-- Video 2 -->
+        <div class="video-card">
+          <video src="assets/videos/comp_video2.mp4" controls preload="metadata" poster="assets/images/comp2.jpg"></video>
+          <div class="video-card__info">
+            <h3 class="video-card__title">منافسات حلبة الروبوتيك الوطنية</h3>
+            <p class="video-card__desc">توثيق مشاركة وتأطير تلاميذ مدرسة Brainova في حل التحدي النهائي للمسابقة.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== GALLERY: ALL REAL PHOTOS WITH LIGHTBOX ========== -->
+  <section id="gallery" class="section section--dark">
+    <div class="container">
+      <div class="section__header">
+        <span class="section__tag" data-i18n="gallery_tag">شاهد أنشطتنا</span>
+        <h2 class="section__title" data-i18n="gallery_title">📸 معرض صور الأكاديمية</h2>
+        <p class="section__subtitle">لقطات حقيقية من ورشات وتدريبات تلاميذ Brainova Robotics بأم البواقي</p>
+      </div>
+      <div class="gallery__filters">
+        <button class="gallery__filter active" data-filter="all">الكل</button>
+        <button class="gallery__filter" data-filter="classes">📚 الحصص والتدريب</button>
+        <button class="gallery__filter" data-filter="robots">🤖 الروبوتات</button>
+        <button class="gallery__filter" data-filter="projects">💻 المشاريع الإلكترونية</button>
+        <button class="gallery__filter" data-filter="competitions">🏆 المسابقات والجوائز</button>
+      </div>
+      <div class="gallery__grid" id="galleryGrid">
+        
+        <div class="gallery__item" data-category="classes" onclick="openLightbox('assets/images/spike10.jpg')">
+          <div class="gallery__img-wrapper">
+            <img src="assets/images/spike10.jpg" alt="تركيب التروس والمحركات" loading="lazy">
+            <div class="gallery__overlay"><span>تركيب التروس والمحركات</span></div>
+          </div>
+        </div>
+
+        <div class="gallery__item" data-category="competitions" onclick="openLightbox('assets/images/comp2.jpg')">
+          <div class="gallery__img-wrapper">
+            <img src="assets/images/comp2.jpg" alt="حلبة المنافسة والتحدي" loading="lazy">
+            <div class="gallery__overlay"><span>حلبة المنافسة والتحدي</span></div>
+          </div>
+        </div>
+
+        <div class="gallery__item" data-category="robots" onclick="openLightbox('assets/images/spikeprime12.jpg')">
+          <div class="gallery__img-wrapper">
+            <img src="assets/images/spikeprime12.jpg" alt="برمجة الروبوت الذاتي" loading="lazy">
+            <div class="gallery__overlay"><span>برمجة الروبوت الذاتي</span></div>
+          </div>
+        </div>
+
+        <div class="gallery__item" data-category="classes" onclick="openLightbox('assets/images/spike22.jpg')">
+          <div class="gallery__img-wrapper">
+            <img src="assets/images/spike22.jpg" alt="تجارب مستشعرات الألوان" loading="lazy">
+            <div class="gallery__overlay"><span>تجارب مستشعرات الألوان</span></div>
+          </div>
+        </div>
+
+        <div class="gallery__item" data-category="competitions" onclick="openLightbox('assets/images/comp5.jpg')">
+          <div class="gallery__img-wrapper">
+            <img src="assets/images/comp5.jpg" alt="اختبار آليات الروبوت" loading="lazy">
+            <div class="gallery__overlay"><span>اختبار آليات الروبوت بالمنافسة</span></div>
+          </div>
+        </div>
+
+        <div class="gallery__item" data-category="robots" onclick="openLightbox('assets/images/spikeprime18.jpg')">
+          <div class="gallery__img-wrapper">
+            <img src="assets/images/spikeprime18.jpg" alt="هندسة الهيكل الميكانيكي" loading="lazy">
+            <div class="gallery__overlay"><span>هندسة الهيكل الميكانيكي</span></div>
+          </div>
+        </div>
+
+        <div class="gallery__item" data-category="classes" onclick="openLightbox('assets/images/spike33.jpg')">
+          <div class="gallery__img-wrapper">
+            <img src="assets/images/spike33.jpg" alt="العمل الجماعي والابتكار" loading="lazy">
+            <div class="gallery__overlay"><span>العمل الجماعي والابتكار</span></div>
+          </div>
+        </div>
+
+        <div class="gallery__item" data-category="competitions" onclick="openLightbox('assets/images/comp7.jpg')">
+          <div class="gallery__img-wrapper">
+            <img src="assets/images/comp7.jpg" alt="تتويج الأبطال والجوائز" loading="lazy">
+            <div class="gallery__overlay"><span>تتويج الأبطال والجوائز</span></div>
+          </div>
+        </div>
+
+        <div class="gallery__item" data-category="projects" onclick="openLightbox('assets/images/microbit2.jpg')">
+          <div class="gallery__img-wrapper">
+            <img src="assets/images/microbit2.jpg" alt="مخبر الإلكترونيات والـ Micro:bit" loading="lazy">
+            <div class="gallery__overlay"><span>مخبر الإلكترونيات والـ Micro:bit</span></div>
+          </div>
+        </div>
+
+        <div class="gallery__item" data-category="robots" onclick="openLightbox('assets/images/spike14.jpg')">
+          <div class="gallery__img-wrapper">
+            <img src="assets/images/spike14.jpg" alt="تركيب حساس الموجات الصوتية" loading="lazy">
+            <div class="gallery__overlay"><span>تركيب حساس الموجات الصوتية</span></div>
+          </div>
+        </div>
+
+        <div class="gallery__item" data-category="classes" onclick="openLightbox('assets/images/spikeprime20.jpg')">
+          <div class="gallery__img-wrapper">
+            <img src="assets/images/spikeprime20.jpg" alt="اختبار القيادة الذاتية للروبوت" loading="lazy">
+            <div class="gallery__overlay"><span>اختبار القيادة الذاتية للروبوت</span></div>
+          </div>
+        </div>
+
+        <div class="gallery__item" data-category="competitions" onclick="openLightbox('assets/images/comp9.jpg')">
+          <div class="gallery__img-wrapper">
+            <img src="assets/images/comp9.jpg" alt="حلبة التحدي والمنافسات الرسمية" loading="lazy">
+            <div class="gallery__overlay"><span>حلبة التحدي والمنافسات الرسمية</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== TEAM ========== -->
+  <section id="team" class="section">
+    <div class="container">
+      <div class="section__header">
+        <span class="section__tag" data-i18n="team_tag">من يعلّم أبناءكم</span>
+        <h2 class="section__title" data-i18n="team_title">فريقنا</h2>
+      </div>
+      <div class="team__grid">
+        <div class="team-card team-card--featured">
+          <div class="team-card__avatar">👨‍💼</div>
+          <h3 class="team-card__role">الإدارة والإشراف</h3>
+          <p class="team-card__desc">يتولى فريق الإدارة والإشراف إدارة جميع الجوانب الأكاديمية والتنظيمية داخل Brainova Robotics، وتوفير بيئة تعليمية آمنة، حديثة ومحفزة للإبداع.</p>
+          <ul class="team-card__list">
+            <li>إدارة المؤسسة والإشراف على العملية التعليمية</li>
+            <li>متابعة جودة البرامج والدورات التدريبية</li>
+            <li>الإشراف على مختبرات الروبوتيك وصيانة الأجهزة</li>
+            <li>تنظيم الأنشطة والفعاليات والمسابقات التقنية</li>
+          </ul>
+        </div>
+        <div class="team-card">
+          <div class="team-card__avatar">👨‍🏫</div>
+          <h3 class="team-card__role">معلم الروبوتيك والبرمجة</h3>
+          <p class="team-card__desc">متخصص في تدريس البرمجة والروبوتيك للأطفال باستخدام أحدث الأساليب التعليمية القائمة على التطبيق العملي وبناء التفكير المنطقي.</p>
+        </div>
+        <div class="team-card">
+          <div class="team-card__avatar">👨‍🔬</div>
+          <h3 class="team-card__role">معلم المشاريع والتقنيات</h3>
+          <p class="team-card__desc">متخصص في الإشراف على مشاريع الروبوتات وتدريس الإلكترونيات ومرافقة التلاميذ في مسابقات mBot2 و LEGO SPIKE Prime.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== ACHIEVEMENTS ========== -->
+  <section id="achievements" class="section section--dark">
+    <div class="container">
+      <div class="section__header">
+        <span class="section__tag" data-i18n="achieve_tag">نفخر بما حققناه</span>
+        <h2 class="section__title" data-i18n="achieve_title">إنجازاتنا</h2>
+      </div>
+      <div class="achievements__grid">
+        <div class="achieve-card">
+          <div class="achieve-card__icon">🎓</div>
+          <div class="achieve-card__number" data-count="50">0</div>
+          <p class="achieve-card__label">طالب تم تدريبهم</p>
+        </div>
+        <div class="achieve-card">
+          <div class="achieve-card__icon">🤖</div>
+          <div class="achieve-card__number" data-count="30">0</div>
+          <p class="achieve-card__label">مشروع روبوتيك منجز</p>
+        </div>
+        <div class="achieve-card">
+          <div class="achieve-card__icon">🏆</div>
+          <div class="achieve-card__number" data-count="5">0</div>
+          <p class="achieve-card__label">مشاركة في مسابقات تقنية</p>
+        </div>
+        <div class="achieve-card">
+          <div class="achieve-card__icon">📚</div>
+          <div class="achieve-card__number" data-count="6">0</div>
+          <p class="achieve-card__label">برامج تعليمية حديثة</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== CERTIFICATES ========== -->
+  <section id="certificates" class="section">
+    <div class="container">
+      <div class="certificates__content">
+        <div class="certificates__text">
+          <span class="section__tag">شهادات معتمدة</span>
+          <h2 class="section__title">🎓 الشهادات</h2>
+          <p class="certificates__desc">يحصل كل طالب بعد اجتياز المستوى بنجاح على شهادة إنجاز رسمية من Brainova Robotics توثق المهارات التي اكتسبها خلال البرنامج وتشجعه على مواصلة رحلته التعليمية.</p>
+          <div class="certificates__badges">
+            <span class="cert-badge">Level 1 — Explorer</span>
+            <span class="cert-badge">Level 2 — Builder</span>
+            <span class="cert-badge">Level 3 — Creator</span>
+            <span class="cert-badge">Level 4 — Innovator</span>
+            <span class="cert-badge">Level 5 — Engineer</span>
+            <span class="cert-badge">Level 6 — Robotics Expert</span>
+          </div>
+        </div>
+        <div class="certificates__visual">
+          <div class="cert-mockup">
+            <div class="cert-mockup__logo">🤖</div>
+            <h4>Brainova Robotics</h4>
+            <p>شهادة إنجاز وتأهيل معتمدة</p>
+            <div class="cert-mockup__line"></div>
+            <div class="cert-mockup__line cert-mockup__line--short"></div>
+            <div class="cert-mockup__seal">★</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== MULTI-STEP REGISTRATION ========== -->
+  <section id="registration" class="section section--gradient">
+    <div class="container">
+      <div class="section__header">
+        <span class="section__tag">انضم إلينا</span>
+        <h2 class="section__title">سجّل ابنك الآن</h2>
+        <p class="section__subtitle">احجز مقعد ابنك في رحلة الروبوتيك والبرمجة بأم البواقي</p>
+      </div>
+      <div class="registration__wrapper">
+        <div class="form-progress">
+          <div class="form-progress__step active" data-step="1">
+            <div class="form-progress__circle">1</div>
+            <span>بيانات الولي</span>
+          </div>
+          <div class="form-progress__line"></div>
+          <div class="form-progress__step" data-step="2">
+            <div class="form-progress__circle">2</div>
+            <span>بيانات الطالب</span>
+          </div>
+          <div class="form-progress__line"></div>
+          <div class="form-progress__step" data-step="3">
+            <div class="form-progress__circle">3</div>
+            <span>اختيار البرنامج</span>
+          </div>
+        </div>
+
+        <form class="reg-form" id="regForm" onsubmit="handleMultiStepRegistration(event)" novalidate>
+          <!-- Step 1 -->
+          <div class="form-step active" data-step="1">
+            <h3 class="form-step__title">بيانات ولي الأمر</h3>
+            <div class="form-group">
+              <label for="parentName">الاسم الكامل لولي الأمر *</label>
+              <input type="text" id="parentName" required placeholder="أدخل اسمك الكامل">
+            </div>
+            <div class="form-group">
+              <label for="parentPhone">رقم الهاتف (WhatsApp) *</label>
+              <input type="tel" id="parentPhone" required placeholder="0661234567" dir="ltr">
+            </div>
+            <div class="form-group">
+              <label for="parentEmail">البريد الإلكتروني (اختياري)</label>
+              <input type="email" id="parentEmail" placeholder="example@email.com" dir="ltr">
+            </div>
+            <button type="button" class="btn btn--primary form-btn-next" onclick="goToStep(2)">التالي ←</button>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="form-step" data-step="2">
+            <h3 class="form-step__title">بيانات الطالب</h3>
+            <div class="form-group">
+              <label for="studentName">اسم الطالب الكامل *</label>
+              <input type="text" id="studentName" required placeholder="اسم الطالب الكامل">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="studentAge">العمر *</label>
+                <select id="studentAge" required>
+                  <option value="">اختر العمر</option>
+                  <option value="6">6 سنوات</option>
+                  <option value="7">7 سنوات</option>
+                  <option value="8">8 سنوات</option>
+                  <option value="9">9 سنوات</option>
+                  <option value="10">10 سنوات</option>
+                  <option value="11">11 سنة</option>
+                  <option value="12">12 سنة</option>
+                  <option value="13">13 سنة</option>
+                  <option value="14">14 سنة</option>
+                  <option value="15">15 سنة</option>
+                  <option value="16">16 سنة</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="studentGrade">المستوى الدراسي</label>
+                <input type="text" id="studentGrade" placeholder="مثال: السنة الثالثة ابتدائي">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>هل لديه خبرة سابقة في البرمجة أو الروبوتيك؟</label>
+              <div class="form-radio-group">
+                <label class="form-radio">
+                  <input type="radio" name="experience" value="no" checked>
+                  <span>لا</span>
+                </label>
+                <label class="form-radio">
+                  <input type="radio" name="experience" value="yes">
+                  <span>نعم</span>
+                </label>
+              </div>
+            </div>
+            <div class="form-btn-group">
+              <button type="button" class="btn btn--outline" onclick="goToStep(1)">→ السابق</button>
+              <button type="button" class="btn btn--primary" onclick="goToStep(3)">التالي ←</button>
+            </div>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="form-step" data-step="3">
+            <h3 class="form-step__title">اختيار البرنامج والتأكيد</h3>
+            <div class="form-group">
+              <label for="preferredLevel">المستوى المقترح *</label>
+              <select id="preferredLevel">
+                <option value="المستوى 1 — Explorer (المستكشف)">Level 1 — Explorer (المستكشف)</option>
+                <option value="المستوى 2 — Builder (الباني)">Level 2 — Builder (الباني)</option>
+                <option value="المستوى 3 — Creator (المبدع)">Level 3 — Creator (المبدع)</option>
+                <option value="المستوى 4 — Innovator (المبتكر)">Level 4 — Innovator (المبتكر)</option>
+                <option value="المستوى 5 — Engineer (المهندس)">Level 5 — Engineer (المهندس)</option>
+                <option value="المستوى 6 — Robotics Expert (خبير الروبوتيك)">Level 6 — Robotics Expert (خبير الروبوتيك)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="schedule">التوقيت المفضل</label>
+              <select id="schedule">
+                <option value="صباحية">صباحية (09:00 - 11:00)</option>
+                <option value="مسائية">مسائية (14:00 - 16:00)</option>
+                <option value="نهاية الأسبوع">نهاية الأسبوع (الجمعة / السبت)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="notes">ملاحظات إضافية</label>
+              <textarea id="notes" rows="3" placeholder="أي ملاحظات أو اهتمامات خاصة..."></textarea>
+            </div>
+            <div class="form-btn-group">
+              <button type="button" class="btn btn--outline" onclick="goToStep(2)">→ السابق</button>
+              <button type="submit" class="btn btn--primary btn--glow">📩 إرسال طلب التسجيل</button>
+            </div>
+          </div>
+
+          <div class="form-success" id="formSuccess" style="display:none; margin-top:20px; padding:18px; border-radius:12px; background:rgba(0,230,118,0.12); border:1px solid var(--color-success); color:var(--color-success); text-align:center; font-weight:700;">
+            ✅ تم استلام طلب التسجيل بنجاح! سنتواصل معكم لتأكيد الفوج والموعد.
+          </div>
+        </form>
+
+        <div class="reg-whatsapp">
+          <p>أو سجّل مباشرة عبر واتساب:</p>
+          <a href="https://wa.me/213791194633?text=مرحبا، أريد تسجيل ابني في Brainova Robotics" class="btn btn--whatsapp" target="_blank" rel="noopener">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            <span>تواصل عبر واتساب (0791 19 46 33)</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FAQ ========== -->
+  <section id="faq" class="section section--dark">
+    <div class="container">
+      <div class="section__header">
+        <span class="section__tag">لديك سؤال؟</span>
+        <h2 class="section__title">الأسئلة الشائعة</h2>
+      </div>
+      <div class="faq__list">
+        <div class="faq__item">
+          <button class="faq__question">ما هو العمر المناسب للتسجيل؟</button>
+          <div class="faq__answer">
+            <p>نستقبل الأطفال من 6 إلى 16 سنة. يتم توزيعهم على مستويات حسب العمر والمهارات.</p>
+          </div>
+        </div>
+        <div class="faq__item">
+          <button class="faq__question">هل يحتاج الطفل لخبرة مسبقة؟</button>
+          <div class="faq__answer">
+            <p>لا! نؤمن بأن التعلم يبدأ من الأساس. يبدأ الطالب رحلته من الصفر ثم يتدرج تدريجيًا.</p>
+          </div>
+        </div>
+        <div class="faq__item">
+          <button class="faq__question">كم عدد الطلبة في كل فوج؟</button>
+          <div class="faq__answer">
+            <p>12 طالبًا فقط في كل فوج لضمان أفضل تأطير ومتابعة لكل متعلم.</p>
+          </div>
+        </div>
+        <div class="faq__item">
+          <button class="faq__question">ما هي الأدوات والمعدات المستخدمة؟</button>
+          <div class="faq__answer">
+            <p>نستخدم أحدث التجهيزات: mBot2، LEGO® SPIKE™ Prime، Micro:bit، Arduino UNO، وأجهزة حاسوب حديثة لكل طالب.</p>
+          </div>
+        </div>
+        <div class="faq__item">
+          <button class="faq__question">هل يحصل الطالب على شهادة؟</button>
+          <div class="faq__answer">
+            <p>نعم، يحصل كل طالب بعد اجتياز المستوى بنجاح على شهادة إنجاز وتأهيل رسمية من Brainova Robotics.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== CONTACT ========== -->
+  <section id="contact" class="section">
+    <div class="container">
+      <div class="section__header">
+        <span class="section__tag">تواصل معنا</span>
+        <h2 class="section__title">اتصل بنا</h2>
+      </div>
+      <div class="contact__grid">
+        <div class="contact__info">
+          <div class="contact__card">
+            <div class="contact__card-icon">📍</div>
+            <h4>العنوان</h4>
+            <p>أم البواقي، الجزائر</p>
+          </div>
+          <div class="contact__card">
+            <div class="contact__card-icon">📞</div>
+            <h4>الهاتف</h4>
+            <a href="tel:+213791194633" dir="ltr">0791 19 46 33</a>
+          </div>
+          <div class="contact__card">
+            <div class="contact__card-icon">📧</div>
+            <h4>البريد الإلكتروني</h4>
+            <a href="mailto:brainovarobotics@gmail.com" dir="ltr">brainovarobotics@gmail.com</a>
+          </div>
+          <div class="contact__card">
+            <div class="contact__card-icon">🕐</div>
+            <h4>أوقات العمل</h4>
+            <p>السبت - الخميس: 9:00 ص - 5:00 م</p>
+          </div>
+          <div class="contact__social">
+            <a href="https://www.facebook.com/profile.php?id=61575395159902" target="_blank" rel="noopener" class="social-link" aria-label="Facebook">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            </a>
+            <a href="https://www.instagram.com/brainova.robotics/" target="_blank" rel="noopener" class="social-link" aria-label="Instagram">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+            </a>
+          </div>
+        </div>
+        <div class="contact__map">
+          <iframe
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d51892.70!2d7.1131!3d35.8769!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x12f0106b5e2ab2c3%3A0x44e4d0c4e3c8d989!2sOum+El+Bouaghi!5e0!3m2!1sar!2sdz!4v1"
+            width="100%" height="320" style="border:0; border-radius: 14px;" allowfullscreen="" loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            title="Brainova Robotics Location">
+          </iframe>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== LIGHTBOX MODAL ========== -->
+  <div id="galleryLightbox" class="lightbox-modal" onclick="closeLightbox(event)">
+    <div class="lightbox-content">
+      <button class="lightbox-close" onclick="closeLightbox(event)">×</button>
+      <img id="lightboxImg" src="" alt="Zoomed Photo">
+    </div>
+  </div>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__grid">
+        <div class="footer__brand">
+          <span class="nav__logo-icon">🤖</span>
+          <span class="footer__logo-text">Brainova <span class="accent">Robotics</span></span>
+          <p class="footer__desc">بيئة تعليمية متخصصة في الروبوتيك — أم البواقي، الجزائر</p>
+        </div>
+        <div class="footer__links">
+          <h4>روابط سريعة</h4>
+          <ul>
+            <li><a href="#about">من نحن</a></li>
+            <li><a href="#levels">المستويات</a></li>
+            <li><a href="#videos">الفيديوهات</a></li>
+            <li><a href="#gallery">المعرض</a></li>
+            <li><a href="#registration">التسجيل</a></li>
+          </ul>
+        </div>
+        <div class="footer__contact">
+          <h4>تواصل معنا</h4>
+          <p>📍 أم البواقي، الجزائر</p>
+          <p>📞 <span dir="ltr">0791 19 46 33</span></p>
+          <p>📧 <span dir="ltr">brainovarobotics@gmail.com</span></p>
+        </div>
+        <div class="footer__social">
+          <h4>تابعونا</h4>
+          <div class="footer__social-links">
+            <a href="https://www.facebook.com/profile.php?id=61575395159902" target="_blank" rel="noopener">Facebook</a>
+            <a href="https://www.instagram.com/brainova.robotics/" target="_blank" rel="noopener">Instagram</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <p>© 2026 Brainova Robotics. جميع الحقوق محفوظة.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========== WHATSAPP FLOAT ========== -->
+  <a href="https://wa.me/213791194633?text=مرحبا، أريد الاستفسار عن Brainova Robotics" class="whatsapp-float" target="_blank" rel="noopener" aria-label="WhatsApp">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+  </a>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

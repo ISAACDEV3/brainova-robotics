@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brainova Admin Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+
+  <div class="dashboard">
+    <!-- ========== SIDEBAR ========== -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar__header">
+          <div class="sidebar__logo" style="display:flex;align-items:center;gap:10px;text-decoration:none;cursor:pointer;" onclick="switchView('overview')">
+            <img src="assets/images/robot.png" alt="Brainova Robot" style="height:48px;width:48px;object-fit:contain;">
+            <span style="font-size:1.1rem;font-weight:800;letter-spacing:-0.5px;line-height:1.1;color:#0F172A;"><span style="color:#0284C7;">Brai</span><span style="color:#D97706;">nova</span><br><span style="font-size:0.65rem;font-weight:600;color:#64748B;letter-spacing:1px;text-transform:uppercase;">Robotics</span></span>
+          </div>
+      </div>
+      
+      <nav class="sidebar__nav">
+        <div class="nav-section-title">الرئيسية</div>
+        <ul id="sidebarNav">
+          <li><a href="#" class="active" data-view="overview" data-i18n="dash_overview"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg></span> نظرة عامة</a></li>
+        </ul>
+
+        <div class="nav-section-title">الشؤون الأكاديمية</div>
+        <ul>
+          <li><a href="#" data-view="students" data-i18n="dash_students"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></span> الطلاب</a></li>
+          <li><a href="#" data-view="attendance" data-i18n="dash_attendance"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span> الحضور والغياب</a></li>
+          <li><a href="#" data-view="groups" data-i18n="dash_groups"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span> الأفواج والفئات</a></li>
+          <li><a href="#" data-view="rooms" data-i18n="dash_rooms"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 7v14"/><path d="M21 7v14"/><path d="M7 21V11a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v10"/><path d="M12 14v1"/></svg></span> القاعات</a></li>
+          <li><a href="#" data-view="courses" data-i18n="dash_courses"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/></svg></span> المناهج والدورات</a></li>
+          <li><a href="#" data-view="schedule" data-i18n="dash_schedule"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg></span> الجدول الزمني</a></li>
+        </ul>
+
+        <div class="nav-section-title">الإدارة والمالية</div>
+        <ul>
+          <li><a href="#" data-view="payments" data-i18n="dash_payments"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg></span> المدفوعات والوصولات</a></li>
+          <li><a href="#" data-view="registrations" data-i18n="dash_registrations"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/></svg></span> طلبات التسجيل <span id="regBadge" class="sidebar-badge" style="display:none;">0</span></a></li>
+          <li><a href="#" data-view="educators" data-i18n="dash_educators"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> طاقم التدريس</a></li>
+        </ul>
+
+        <div class="nav-section-title">النظام</div>
+        <ul>
+          <li><a href="#" data-view="settings" data-i18n="dash_settings"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span> الإعدادات</a></li>
+        </ul>
+      </nav>
+      <div class="sidebar__footer">
+        <div class="sidebar__status">
+          <span class="status-dot"></span>
+          <span>النظام متصل محلياً</span>
+        </div>
+        <button class="btn-icon" style="border:none; color:var(--color-text-dim);" onclick="location.reload();" title="تحديث النظام">🔄</button>
+      </div>
+    </aside>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <main class="main-content">
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="topbar__left">
+          <div class="topbar-breadcrumb">
+            <span>الرئيسية</span> <span style="opacity:0.3;">/</span> <strong id="topbarViewTitle">نظرة عامة</strong>
+          </div>
+          <div class="search-bar" style="margin-right: 14px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" id="globalSearch" placeholder="بحث سريع في النظام (Ctrl+K)...">
+            <span class="search-shortcut">⌘K</span>
+          </div>
+        </div>
+
+        <div class="topbar__right">
+          <div class="topbar__profile">
+            <div class="topbar__avatar">A</div>
+            <div>
+              <div class="topbar__admin-name">إدارة الأكاديمية</div>
+              <div class="topbar__admin-role">لوحة تحكم الإدارة</div>
+            </div>
+          </div>
+
+          <!-- Windows 11 Frameless Controls -->
+          <div id="electronWinControls" style="display:flex; align-items:center; gap:3px; margin-left:6px; direction:ltr; -webkit-app-region:no-drag;">
+            <button onclick="if(window.electronAPI)window.electronAPI.minimize()" title="تصغير" style="width:30px; height:26px; border:1px solid rgba(56,189,248,0.2); border-radius:5px; background:rgba(255,255,255,0.04); color:#94A3B8; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+              <svg width="11" height="11" viewBox="0 0 12 12"><rect fill="currentColor" width="10" height="1.6" x="1" y="5.2"/></svg>
+            </button>
+            <button onclick="if(window.electronAPI)window.electronAPI.maximize()" title="تكبير / استعادة" style="width:30px; height:26px; border:1px solid rgba(56,189,248,0.2); border-radius:5px; background:rgba(255,255,255,0.04); color:#94A3B8; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+              <svg width="11" height="11" viewBox="0 0 12 12"><rect fill="none" stroke="currentColor" stroke-width="1.3" width="9" height="9" x="1.5" y="1.5" rx="1"/></svg>
+            </button>
+            <button onclick="if(window.electronAPI)window.electronAPI.close()" title="إغلاق البرنامج" style="width:30px; height:26px; border:1px solid rgba(239,68,68,0.3); border-radius:5px; background:rgba(239,68,68,0.12); color:#F87171; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+              <svg width="11" height="11" viewBox="0 0 12 12"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M2.5 2.5l7 7m0-7l-7 7"/></svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="page-content">
+        
+        <!-- 1. OVERVIEW VIEW -->
+        <section id="view-overview" class="dashboard-view active">
+          <!-- Executive Top Welcome Banner -->
+          <div class="dash-welcome-bar">
+            <div>
+              <div class="dash-breadcrumb">لوحة التحكم الأكاديمية <span style="opacity:0.4;">/</span> نظرة عامة شاملة</div>
+              <h1 class="page-title">مركز القيادة والمتابعة</h1>
+            </div>
+            <div class="dash-welcome-actions">
+              <button class="btn btn--outline btn--small" onclick="document.querySelector('[data-view=\'attendance\']').click()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                تفقد الحضور اليوم
+              </button>
+              <button class="btn btn--primary btn--small" onclick="openAddStudentModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                تسجيل تلميذ جديد
+              </button>
+            </div>
+          </div>
+
+          <!-- 4 Executive KPI Cards -->
+          <div class="stats-grid" id="statsGrid">
+            <!-- Rendered by JS -->
+          </div>
+
+          <!-- Analytics Row: Revenue Chart + Attendance Breakdown -->
+          <div class="dash-analytics-row">
+            <!-- Monthly Revenue Mini Chart -->
+            <div class="dash-card">
+              <div class="dash-card__header">
+                <h3 class="dash-card__title">الإيرادات الشهرية — آخر 6 أشهر</h3>
+                <span class="dash-pill-muted" style="color:#10B981; border-color:rgba(16,185,129,0.3);">دج</span>
+              </div>
+              <div id="overviewRevenueChart" style="padding: 8px 0 4px;">
+                <!-- Filled by JS -->
+              </div>
+            </div>
+
+            <!-- Attendance Breakdown per Group -->
+            <div class="dash-card">
+              <div class="dash-card__header">
+                <h3 class="dash-card__title">نسبة الحضور — بالفوج</h3>
+                <span class="dash-pill-muted">إجمالي كل سجلات الحضور</span>
+              </div>
+              <div id="overviewAttBreakdown" style="padding: 4px 0;">
+                <!-- Filled by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- 2-Column High-Density Workstation Grid -->
+
+          <div class="dash-main-grid">
+            <!-- Primary Section (65%): Live Registrations & Scheduled Sessions -->
+            <div class="dash-col-primary">
+              <!-- Recent Registrations Card -->
+              <div class="table-container">
+                <div class="table-header">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#38BDF8; box-shadow:0 0 8px #38BDF8;"></span>
+                    <h3 class="table-title">أحدث طلبات التسجيل الواردة</h3>
+                  </div>
+                  <button class="btn btn--outline btn--small" onclick="document.querySelector('[data-view=\'registrations\']').click()">إدارة كل الطلبات</button>
+                </div>
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>اسم التلميذ</th>
+                      <th>ولي الأمر</th>
+                      <th>رقم الهاتف</th>
+                      <th>تاريخ الطلب</th>
+                      <th>الحالة</th>
+                      <th style="text-align: center;">الإجراء</th>
+                    </tr>
+                  </thead>
+                  <tbody id="overviewTableBody">
+                    <!-- Filled by JS -->
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Today's Live Sessions & Schedule Stream -->
+              <div class="table-container" style="margin-top:18px;">
+                <div class="table-header">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10B981; box-shadow:0 0 8px #10B981;"></span>
+                    <h3 class="table-title">الأفواج التدريبية وجدول الحصص</h3>
+                  </div>
+                  <button class="btn btn--outline btn--small" onclick="document.querySelector('[data-view=\'schedule\']').click()">عرض الجدول الكامل</button>
+                </div>
+                <div id="overviewScheduleStream">
+                  <!-- Filled by JS -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Secondary Section (35%): Capacity Meters & Quick Action Hub -->
+            <div class="dash-col-secondary">
+              <!-- Cohort Capacity Card -->
+              <div class="dash-card">
+                <div class="dash-card__header">
+                  <h3 class="dash-card__title">استيعاب المستويات والأفواج</h3>
+                  <span class="dash-pill-muted">السعة الحالية</span>
+                </div>
+                <div id="overviewCapacityMeters" class="capacity-meters-list">
+                  <!-- Filled by JS -->
+                </div>
+              </div>
+
+              <!-- Quick Action Hub -->
+              <div class="dash-card" style="margin-top:18px;">
+                <div class="dash-card__header">
+                  <h3 class="dash-card__title">مركز العمليات السريعة</h3>
+                </div>
+                <div class="quick-actions-grid">
+                  <button type="button" class="qa-tile" onclick="openAddStudentModal()">
+                    <div class="qa-tile__icon" style="color:#38BDF8; background:rgba(56,189,248,0.12);">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                    </div>
+                    <span class="qa-tile__title">إضافة تلميذ</span>
+                    <span class="qa-tile__sub">تسجيل ملف كامل</span>
+                  </button>
+
+                  <button type="button" class="qa-tile" onclick="openRecordPaymentModal()">
+                    <div class="qa-tile__icon" style="color:#10B981; background:rgba(16,185,129,0.12);">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+                    </div>
+                    <span class="qa-tile__title">تسجيل دفعة</span>
+                    <span class="qa-tile__sub">تحصيل وطباعة وصل</span>
+                  </button>
+
+                  <button type="button" class="qa-tile" onclick="document.querySelector('[data-view=\'attendance\']').click()">
+                    <div class="qa-tile__icon" style="color:#F59E0B; background:rgba(245,158,11,0.12);">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    </div>
+                    <span class="qa-tile__title">تفقد الحضور</span>
+                    <span class="qa-tile__sub">مناداة مباشرة للحصة</span>
+                  </button>
+
+                  <button type="button" class="qa-tile" onclick="document.querySelector('[data-view=\'students\']').click()">
+                    <div class="qa-tile__icon" style="color:#A78BFA; background:rgba(167,139,250,0.12);">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <span class="qa-tile__title">قائمة الطلاب</span>
+                    <span class="qa-tile__sub">عرض وإدارة الملفات</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. STUDENTS VIEW -->
+        <section id="view-students" class="dashboard-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title" data-i18n="dash_students">الطلاب</h1>
+              <p class="page-subtitle" data-i18n="dash_students_sub">إدارة جميع الطلاب المسجلين حالياً.</p>
+            </div>
+            <div style="display:flex; gap: 10px;">
+              <button class="btn btn--outline btn--small" data-i18n="dash_export_csv" onclick="exportData('brainova_students', 'students')">تصدير CSV</button>
+              <button class="btn btn--primary btn--small" data-i18n="dash_add_student" onclick="openAddStudentModal()">+ إضافة طالب</button>
+            </div>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th data-i18n="dash_id">رقم التعريف</th>
+                  <th data-i18n="dash_student_name">اسم الطالب</th>
+                  <th data-i18n="dash_group_name">الفوج والمستوى</th>
+                  <th data-i18n="dash_parent_name">ولي الأمر والهاتف</th>
+                  <th>الاشتراك والدفع</th>
+                  <th data-i18n="dash_action" style="text-align: center;">الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="studentsTableBody">
+                <!-- Filled by JS -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- 3. EDUCATORS VIEW -->
+        <section id="view-educators" class="dashboard-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title" data-i18n="dash_educators">المعلمون</h1>
+              <p class="page-subtitle" data-i18n="dash_educators_sub">إدارة طاقم التدريس وتعييناتهم.</p>
+            </div>
+            <div style="display:flex; gap: 10px;">
+              <button class="btn btn--outline btn--small" data-i18n="dash_export_csv" onclick="exportData('brainova_educators', 'educators')">تصدير CSV</button>
+              <button class="btn btn--primary btn--small" data-i18n="dash_add_educator" onclick="openAddEducatorModal()">+ إضافة معلم</button>
+            </div>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th data-i18n="dash_educator_name">اسم المعلم</th>
+                  <th data-i18n="dash_specialty">التخصص</th>
+                  <th data-i18n="dash_groups_count">عدد الأفواج</th>
+                  <th data-i18n="dash_phone">الهاتف</th>
+                  <th data-i18n="dash_action">الإجراء</th>
+                </tr>
+              </thead>
+              <tbody id="educatorsTableBody">
+                <!-- Filled by JS -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- 4. REGISTRATIONS VIEW -->
+        <section id="view-registrations" class="dashboard-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title" data-i18n="dash_registrations">التسجيلات</h1>
+              <p class="page-subtitle">إدارة جميع طلبات التسجيل.</p>
+            </div>
+            <button class="btn btn--outline btn--small" data-i18n="dash_export_csv" onclick="exportData('brainova_registrations', 'registrations')">تصدير CSV</button>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>رقم الطلب</th>
+                  <th>اسم الطالب والمستوى</th>
+                  <th>ولي الأمر والهاتف</th>
+                  <th>تاريخ الطلب والمصدر</th>
+                  <th>الحالة</th>
+                  <th style="text-align: center;">الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="allRegistrationsTableBody">
+                <!-- Filled by JS -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- 4. GROUPS VIEW (WITH AGE CATEGORIES) -->
+        <section id="view-groups" class="dashboard-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title" data-i18n="dash_groups">الأفواج والفئات العمرية</h1>
+              <p class="page-subtitle">تنظيم مجموعات الطلاب، الفئات العمرية، والقاعات المخصصة لكل فوج.</p>
+            </div>
+            <div style="display:flex; gap: 10px;">
+              <button class="btn btn--outline btn--small" data-i18n="dash_export_csv" onclick="exportData('brainova_groups', 'groups')">تصدير CSV</button>
+              <button class="btn btn--primary btn--small" onclick="openAddGroupModal()">+ إنشاء فوج جديد</button>
+            </div>
+          </div>
+
+          <!-- Age Filter Toolbar -->
+          <div style="display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap; background:var(--color-bg-card); padding:10px 16px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">
+            <span style="font-size:0.85rem; color:var(--color-text-muted); font-weight:700;">🎂 تصفية حسب الفئة العمرية:</span>
+            <select id="groupAgeFilter" onchange="renderGroups()" class="form-input" style="width:auto; padding:6px 12px; font-size:0.85rem;">
+              <option value="all">جميع الفئات العمرية</option>
+              <option value="6-8">👶 براعم الروبوتيك (6 - 8 سنوات)</option>
+              <option value="8-11">🚀 المبرمج الناشئ (8 - 11 سنة)</option>
+              <option value="11-15">🤖 المبتكر الصغير (11 - 15 سنة)</option>
+              <option value="15-18">⚡ مهندسو المستقبل (15 - 18 سنة)</option>
+            </select>
+          </div>
+
+          <div class="stats-grid" id="groupsGrid">
+            <!-- Filled by JS -->
+          </div>
+        </section>
+
+        <!-- 5. ROOMS & LABS VIEW -->
+        <section id="view-rooms" class="dashboard-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title" data-i18n="dash_rooms">تنظيم القاعات</h1>
+              <p class="page-subtitle">إدارة وتوزيع القاعات، التجهيزات التقنية، ومتابعة الجلسات في الوقت الفعلي.</p>
+            </div>
+            <div style="display:flex; gap: 10px;">
+              <button class="btn btn--primary btn--small" onclick="openAddRoomModal()">+ إضافة قاعة</button>
+            </div>
+          </div>
+
+          <!-- Rooms Top Stats -->
+          <div class="stats-grid" id="roomStatsGrid" style="margin-bottom:20px;">
+            <!-- Filled by JS -->
+          </div>
+
+          <!-- Rooms Grid -->
+          <div class="stats-grid" id="roomsGrid">
+            <!-- Filled by JS -->
+          </div>
+        </section>
+
+        <!-- 5. COURSES VIEW -->
+        <section id="view-courses" class="dashboard-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">الدورات والمستويات</h1>
+              <p class="page-subtitle">نظرة عامة على المناهج التعليمية المتاحة.</p>
+            </div>
+            <div style="display:flex; gap: 10px;">
+              <button class="btn btn--primary btn--small" onclick="openAddCourseModal()">+ إضافة دورة</button>
+            </div>
+          </div>
+          <div class="stats-grid" id="coursesGrid">
+             <!-- Filled by JS -->
+          </div>
+        </section>
+
+        <!-- 7. SCHEDULE VIEW -->
+        <section id="view-schedule" class="dashboard-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title" data-i18n="dash_schedule">الجدول الزمني</h1>
+              <p class="page-subtitle" data-i18n="dash_schedule_sub">تنظيم الحصص الأسبوعية للأفواج.</p>
+            </div>
+            <button class="btn btn--primary btn--small" data-i18n="dash_add_session" onclick="openAddSessionModal()">+ إضافة حصة</button>
+          </div>
+          
+          <div class="schedule-wrapper">
+            <div class="schedule-grid" id="scheduleGrid">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- 8. ATTENDANCE VIEW -->
+        <section id="view-attendance" class="dashboard-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title" data-i18n="dash_attendance">تفقد الحضور والجلسات التدريبية</h1>
+              <p class="page-subtitle">تسجيل تفقد الحصة المباشر، خصم الرصيد التلقائي، وإشعار الأولياء بالغياب.</p>
+            </div>
+            <div style="display:flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn--primary btn--small" onclick="openQrScannerModal()" style="background:linear-gradient(135deg, #0284C7 0%, #0369A1 100%); font-weight:800; box-shadow:0 0 12px rgba(2,132,199,0.5);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                تشغيل كاميرا مسح بطاقات الطلاب
+              </button>
+              <button class="btn btn--outline btn--small" onclick="markAllAttendance('present')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><polyline points="20 6 9 17 4 12"/></svg>
+                تحديد الكل كحاضرين
+              </button>
+              <button class="btn btn--primary btn--small" onclick="saveAttendanceRecord()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                اعتماد وحفظ الحصة
+              </button>
+            </div>
+          </div>
+
+          <!-- Attendance Session Controls & Live Stats Header -->
+          <div class="att-session-header">
+            <div class="att-controls-row">
+              <div>
+                <label style="font-size:0.72rem; color:var(--color-text-dim); font-weight:700; display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">الفوج التدريبي</label>
+                <select id="attGroupSelect" onchange="renderAttendance()" class="form-input" style="width: 220px; height: 36px; font-weight:700;"></select>
+              </div>
+              <div>
+                <label style="font-size:0.72rem; color:var(--color-text-dim); font-weight:700; display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">تاريخ الحصة</label>
+                <input type="date" id="attDateSelect" onchange="renderAttendance()" class="form-input" style="width: 180px; height: 36px; font-family:monospace;">
+              </div>
+            </div>
+
+            <!-- Live Session Metrics -->
+            <div class="att-controls-row">
+              <span class="att-metric-pill att-metric-pill--present">حاضر: <strong id="attPresentCount">0</strong></span>
+              <span class="att-metric-pill att-metric-pill--absent">غائب: <strong id="attAbsentCount">0</strong></span>
+              <span class="att-metric-pill att-metric-pill--late">متأخر: <strong id="attLateCount">0</strong></span>
+              
+              <span class="att-metric-pill" style="border-color:var(--color-primary); color:var(--color-primary);">نسبة الحضور: <strong id="attRate">100%</strong></span>
+            </div>
+          </div>
+
+          <!-- Attendance Table / Roster Grid -->
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 240px;">الطالب والتفاصيل</th>
+                  <th style="text-align: center; width: 280px;">حالة الحضور للجلسة</th>
+                  <th>ملاحظة الأستاذ حول الجلسة / سبب الغياب</th>
+                  <th style="text-align: center; width: 140px;">إجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="attendanceTableBody">
+                <!-- Rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- 9. PAYMENTS & RECEIPTS VIEW -->
+        <section id="view-payments" class="dashboard-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title" data-i18n="dash_payments">المدفوعات والوصولات</h1>
+              <p class="page-subtitle">إدارة الاشتراكات الشهرية، تسديد الأقساط، وإصدار وصولات الدفع الفورية.</p>
+            </div>
+            <div style="display:flex; gap: 10px;">
+              <button class="btn btn--outline btn--small" onclick="exportData('brainova_payments', 'payments')">تصدير CSV</button>
+              <button class="btn btn--primary btn--small" onclick="openRecordPaymentModal()">+ تسجيل دفعة وإصدار وصل</button>
+            </div>
+          </div>
+
+          <!-- Financial Stats Grid -->
+          <div class="stats-grid" id="paymentStatsGrid" style="margin-bottom: 20px;">
+            <!-- Rendered by JS -->
+          </div>
+
+          <!-- Filter Toolbar -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:12px; flex-wrap:wrap; background:var(--color-bg-card); padding:10px 16px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">
+            <div style="display:flex; gap:10px; align-items:center;">
+              <label style="font-size:0.85rem; color:var(--color-text-muted); font-weight:700;">تصفية حسب الحالة:</label>
+              <select id="paymentStatusFilter" onchange="renderPayments()" class="form-input" style="width:auto; padding:6px 12px;">
+                <option value="all">جميع الحالات</option>
+                <option value="paid">مسدد بالكامل</option>
+                <option value="partial">مسدد جزئياً</option>
+                <option value="overdue">متأخر عن السداد</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Payments Table -->
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>رقم الوصل</th>
+                  <th>تاريخ العملية</th>
+                  <th>اسم الطالب</th>
+                  <th>الفوج والأستاذ</th>
+                  <th>المبلغ المدفوع</th>
+                  <th>الرصيد المتبقي</th>
+                  <th>الحصص المتبقية</th>
+                  <th>طريقة الدفع</th>
+                  <th style="text-align: center;">إجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="paymentsTableBody">
+                <!-- Rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- 10. SETTINGS VIEW -->
+        <section id="view-settings" class="dashboard-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">الإعدادات</h1>
+              <p class="page-subtitle">إعدادات النظام، النسخ الاحتياطي، وبوابة الأولياء.</p>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+
+            <!-- Left Column -->
+            <div style="display:flex; flex-direction:column; gap:20px;">
+
+              <!-- Academy Info -->
+              <div class="table-container" style="padding:20px;">
+                <div class="table-header" style="margin-bottom:16px;">
+                  <h3 class="table-title">معلومات الأكاديمية</h3>
+                </div>
+                <form class="reg-form" onsubmit="event.preventDefault(); showToast('تم حفظ الإعدادات!', 'success');">
+                  <div style="display:grid; gap:14px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                      <label>اسم المدرسة</label>
+                      <input type="text" value="Brainova Robotics" class="form-input">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                      <label>البريد الإلكتروني</label>
+                      <input type="email" value="brainovarobotics@gmail.com" dir="ltr" class="form-input">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                      <label>السنة الدراسية</label>
+                      <select class="form-input">
+                        <option>2025/2026</option>
+                        <option selected>2026/2027</option>
+                      </select>
+                    </div>
+                    <button type="submit" class="btn btn--primary btn--small">حفظ التغييرات</button>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Backup & Restore -->
+              <div class="table-container" style="padding:20px;">
+                <div class="table-header" style="margin-bottom:16px;">
+                  <h3 class="table-title">💾 النسخ الاحتياطي والأرشفة</h3>
+                  <span class="dash-pill-muted" style="color:#10B981; border-color:rgba(16,185,129,0.3);">تلقائي يومياً</span>
+                </div>
+                <p style="font-size:0.82rem; color:var(--color-text-dim); margin-bottom:16px; line-height:1.6;">
+                  يحفظ النظام نسخة احتياطية يومية تلقائياً في مجلد المستندات، ويمكنك أيضاً تصدير أو استيراد قاعدة البيانات يدوياً في أي وقت.
+                </p>
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                  <button class="btn btn--primary btn--small" onclick="doBackupExport()" style="background:linear-gradient(135deg,#10B981,#059669);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    تصدير نسخة احتياطية يدوية (.brainova)
+                  </button>
+                  <button class="btn btn--outline btn--small" onclick="doBackupImport()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    استيراد واستعادة نسخة احتياطية
+                  </button>
+                  <button class="btn btn--outline btn--small" onclick="if(window.electronAPI && window.electronAPI.backup.openFolder) window.electronAPI.backup.openFolder(); else alert('المجلد: Documents/Brainova Robotics Backups');" style="border-color:rgba(56,189,248,0.3); color:#38BDF8;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    فتح مجلد النسخ الاحتياطية اليومية
+                  </button>
+                </div>
+                <div id="backupStatus" style="margin-top:12px; font-size:0.8rem; color:#10B981; min-height:18px;"></div>
+              </div>
+
+              <!-- Database Management & Factory Reset -->
+              <div class="table-container" style="padding:20px;">
+                <div class="table-header" style="margin-bottom:16px;">
+                  <h3 class="table-title">⚙️ إدارة وتهيئة قاعدة البيانات</h3>
+                </div>
+                <p style="font-size:0.82rem; color:var(--color-text-dim); margin-bottom:14px; line-height:1.6;">
+                  تتيح لك تصفير النظام وبدء العمل الفعلي بقاعدة بيانات نظيفة خالية من البيانات التجريبية، أو إعادة تعيين النظام عند الحاجة.
+                </p>
+                <div style="display:flex; gap:10px;">
+                  <button class="btn btn--outline btn--small" onclick="promptFactoryReset()" style="flex:1; border-color:rgba(239,68,68,0.4); color:#F87171;">
+                    🗑️ تصفير وبدء قاعدة جديدة
+                  </button>
+                  <button class="btn btn--outline btn--small" onclick="loadSampleData()" style="flex:1; border-color:rgba(56,189,248,0.3); color:#38BDF8;">
+                    📥 توليد بيانات تجريبية
+                  </button>
+                </div>
+              </div>
+
+              <!-- Security & Password Management -->
+              <div class="table-container" style="padding:20px;">
+                <div class="table-header" style="margin-bottom:16px;">
+                  <h3 class="table-title">🔒 أمان النظام وكلمة المرور</h3>
+                  <span class="dash-pill-muted" style="color:#10B981; border-color:rgba(16,185,129,0.3);">المدير العام</span>
+                </div>
+                <p style="font-size:0.82rem; color:var(--color-text-dim); margin-bottom:14px; line-height:1.6;">
+                  يمكن للمشتري أو مدير المركز تغيير اسم المستخدم وكلمة المرور لحماية بيانات المركز والطلاب.
+                </p>
+                <form onsubmit="handleSaveAdminPassword(event)" style="display:flex; flex-direction:column; gap:12px;">
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label style="font-size:0.78rem; font-weight:700; color:#94A3B8;">اسم المستخدم</label>
+                    <input type="text" id="adminUsernameInput" class="form-input" value="admin" required style="height:36px; font-size:0.85rem;">
+                  </div>
+                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                      <label style="font-size:0.78rem; font-weight:700; color:#94A3B8;">كلمة المرور الجديدة</label>
+                      <input type="password" id="adminNewPassword" class="form-input" placeholder="••••••••" required minlength="4" style="height:36px; font-size:0.85rem;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                      <label style="font-size:0.78rem; font-weight:700; color:#94A3B8;">تأكيد كلمة المرور</label>
+                      <input type="password" id="adminConfirmPassword" class="form-input" placeholder="••••••••" required minlength="4" style="height:36px; font-size:0.85rem;">
+                    </div>
+                  </div>
+                  <button type="submit" class="btn btn--primary btn--small" style="margin-top:6px; justify-content:center;">
+                    💾 حفظ وتحديث كلمة المرور
+                  </button>
+                </form>
+              </div>
+
+              <!-- System Status -->
+              <div class="table-container" style="padding:20px;">
+                <div class="table-header" style="margin-bottom:16px;">
+                  <h3 class="table-title">⚡ وضع النظام</h3>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                  <div>
+                    <div style="font-weight:700; color:#F1F5F9;">إدارة الأكاديمية</div>
+                    <div style="font-size:0.78rem; color:#10B981;">● وصول كامل مباشر (جاهز للعمل الفعلي)</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Auto-Updates Card -->
+              <div class="table-container" style="padding:20px;">
+                <div class="table-header" style="margin-bottom:16px;">
+                  <h3 class="table-title">🚀 التحديثات التلقائية للسحابة</h3>
+                  <span class="dash-pill-muted" style="color:#38BDF8; border-color:rgba(56,189,248,0.3);">v1.0.0</span>
+                </div>
+                <p style="font-size:0.82rem; color:var(--color-text-dim); margin-bottom:14px; line-height:1.6;">
+                  يتصل التطبيق بمستودع GitHub المخصص لفحص وتثبيت أي تحديثات جديدة برمجتها عن بُعد تلقائياً.
+                </p>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; background:rgba(15,23,42,0.6); padding:10px 14px; border-radius:8px; border:1px solid var(--color-border);">
+                  <span style="font-size:0.82rem; color:var(--color-text-dim);">مستودع التحديثات:</span>
+                  <span style="font-family:monospace; font-size:0.82rem; color:#38BDF8; direction:ltr;">ISAACDEV3/brainova-robotics</span>
+                </div>
+                <button class="btn btn--outline btn--small" style="width:100%; justify-content:center;" onclick="if(window.electronAPI && window.electronAPI.checkForUpdates) window.electronAPI.checkForUpdates(); else alert('فحص التحديثات متاح في التطبيق المثبت');">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+                  فحص وجود تحديثات جديدة الآن
+                </button>
+              </div>
+
+
+            </div>
+
+            <!-- Right Column: Parent Portal -->
+            <div style="display:flex; flex-direction:column; gap:20px;">
+
+              <!-- Mobile App Coming Soon Card -->
+              <div class="table-container" style="padding:24px; position:relative; overflow:hidden; background:linear-gradient(145deg, rgba(15, 33, 58, 0.9) 0%, rgba(10, 22, 40, 0.95) 100%); border: 1px solid rgba(0, 188, 212, 0.35); box-shadow: 0 10px 30px rgba(0,0,0,0.4);">
+                
+                <!-- Glow Accent -->
+                <div style="position:absolute; top:-30px; left:-30px; width:120px; height:120px; background:radial-gradient(circle, rgba(0, 229, 255, 0.2) 0%, transparent 70%); border-radius:50%; pointer-events:none;"></div>
+
+                <div class="table-header" style="margin-bottom:16px; align-items:center;">
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:38px; height:38px; border-radius:10px; background:rgba(0, 188, 212, 0.15); border:1px solid rgba(0, 188, 212, 0.4); display:flex; align-items:center; justify-content:center; font-size:1.2rem;">
+                      📱
+                    </div>
+                    <div>
+                      <h3 class="table-title" style="margin:0; font-size:1.05rem;">تطبيق Brainova Mobile للأولياء</h3>
+                      <span style="font-size:0.75rem; color:#94A3B8;">إصدار الهواتف الذكية (Android & iOS)</span>
+                    </div>
+                  </div>
+                  <span class="dash-pill-muted" style="color:#00E5FF; background:rgba(0, 229, 255, 0.1); border-color:rgba(0, 229, 255, 0.4); font-weight:800; font-size:0.72rem; padding:4px 10px; border-radius:999px;">
+                    قريباً • Coming Soon
+                  </span>
+                </div>
+
+                <p style="font-size:0.86rem; color:#CBD5E1; line-height:1.75; margin-bottom:18px;">
+                  يتم العمل حالياً على إطلاق التطبيق الرسمي للأكاديمية على الهواتف الذكية. سيتيح لأولياء الأمور متابعة كل تفاصيل أبنائهم مباشرة لحظة بلحظة ومن أي مكان عبر السحابة.
+                </p>
+
+                <!-- Key Features Grid -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px;">
+                  <div style="background:rgba(5, 11, 20, 0.6); border:1px solid rgba(255, 255, 255, 0.06); border-radius:8px; padding:10px 12px; display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:1rem;">🔔</span>
+                    <span style="font-size:0.78rem; font-weight:700; color:#F1F5F9;">إشعارات فورية للحضور</span>
+                  </div>
+                  <div style="background:rgba(5, 11, 20, 0.6); border:1px solid rgba(255, 255, 255, 0.06); border-radius:8px; padding:10px 12px; display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:1rem;">💳</span>
+                    <span style="font-size:0.78rem; font-weight:700; color:#F1F5F9;">متابعة الأقساط والوصولات</span>
+                  </div>
+                  <div style="background:rgba(5, 11, 20, 0.6); border:1px solid rgba(255, 255, 255, 0.06); border-radius:8px; padding:10px 12px; display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:1rem;">📊</span>
+                    <span style="font-size:0.78rem; font-weight:700; color:#F1F5F9;">تقارير التقييم والنقاط</span>
+                  </div>
+                  <div style="background:rgba(5, 11, 20, 0.6); border:1px solid rgba(255, 255, 255, 0.06); border-radius:8px; padding:10px 12px; display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:1rem;">⚡</span>
+                    <span style="font-size:0.78rem; font-weight:700; color:#F1F5F9;">مزامنة سحابية مباشرة</span>
+                  </div>
+                </div>
+
+                <!-- Launch Status Bar -->
+                <div style="background:rgba(0, 188, 212, 0.08); border:1px dashed rgba(0, 188, 212, 0.35); border-radius:10px; padding:12px 14px; display:flex; align-items:center; justify-content:space-between;">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="width:8px; height:8px; border-radius:50%; background:#00E5FF; box-shadow:0 0 8px #00E5FF;"></span>
+                    <span style="font-size:0.8rem; font-weight:700; color:#E2E8F0;">مرحلة الإطلاق: التطوير والاختبار التجريبي</span>
+                  </div>
+                  <span style="font-size:0.75rem; color:#00E5FF; font-weight:800;">85%</span>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+
+
+      </div>
+    </main>
+  </div>
+  
+  <!-- Toast Notifications Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Add Student Modal -->
+  <div class="modal-overlay" id="addStudentModal">
+    <div class="modal">
+      <div class="modal__header">
+        <h3 class="modal__title" data-i18n="dash_add_student_title">إضافة طالب جديد</h3>
+        <button class="modal__close" onclick="closeAddStudentModal()">&times;</button>
+      </div>
+      <form id="addStudentForm" class="reg-form" onsubmit="submitAddStudent(event)">
+        <div class="form-group">
+          <label data-i18n="dash_student_name">اسم الطالب واللقب</label>
+          <input type="text" id="newStudentName" required class="form-input" placeholder="مثال: يوسف بلحاج">
+        </div>
+        <div class="form-group">
+          <label data-i18n="dash_group_name">الفوج</label>
+          <select id="newStudentGroup" required class="form-input">
+            <!-- Populated via JS -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label data-i18n="dash_level_name">المستوى التعليمي</label>
+          <select id="newStudentLevel" required class="form-input">
+            <option value="المستوى الأول">المستوى الأول: التفكير المنطقي وأساسيات الروبوت</option>
+            <option value="المستوى الثاني">المستوى الثاني: البرمجة المرئية بسكراتش</option>
+            <option value="المستوى الثالث">المستوى الثالث: برمجة الأردوينو والمستشعرات</option>
+            <option value="المستوى الرابع">المستوى الرابع: الذكاء الاصطناعي والرؤية الحاسوبية</option>
+            <option value="المستوى الخامس">المستوى الخامس: الروبوتات المتقدمة و IoT</option>
+            <option value="المستوى السادس">المستوى السادس: المشاريع الابتكارية والمسابقات</option>
+          </select>
+        </div>
+        <div class="modal__actions">
+          <button type="button" class="btn btn--outline" onclick="closeAddStudentModal()" data-i18n="dash_cancel">إلغاء</button>
+          <button type="submit" class="btn btn--primary" data-i18n="dash_save">+ حفظ الطالب</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Registration Modal -->
+  <div class="modal-overlay" id="editRegModal">
+    <div class="modal">
+      <div class="modal__header">
+        <h3 class="modal__title" data-i18n="dash_edit_reg_title">تعديل التسجيل</h3>
+        <button class="modal__close" onclick="closeEditRegModal()">&times;</button>
+      </div>
+      <form id="editRegForm" class="reg-form" onsubmit="submitEditReg(event)">
+        <input type="hidden" id="editRegId">
+        <div class="form-group">
+          <label data-i18n="dash_student_name">اسم الطالب</label>
+          <input type="text" id="editRegStudentName" required class="form-input">
+        </div>
+        <div class="form-group">
+          <label data-i18n="dash_parent_name">اسم الولي</label>
+          <input type="text" id="editRegParentName" required class="form-input">
+        </div>
+        <div class="form-group">
+          <label data-i18n="dash_phone">الهاتف</label>
+          <input type="text" id="editRegPhone" required class="form-input" dir="ltr">
+        </div>
+        <div class="modal__actions">
+          <button type="button" class="btn btn--outline" onclick="closeEditRegModal()" data-i18n="dash_cancel">إلغاء</button>
+          <button type="submit" class="btn btn--primary" data-i18n="dash_save">حفظ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Session Modal -->
+  <div class="modal-overlay" id="addSessionModal">
+    <div class="modal">
+      <div class="modal__header">
+        <h3 class="modal__title" data-i18n="dash_add_session_title">إضافة حصة جديدة</h3>
+        <button class="modal__close" onclick="closeAddSessionModal()">&times;</button>
+      </div>
+      <form id="addSessionForm" class="reg-form" onsubmit="submitAddSession(event)">
+        <div class="form-group">
+          <label data-i18n="dash_group_name">الفوج</label>
+          <select id="sessionGroup" required class="form-input">
+            <!-- Rendered via JS -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label data-i18n="dash_educator_name">المعلم</label>
+          <select id="sessionEducator" required class="form-input">
+             <!-- Rendered via JS -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label data-i18n="dash_day">اليوم</label>
+          <select id="sessionDay" required class="form-input">
+            <option value="Sunday" data-i18n="day_sun">الأحد</option>
+            <option value="Monday" data-i18n="day_mon">الإثنين</option>
+            <option value="Tuesday" data-i18n="day_tue">الثلاثاء</option>
+            <option value="Wednesday" data-i18n="day_wed">الأربعاء</option>
+            <option value="Thursday" data-i18n="day_thu">الخميس</option>
+            <option value="Friday" data-i18n="day_fri">الجمعة</option>
+            <option value="Saturday" data-i18n="day_sat">السبت</option>
+          </select>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label data-i18n="dash_start_time">وقت البداية</label>
+            <input type="time" id="sessionStart" required min="08:00" max="18:00" class="form-input">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label data-i18n="dash_end_time">وقت النهاية</label>
+            <input type="time" id="sessionEnd" required min="08:00" max="18:00" class="form-input">
+          </div>
+        </div>
+        <div class="form-group">
+          <label data-i18n="dash_room">القاعة</label>
+          <select id="sessionRoom" class="form-input">
+            <!-- Populated dynamically via JS -->
+          </select>
+        </div>
+        <div class="modal__actions">
+          <button type="button" class="btn btn--outline" onclick="closeAddSessionModal()" data-i18n="dash_cancel">إلغاء</button>
+          <button type="submit" class="btn btn--primary" data-i18n="dash_save">حفظ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== ADD GROUP MODAL ===== -->
+  <div class="modal-overlay" id="addGroupModal">
+    <div class="modal">
+      <div class="modal__header">
+        <h2 class="modal__title">إنشاء فوج جديد</h2>
+        <button class="modal__close" onclick="closeAddGroupModal()">×</button>
+      </div>
+      <form id="addGroupForm" onsubmit="submitAddGroup(event)">
+        <div class="form-group">
+          <label>اسم الفوج</label>
+          <input type="text" id="newGroupName" required class="form-input" placeholder="مثال: فوج أ (صباح)">
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>المستوى</label>
+            <select id="newGroupLevel" required class="form-input">
+              <option value="">-- اختر المستوى --</option>
+              <option value="المستوى الأول">المستوى الأول</option>
+              <option value="المستوى الثاني">المستوى الثاني</option>
+              <option value="المستوى الثالث">المستوى الثالث</option>
+              <option value="المستوى الرابع">المستوى الرابع</option>
+              <option value="المستوى الخامس">المستوى الخامس</option>
+              <option value="المستوى السادس">المستوى السادس</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>الفئة العمرية المستهدفة</label>
+            <select id="newGroupAgeCategory" required class="form-input">
+              <option value="6 - 8 سنوات (براعم)">6 - 8 سنوات (براعم)</option>
+              <option value="8 - 11 سنة (ناشئين)" selected>8 - 11 سنة (ناشئين)</option>
+              <option value="11 - 15 سنة (فتيان)">11 - 15 سنة (فتيان)</option>
+              <option value="15 - 18 سنة (شباب)">15 - 18 سنة (شباب)</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>القاعة المخصصة</label>
+            <select id="newGroupRoom" class="form-input">
+              <!-- Filled via JS -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label>الأستاذ المسؤول</label>
+            <select id="newGroupEducator" class="form-input">
+              <!-- Filled via JS -->
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>الحد الأقصى للطلاب</label>
+          <input type="number" id="newGroupMaxStudents" class="form-input" placeholder="12" value="12" min="1" max="50">
+        </div>
+        <div class="modal__actions">
+          <button type="button" class="btn btn--outline" onclick="closeAddGroupModal()">إلغاء</button>
+          <button type="submit" class="btn btn--primary">+ إنشاء الفوج</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== ADD ROOM / LAB MODAL ===== -->
+  <div class="modal-overlay" id="addRoomModal">
+    <div class="modal">
+      <div class="modal__header">
+        <h2 class="modal__title">إضافة قاعة جديدة</h2>
+        <button class="modal__close" onclick="closeAddRoomModal()">×</button>
+      </div>
+      <form id="addRoomForm" onsubmit="submitAddRoom(event)">
+        <div class="form-group">
+          <label>اسم القاعة</label>
+          <input type="text" id="newRoomName" required class="form-input" placeholder="مثال: قاعة Brainova 2">
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>نوع القاعة</label>
+            <select id="newRoomType" class="form-input">
+              <option value="قاعة روبوتيك وإلكترونيات">قاعة روبوتيك وإلكترونيات</option>
+              <option value="قاعة حواسيب وبرمجة">قاعة حواسيب وبرمجة</option>
+              <option value="قاعة ابتكار و3D">قاعة ابتكار و3D</option>
+              <option value="قاعة ورشات تفاعلية">قاعة ورشات تفاعلية</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>طاقة الاستيعاب (المقاعد)</label>
+            <input type="number" id="newRoomCapacity" required min="1" max="50" value="14" class="form-input">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>التجهيزات المتوفرة</label>
+          <input type="text" id="newRoomEquipment" required class="form-input" placeholder="مثال: 12 حاسوب، حقائب أردوينو، طابعة 3D، شاشة ذكية">
+        </div>
+        <div class="form-group">
+          <label>الحالة التشغيلية</label>
+          <select id="newRoomStatus" class="form-input">
+            <option value="available">متاحة وجاهزة</option>
+            <option value="occupied">مشغولة بحصة</option>
+            <option value="maintenance">قيد الصيانة</option>
+          </select>
+        </div>
+        <div class="modal__actions">
+          <button type="button" class="btn btn--outline" onclick="closeAddRoomModal()">إلغاء</button>
+          <button type="submit" class="btn btn--primary">+ حفظ القاعة</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== ADD EDUCATOR MODAL ===== -->
+  <div class="modal-overlay" id="addEducatorModal">
+    <div class="modal">
+      <div class="modal__header">
+        <h2 class="modal__title">إضافة معلم جديد</h2>
+        <button class="modal__close" onclick="closeAddEducatorModal()">×</button>
+      </div>
+      <form id="addEducatorForm" onsubmit="submitAddEducator(event)">
+        <div class="form-group">
+          <label>اسم المعلم واللقب</label>
+          <input type="text" id="newEduName" required class="form-input" placeholder="مثال: أ. محمد الأمين">
+        </div>
+        <div class="form-group">
+          <label>التخصص</label>
+          <input type="text" id="newEduSpecialty" required class="form-input" placeholder="مثال: برمجة الروبوتات والأردوينو">
+        </div>
+        <div class="form-group">
+          <label>رقم الهاتف</label>
+          <input type="tel" id="newEduPhone" required class="form-input" placeholder="0550 12 34 56" dir="ltr">
+        </div>
+        <div class="modal__actions">
+          <button type="button" class="btn btn--outline" onclick="closeAddEducatorModal()">إلغاء</button>
+          <button type="submit" class="btn btn--primary">+ حفظ المعلم</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== ADD COURSE MODAL ===== -->
+  <div class="modal-overlay" id="addCourseModal">
+    <div class="modal">
+      <div class="modal__header">
+        <h2 class="modal__title">إضافة دورة تعليمية</h2>
+        <button class="modal__close" onclick="closeAddCourseModal()">×</button>
+      </div>
+      <form id="addCourseForm" onsubmit="submitAddCourse(event)">
+        <div class="form-group">
+          <label>اسم الدورة</label>
+          <input type="text" id="newCourseName" required class="form-input" placeholder="مثال: المستوى الثالث: أردوينو وإلكترونيات">
+        </div>
+        <div class="form-group">
+          <label>الفئة العمرية</label>
+          <input type="text" id="newCourseAge" required class="form-input" placeholder="مثال: 10 - 14 سنة">
+        </div>
+        <div class="form-group">
+          <label>المدة</label>
+          <input type="text" id="newCourseDuration" required class="form-input" placeholder="مثال: 3 أشهر (12 حصة)">
+        </div>
+        <div class="modal__actions">
+          <button type="button" class="btn btn--outline" onclick="closeAddCourseModal()">إلغاء</button>
+          <button type="submit" class="btn btn--primary">+ حفظ الدورة</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== RECORD PAYMENT MODAL ===== -->
+  <div class="modal-overlay" id="recordPaymentModal">
+    <div class="modal" style="max-width: 520px;">
+      <div class="modal__header">
+        <h2 class="modal__title">💳 تسجيل دفعة مالية وإصدار وصل</h2>
+        <button class="modal__close" onclick="closeRecordPaymentModal()">×</button>
+      </div>
+      <form id="recordPaymentForm" onsubmit="submitRecordPayment(event)">
+        <div class="form-group">
+          <label>اختر الطالب المسجل</label>
+          <select id="payStudentSelect" onchange="onPaymentStudentSelected()" required class="form-input">
+            <!-- Filled dynamically -->
+          </select>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>المبلغ المدفوع (دج)</label>
+            <input type="number" id="payAmount" required min="100" step="100" value="2000" class="form-input">
+          </div>
+          <div class="form-group">
+            <label>عدد الحصص المشتراة</label>
+            <input type="number" id="paySessions" required min="1" max="50" value="4" class="form-input">
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>طريقة الدفع</label>
+            <select id="payMethod" class="form-input">
+              <option value="نقداً (Cash)">نقداً (Cash)</option>
+              <option value="بريدي موب (BaridiMob)">بريدي موب (BaridiMob)</option>
+              <option value="تحويل بنكي">تحويل بنكي</option>
+              <option value="شيك">شيك</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>تاريخ ووقت العملية</label>
+            <input type="datetime-local" id="payDateTime" class="form-input">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>ملاحظات إضافية</label>
+          <input type="text" id="payNotes" placeholder="مثال: تسديد اشتراك شهر سبتمبر" class="form-input">
+        </div>
+
+        <div style="display:flex; align-items:center; gap:8px; margin: 16px 0;">
+          <input type="checkbox" id="autoPrintReceiptCheck" checked style="width:16px; height:16px; cursor:pointer;">
+          <label for="autoPrintReceiptCheck" style="cursor:pointer; font-weight:600; font-size:0.85rem; color:var(--color-text);">🖨️ فتح ومعاينة الوصل الحراري فوراً بعد الحفظ</label>
+        </div>
+
+        <div class="modal__actions">
+          <button type="button" class="btn btn--outline" onclick="closeRecordPaymentModal()">إلغاء</button>
+          <button type="submit" class="btn btn--primary">تسجيل الدفعة وإصدار الوصل</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== STUDENT PROFILE MODAL ===== -->
+  <div class="modal-overlay" id="studentProfileModal">
+    <div class="modal" style="max-width: 600px;">
+      <div class="modal__header">
+        <h2 class="modal__title">الملف الشامل للطالب</h2>
+        <button class="modal__close" onclick="closeStudentProfileModal()">×</button>
+      </div>
+      <div id="studentProfileContent">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+    <!-- ===== RECEIPT PRINT MODAL (AUTHENTIC THERMAL 80MM) ===== -->
+  <div class="modal-overlay" id="receiptModal">
+    <div class="modal receipt-modal-container">
+      <div class="modal__header" style="border:none; padding-bottom:0; margin-bottom:6px; justify-content:flex-end;">
+        <button class="modal__close" onclick="closeReceiptModal()" style="color:#111827;">×</button>
+      </div>
+
+      <div class="receipt-slip-80mm" id="printableReceiptArea">
+        <div class="receipt-slip-header">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
+            <img src="assets/images/robot.png" alt="Brainova" style="width:40px; height:40px; object-fit:contain;">
+            <div style="flex:1;">
+              <div class="receipt-slip-title">مدرسة BRAINOVA ROBOTICS</div>
+              <div class="receipt-slip-sub">مدرسة الروبوتيك والذكاء الاصطناعي — أم البواقي</div>
+            </div>
+            <img id="rcptQrCode" alt="QR" style="width:54px; height:54px; border:1px solid #E5E7EB; border-radius:4px; padding:2px; background:#fff;">
+          </div>
+          <div class="receipt-slip-code" id="rcptOpNumber">94789</div>
+        </div>
+
+        <table class="receipt-slip-table">
+          <tr>
+            <th>رقم العملية</th>
+            <td id="rcptOpNumberCell" style="font-family:monospace; font-weight:800;">94789</td>
+          </tr>
+          <tr>
+            <th>اسم التلميذ</th>
+            <td id="rcptStudentName">نزار تسنيم</td>
+          </tr>
+          <tr>
+            <th>المستوى والفوج</th>
+            <td id="rcptLevelGroup">المستوى الثاني • الفوج ب</td>
+          </tr>
+          <tr>
+            <th>تاريخ الدفع</th>
+            <td id="rcptDateTime" style="font-family:monospace;">18/08/2026 17:47</td>
+          </tr>
+          <tr>
+            <th>المبلغ المدفوع</th>
+            <td class="highlight-amount" id="rcptAmountPaid">2,000 دج</td>
+          </tr>
+
+          <tr>
+            <th>الرصيد السابق</th>
+            <td id="rcptPrevBalance">0 دج</td>
+          </tr>
+          <tr>
+            <th>الرصيد والحصص</th>
+            <td id="rcptCurrentBalance">4 حصص متبقية / 2,000 دج</td>
+          </tr>
+          <tr style="background:#F8FAFC; font-family:monospace;">
+            <th>اسم المستخدم</th>
+            <td id="rcptUsername" style="color:#0284C7; font-weight:800;">userSTU001</td>
+          </tr>
+          <tr style="background:#F8FAFC; font-family:monospace;">
+            <th>كلمة المرور</th>
+            <td id="rcptPassword" style="color:#0284C7; font-weight:800;">123456</td>
+          </tr>
+        </table>
+
+        <div class="receipt-slip-footer">
+          <div>الهاتف: <strong style="font-family:monospace;" dir="ltr">0791 19 46 33</strong> • البريد: <strong>brainovarobotics@gmail.com</strong></div>
+          <div style="font-weight:700; color:#1F2937; margin-top:3px;">يرجى الاحتفاظ بهذا الوصل كإثبات رسمي لعملية التسديد</div>
+          <div style="font-family:monospace; font-size:8px; color:#9CA3AF; margin-top:2px;">BRAINOVA POS ENGINE · VALIDATED</div>
+        </div>
+      </div>
+
+      <div class="modal__actions" style="margin-top:14px; display:flex; gap:8px;">
+        <button type="button" class="btn btn--outline" onclick="closeReceiptModal()" style="flex:1; border-color:#D1D5DB; color:#374151;">إلغاء</button>
+        <button type="button" class="btn btn--primary" onclick="window.print()" style="flex:2; background:#0284C7;">طباعة الوصل الحراري</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STUDENT ID BADGE CARD MODAL (STANDARD CR80) ===== -->
+  <div class="modal-overlay" id="studentIdCardModal">
+    <div class="modal id-card-modal-shell">
+      <div class="modal__header">
+        <h2 class="modal__title">بطاقة التلميذ الذكية (CR80 Standard)</h2>
+        <button class="modal__close" onclick="closeStudentIdCardModal()">×</button>
+      </div>
+
+      <!-- Printable Standard CR80 Card (85.6mm x 54mm) -->
+      <div class="cr80-card-frame" id="printableIdCardArea">
+        <div class="cr80-card-header">
+          <div class="cr80-brand">
+            <img src="assets/images/robot.png" alt="Brainova">
+            <div class="cr80-brand-name">BRAINOVA ROBOTICS</div>
+          </div>
+          <span class="cr80-tag">بطاقة تلميذ 2026</span>
+        </div>
+
+        <div class="cr80-card-body">
+          <div class="cr80-avatar" id="idCardAvatarInitial">ن</div>
+          <div class="cr80-meta">
+            <div class="cr80-student-name" id="idCardStudentName">نزار تسنيم</div>
+            <div class="cr80-level-text" id="idCardLevel">المستوى الأول: التفكير المنطقي</div>
+            <div class="cr80-group-text">👥 الفوج: <strong id="idCardGroup" style="color:#fff;">الفوج أ (مبتدئ)</strong></div>
+            <div class="cr80-id-text">🆔 المعرف: <span id="idCardStudentId">STU-001</span></div>
+          </div>
+          <div class="cr80-qr-frame">
+            <img id="idCardQrCode" alt="QR" class="cr80-qr-img">
+            <div style="font-size:7px; color:#94A3B8; margin-top:2px;">مسح الحضور</div>
+          </div>
+        </div>
+
+        <div class="cr80-card-footer">
+          <span>أكاديمية برينوفا للروبوتيك والذكاء الاصطناعي</span>
+          <span style="font-family:monospace;" dir="ltr">0791 19 46 33</span>
+        </div>
+      </div>
+
+      <div class="modal__actions" style="display:flex; gap:8px;">
+        <button type="button" class="btn btn--outline" onclick="closeStudentIdCardModal()">إلغاء</button>
+        <button type="button" class="btn btn--primary" onclick="window.print()">🖨️ طباعة البطاقة (حجم قياسي)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FAST QR ATTENDANCE SCANNER KIOSK MODAL ===== -->
+  <div class="modal-overlay" id="qrScannerModal">
+    <div class="modal" style="max-width: 540px; text-align:center; padding: 24px;">
+      <div class="modal__header">
+        <div>
+          <h2 class="modal__title" style="display:flex; align-items:center; gap:8px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            نظام مسح حضور الطلاب بالكاميرا
+          </h2>
+          <div style="font-size:0.75rem; color:var(--color-text-dim); text-align:right; margin-top:2px;">يظهر الطالب بطاقته أمام الكاميرا ليتم تسجيل حضوره فوراً وخصم الحصة</div>
+        </div>
+        <button class="modal__close" onclick="closeQrScannerModal()">×</button>
+      </div>
+
+      <!-- Live Video Viewport with Precision Scanning Reticle -->
+      <div style="position:relative; width: 100%; height: 280px; background: #040814; border-radius: 14px; overflow: hidden; border: 1.5px solid rgba(56, 189, 248, 0.35); display:flex; align-items:center; justify-content:center; margin-bottom: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+        <video id="qrScannerVideo" playsinline autoplay muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+        <canvas id="qrScannerCanvas" style="display:none;"></canvas>
+
+        <!-- Viewfinder Reticle Overlay -->
+        <div style="position:absolute; width: 180px; height: 180px; border: 2px solid #38BDF8; border-radius: 12px; pointer-events:none; box-shadow: 0 0 0 9999px rgba(0,0,0,0.45);">
+          <!-- Animated Laser -->
+          <div style="position:absolute; top:0; left:0; width:100%; height:2.5px; background: #38BDF8; box-shadow: 0 0 12px #38BDF8; animation: laserScan 2s infinite ease-in-out;"></div>
+        </div>
+
+        <div style="position:absolute; bottom:12px; background:rgba(9,15,30,0.85); border:1px solid rgba(56,189,248,0.25); color:#F1F5F9; font-size:0.75rem; font-weight:700; padding:4px 14px; border-radius:999px; backdrop-filter:blur(4px);">
+          🔍 وجّه رمز الـ QR الموجود على بطاقة الطالب نحو المربع
+        </div>
+      </div>
+
+      <!-- Instant Live Detection Card -->
+      <div id="qrScanResultBanner" style="display:none; background:rgba(16,185,129,0.1); border:1px solid #10B981; border-radius:12px; padding:14px; margin-bottom:14px; animation:fadeIn 0.2s ease;">
+        <div style="display:flex; align-items:center; gap:12px; text-align:right;">
+          <div style="width:44px; height:44px; border-radius:10px; background:#10B981; color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.4rem; font-weight:900;" id="qrScannedAvatar">ن</div>
+          <div style="flex:1;">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <strong id="qrScannedStudentName" style="color:#F8FAFC; font-size:1rem;">نزار تسنيم</strong>
+              <span class="status-pill status-pill--active">🟢 تم تسجيل الحضور</span>
+            </div>
+            <div id="qrScannedDetails" style="font-size:0.78rem; color:#94A3B8; margin-top:2px;">الفوج أ (مبتدئ) • الحصص المتبقية: 3</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Manual Barcode / ID Input Fallback -->
+      <div style="background:rgba(255,255,255,0.02); border:1px solid var(--color-border); border-radius:var(--radius-sm); padding:10px 14px; margin-bottom: 14px; text-align:right;">
+        <label style="font-size:0.76rem; color:var(--color-text-muted); font-weight:700; display:block; margin-bottom:6px;">أو مسح عبر قارئ الباركود اليدوي USB / إدخال المعرف:</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="manualQrInput" placeholder="أدخل ID الطالب واضغط Enter..." class="form-input" style="font-family:monospace; font-weight:700;" onkeydown="if(event.key==='Enter'){handleManualQrSubmit();}">
+          <button type="button" class="btn btn--primary" onclick="handleManualQrSubmit()">تسجيل</button>
+        </div>
+      </div>
+
+      <div class="modal__actions" style="margin-top:0;">
+        <button type="button" class="btn btn--outline" onclick="closeQrScannerModal()" style="width:100%;">إغلاق ماسح الكاميرا</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== QUICK STUDENT NOTE TO PARENT MODAL ===== -->
+  <div class="modal-overlay" id="quickNoteModal">
+    <div class="modal" style="max-width: 520px;">
+      <div class="modal__header">
+        <h2 class="modal__title">📝 توجيه وملاحظة لولي الأمر</h2>
+        <button class="modal__close" onclick="closeQuickNoteModal()">×</button>
+      </div>
+      <div style="padding: 10px 0;">
+        <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px; background: var(--color-bg-darker); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--color-border);">
+          <div style="font-size: 1.5rem;">🤖</div>
+          <div>
+            <div id="quickNoteStudentName" style="font-weight: 700; color: #fff; font-size: 1rem;">—</div>
+            <div id="quickNoteStudentMeta" style="font-size: 0.8rem; color: var(--color-primary);">—</div>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 0.85rem; margin-bottom: 6px; color: var(--color-text); font-weight: 600;">نص الملاحظة والتوجيه التربوي (يظهر فوراً في بوابة الولي):</label>
+          <textarea id="quickNoteText" rows="4" class="form-input" placeholder="اكتب ملاحظتك للأب أو الأم حول مستوى الطفل، سلوكه، مشاركته، أو ما يجب تعزيزه في المنزل..." style="width: 100%; height: auto; padding: 10px; resize: vertical; line-height: 1.6; font-size: 0.9rem;"></textarea>
+        </div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;">
+          <span style="font-size: 0.75rem; color: var(--color-text-muted); width: 100%;">نماذج سريعة:</span>
+          <button type="button" class="btn btn--outline btn--small" style="font-size: 0.72rem; padding: 3px 8px;" onclick="document.getElementById('quickNoteText').value = 'أداء رائع وتفاعل ممتاز اليوم في تركيب وبرمجة المشروع. واصل هذا التألق! 🌟'">🌟 أداء متميز</button>
+          <button type="button" class="btn btn--outline btn--small" style="font-size: 0.72rem; padding: 3px 8px;" onclick="document.getElementById('quickNoteText').value = 'مستوى جيد جداً، يرجى تشجيع الطفل على مراجعة خوارزمية التكرار والشروط في البيت. 💻'">💻 تشجيع المراجعة</button>
+          <button type="button" class="btn btn--outline btn--small" style="font-size: 0.72rem; padding: 3px 8px;" onclick="document.getElementById('quickNoteText').value = 'نلفت عنايتكم الكريمة إلى أن اشتراك الطالب يقترب من الانتهاء، يرجى تجديد الاشتراك لضمان استمراره في الفوج. 🔔'">🔔 تنبيه التجديد</button>
+        </div>
+      </div>
+      <div class="modal__actions">
+        <button type="button" class="btn btn--outline" onclick="closeQuickNoteModal()">إلغاء</button>
+        <button type="button" class="btn btn--primary" id="saveQuickNoteBtn" onclick="submitQuickNote()">💾 حفظ ونشر في بوابة الولي</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== REGISTRATION REQUEST DETAILS MODAL ===== -->
+  <div class="modal-overlay" id="regDetailsModal">
+    <div class="modal" style="max-width: 600px;">
+      <div class="modal__header">
+        <h2 class="modal__title">📋 تفاصيل طلب التسجيل</h2>
+        <button class="modal__close" onclick="closeRegistrationDetailsModal()">×</button>
+      </div>
+
+      <div id="regDetailsModalBody" style="padding: 10px 0;">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 1-CLICK WHATSAPP DISPATCH MODAL ===== -->
+  <div class="modal-overlay" id="whatsappDispatchModal">
+    <div class="modal" style="max-width: 520px;">
+      <div class="modal__header">
+        <h2 class="modal__title">💬 إرسال إشعار واتساب لولي الأمر</h2>
+        <button class="modal__close" onclick="closeWhatsAppDispatchModal()">×</button>
+      </div>
+
+      <form onsubmit="executeWhatsAppDispatch(event)">
+        <div style="background:rgba(37,211,102,0.1); border:1px solid rgba(37,211,102,0.3); border-radius:12px; padding:12px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <strong id="waStudentNameDisplay" style="color:#fff; display:block;">الطالب: -</strong>
+            <span style="font-size:0.8rem; color:#94a3b8;">رقم ولي الأمر: <strong id="waParentPhoneDisplay" style="color:#25D366; font-family:monospace;">0791 19 46 33</strong></span>
+          </div>
+          <span style="font-size:1.8rem;">📱</span>
+        </div>
+
+        <div class="form-group">
+          <label style="font-size:0.85rem; color:var(--color-text-muted); font-weight:700;">اختر قالب الرسالة الجاهز:</label>
+          <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:6px; margin-bottom:10px;">
+            <button type="button" class="btn btn--outline btn--small" onclick="selectWaTemplate('reminder')" style="font-size:0.75rem; padding:6px 4px;">📢 تذكير بالحصة</button>
+            <button type="button" class="btn btn--outline btn--small" onclick="selectWaTemplate('renewal')" style="font-size:0.75rem; padding:6px 4px;">💳 تجديد الحصص</button>
+            <button type="button" class="btn btn--outline btn--small" onclick="selectWaTemplate('kudos')" style="font-size:0.75rem; padding:6px 4px;">🌟 تهنئة وتميز</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label style="font-size:0.85rem; color:var(--color-text-muted);">نص الرسالة (يمكنك التعديل عليها):</label>
+          <textarea id="waMessageContent" rows="5" class="form-input" style="height:auto; padding:10px; font-size:0.9rem; line-height:1.5; resize:vertical;" required></textarea>
+        </div>
+
+        <div class="modal__actions">
+          <button type="button" class="btn btn--outline" onclick="closeWhatsAppDispatchModal()">إلغاء</button>
+          <button type="submit" class="btn" style="background:#25D366; color:#fff; font-weight:700; display:flex; align-items:center; gap:6px;">
+            <span>🚀 فتح وإرسال عبر واتساب</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/dashboard.js"></script>
+  
+  <script>
+    // Show Electron window controls only when inside Electron
+    if (window.electronAPI || navigator.userAgent.includes('Electron')) {
+      const ctrl = document.getElementById('electronWinControls');
+      if (ctrl) ctrl.style.display = 'flex';
+    }
+  </script>
+</body>
+</html>

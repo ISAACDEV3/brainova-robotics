@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    user-select: none;
+  }
+
+  /* Main Card — dark blue background */
+  .splash-card {
+    width: 480px;
+    height: 310px;
+    background: #0A1628;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 12px 50px rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 48px;
+    position: relative;
+    gap: 28px;
+  }
+
+  /* Top: Brand Name */
+  .brand-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0;
+    line-height: 1;
+  }
+
+  .brand-main {
+    font-size: 2.1rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+  }
+
+  .brand-yellow {
+    color: #F5A623;
+  }
+
+  .brand-separator {
+    color: rgba(255, 255, 255, 0.25);
+    font-weight: 300;
+    margin: 0 8px;
+  }
+
+  .brand-blue {
+    color: #38BDF8;
+  }
+
+  .brand-version {
+    margin-left: 12px;
+    font-size: 1rem;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.35);
+    letter-spacing: 0;
+  }
+
+  /* Center: Logo */
+  .logo-frame {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo-frame img {
+    width: 88px;
+    height: 88px;
+    object-fit: contain;
+  }
+
+  /* Bottom: Loading text */
+  .loading-text {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.38);
+    font-weight: 400;
+    letter-spacing: 0.2px;
+    min-height: 20px;
+    text-align: center;
+    transition: opacity 0.3s ease;
+  }
+</style>
+</head>
+<body>
+  <div class="splash-card">
+
+    <!-- Top: App Name -->
+    <div class="brand-row">
+      <span class="brand-main">
+        <span class="brand-yellow">BRAINOVA</span><span class="brand-separator">|</span><span class="brand-blue">ROBOTICS</span>
+      </span>
+      <span class="brand-version">v 1.0.0</span>
+    </div>
+
+    <!-- Center: Logo -->
+    <div class="logo-frame">
+      <img src="../assets/images/robot.png" alt="Brainova Robotics" />
+    </div>
+
+    <!-- Bottom: Dynamic Loading Text -->
+    <div class="loading-text" id="loadingText">Loading configuration...</div>
+
+  </div>
+
+  <script>
+    const steps = [
+      "Loading configuration...",
+      "Initializing workspace...",
+      "Loading student database...",
+      "Preparing dashboard..."
+    ];
+
+    let i = 0;
+    const el = document.getElementById('loadingText');
+
+    const interval = setInterval(() => {
+      i++;
+      if (i < steps.length) {
+        el.style.opacity = '0';
+        setTimeout(() => {
+          el.textContent = steps[i];
+          el.style.opacity = '1';
+        }, 200);
+      } else {
+        clearInterval(interval);
+        el.style.opacity = '0';
+        setTimeout(() => {
+          el.textContent = "Ready.";
+          el.style.opacity = '1';
+        }, 200);
+      }
+    }, 550);
+  </script>
+</body>
+</html>
