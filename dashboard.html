@@ -1195,8 +1195,143 @@
 
       <div class="modal__actions" style="margin-top:14px; display:flex; gap:8px;">
         <button type="button" class="btn btn--outline" onclick="closeReceiptModal()" style="flex:1; border-color:#D1D5DB; color:#374151;">إلغاء</button>
-        <button type="button" class="btn btn--primary" onclick="window.print()" style="flex:2; background:#0284C7;">طباعة الوصل الحراري</button>
+        <button type="button" class="btn btn--outline" onclick="openA4ReceiptModal(window.__currentPaymentIdForPrint)" style="flex:1.5; border-color:#0284C7; color:#0284C7;">📄 وصل ورقة A4</button>
+        <button type="button" class="btn btn--primary" onclick="window.print()" style="flex:2; background:#0284C7;">🧾 طباعة حراري (80mm)</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ===== A4/A5 OFFICIAL RECEIPT MODAL (FULL DOCUMENT PRINT) ===== -->
+  <div class="modal-overlay" id="a4ReceiptModal">
+    <div class="modal" style="max-width: 800px; width: 95%; background: #ffffff; color: #0F172A; border-radius: 12px; padding: 0; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
+      
+      <!-- Top Action Bar (hidden on print) -->
+      <div class="modal__header" style="background: #0F172A; padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:space-between;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.2rem;">📄</span>
+          <h3 class="modal__title" style="color: #F8FAFC; margin: 0; font-size: 1.05rem;">وصل استلام ودفع رسمي (ورقة عادية A4 / A5)</h3>
+        </div>
+        <button class="modal__close" onclick="closeA4ReceiptModal()" style="color: #94A3B8;">×</button>
+      </div>
+
+      <!-- Printable A4 Area -->
+      <div class="a4-receipt-sheet" id="printableA4Area" style="padding: 28px 36px; background: #ffffff; color: #0F172A; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Cairo', sans-serif;">
+        
+        <!-- Header -->
+        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #0284C7; padding-bottom: 16px; margin-bottom: 18px;">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <img src="assets/images/robot.png" alt="Brainova" style="width: 54px; height: 54px; object-fit: contain;">
+            <div>
+              <h1 style="font-size: 1.3rem; font-weight: 900; color: #0369A1; margin: 0; letter-spacing: 0.5px;">BRAINOVA ROBOTICS ACADEMY</h1>
+              <div style="font-size: 0.82rem; font-weight: 700; color: #475569; margin-top: 2px;">أكاديمية الروبوتيك والذكاء الاصطناعي — أم البواقي</div>
+              <div style="font-size: 0.75rem; color: #64748B; margin-top: 2px;">الهاتف: 0791 19 46 33 • البريد: brainovarobotics@gmail.com</div>
+            </div>
+          </div>
+          <div style="text-align: left; direction: ltr;">
+            <div style="font-size: 0.72rem; color: #64748B; font-weight: 700;">OFFICIAL RECEIPT</div>
+            <div style="font-size: 1.2rem; font-weight: 900; color: #0284C7; font-family: monospace;" id="a4RcptOpNumber">REC-94801</div>
+            <div style="font-size: 0.75rem; color: #475569;" id="a4RcptDate">29/08/2026 12:00</div>
+          </div>
+        </div>
+
+        <!-- Title Banner -->
+        <div style="background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 8px; padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;">
+          <span style="font-size: 0.9rem; font-weight: 800; color: #0369A1;">📋 وصل استلام ودفع اشتراك / REÇU DE PAIEMENT</span>
+          <span style="font-size: 0.8rem; font-weight: 700; color: #0284C7;">السنة الدراسية: 2026/2027</span>
+        </div>
+
+        <!-- Student & Guardian Grid -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px;">
+          <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px 14px;">
+            <div style="font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase; margin-bottom: 6px; border-bottom: 1px dashed #CBD5E1; padding-bottom: 3px;">معلومات التلميذ</div>
+            <div style="display: flex; flex-direction: column; gap: 5px; font-size: 0.82rem;">
+              <div><strong>اسم التلميذ:</strong> <span id="a4RcptStudentName" style="color: #0F172A; font-weight: 700;">أحمد بن علي</span></div>
+              <div><strong>المستوى التعليمي:</strong> <span id="a4RcptLevel">Level 1 — Explorer</span></div>
+              <div><strong>الفوج والجدول:</strong> <span id="a4RcptGroup">الفوج الأول (السبت 10:00)</span></div>
+            </div>
+          </div>
+          <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px 14px;">
+            <div style="font-size: 0.75rem; font-weight: 800; color: #64748B; text-transform: uppercase; margin-bottom: 6px; border-bottom: 1px dashed #CBD5E1; padding-bottom: 3px;">معلومات الولي وطريقة الدفع</div>
+            <div style="display: flex; flex-direction: column; gap: 5px; font-size: 0.82rem;">
+              <div><strong>ولي الأمر:</strong> <span id="a4RcptParentName">عمر بن علي</span></div>
+              <div><strong>هاتف الولي:</strong> <span id="a4RcptParentPhone" style="font-family: monospace;" dir="ltr">0661234567</span></div>
+              <div><strong>طريقة السداد:</strong> <span id="a4RcptMethod" style="color: #0284C7; font-weight: 700;">نقداً (Cash)</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Breakdown Table -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 0.85rem;">
+          <thead>
+            <tr style="background: #0284C7; color: #ffffff;">
+              <th style="padding: 8px 12px; text-align: right; border-radius: 6px 0 0 0;">البيان / تفاصيل الدفعة</th>
+              <th style="padding: 8px 12px; text-align: center;">الشهر / الدورة</th>
+              <th style="padding: 8px 12px; text-align: center;">الحصص المشتراة</th>
+              <th style="padding: 8px 12px; text-align: left; border-radius: 0 6px 0 0;">المبلغ المسدد</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid #E2E8F0; background: #FFFFFF;">
+              <td style="padding: 10px 12px; font-weight: 600;" id="a4RcptDescription">تسديد اشتراك دورة الروبوتيك والبرمجة</td>
+              <td style="padding: 10px 12px; text-align: center;" id="a4RcptMonth">أكتوبر 2026</td>
+              <td style="padding: 10px 12px; text-align: center; font-weight: 700; color: #0284C7;" id="a4RcptSessions">4 حصص</td>
+              <td style="padding: 10px 12px; text-align: left; font-size: 1rem; font-weight: 900; color: #059669;" id="a4RcptAmountPaid">2,000 دج</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr style="background: #F8FAFC; font-weight: 800;">
+              <td colspan="3" style="padding: 8px 12px; text-align: right; color: #475569;">المبلغ الإجمالي المسدد (Total Payé):</td>
+              <td style="padding: 8px 12px; text-align: left; font-size: 1.05rem; color: #059669;" id="a4RcptTotalAmount">2,000 دج</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <!-- Balance & Sessions Summary -->
+        <div style="display: flex; gap: 12px; margin-bottom: 18px;">
+          <div style="flex: 1; background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 8px; padding: 8px 12px;">
+            <div style="font-size: 0.72rem; color: #065F46; font-weight: 700;">الحصص المتبقية المتاحة للطالب</div>
+            <div style="font-size: 1rem; font-weight: 900; color: #059669; margin-top: 1px;" id="a4RcptRemainingSessions">4 حصص</div>
+          </div>
+          <div style="flex: 1; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 8px 12px;">
+            <div style="font-size: 0.72rem; color: #475569; font-weight: 700;">الرصيد المالي المتبقي</div>
+            <div style="font-size: 1rem; font-weight: 900; color: #0284C7; margin-top: 1px;" id="a4RcptRemainingBalance">0 دج</div>
+          </div>
+        </div>
+
+        <!-- Parent Portal Credentials & Sign Box -->
+        <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; margin-bottom: 14px;">
+          <div style="border: 1px dashed #0284C7; border-radius: 8px; padding: 10px 14px; background: #F0F9FF; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+            <div>
+              <div style="font-weight: 800; font-size: 0.78rem; color: #0369A1; margin-bottom: 3px;">📱 بيانات بوابة الأولياء للمتابعة المباشرة</div>
+              <div style="font-size: 0.75rem; color: #475569;">اسم المستخدم: <strong id="a4RcptUser" style="color:#0284C7; font-family:monospace;">user</strong></div>
+              <div style="font-size: 0.75rem; color: #475569;">كلمة المرور: <strong id="a4RcptPass" style="color:#0284C7; font-family:monospace;">pass</strong></div>
+              <div style="font-size: 0.68rem; color: #64748B; margin-top: 3px;">امسح الرمز بكاميرا الهاتف للمتابعة المباشرة</div>
+            </div>
+            <img id="a4RcptQrCode" alt="QR" style="width: 64px; height: 64px; border: 1px solid #BAE6FD; border-radius: 6px; padding: 2px; background: #fff;">
+          </div>
+
+          <div style="border: 1px solid #CBD5E1; border-radius: 8px; padding: 10px 14px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; min-height: 85px;">
+            <div style="font-size: 0.75rem; font-weight: 800; color: #475569;">ختم وتوقيع إدارة الأكاديمية</div>
+            <div style="font-size: 0.68rem; color: #94A3B8; margin-top: 20px;">Cachet et Signature</div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; font-size: 0.72rem; color: #94A3B8; border-top: 1px solid #E2E8F0; padding-top: 8px;">
+          شكراً لثقتكم في مدرسة Brainova Robotics • هذا الوصل صادر آلياً من المنظومة الرقمية ويعتبر سند إثبات رسمي.
+        </div>
+
+      </div>
+
+      <!-- Action Footer (Hidden on print) -->
+      <div class="modal__actions" style="background: #F8FAFC; padding: 12px 20px; border-top: 1px solid #E2E8F0; display: flex; justify-content: space-between; gap: 10px;">
+        <button type="button" class="btn btn--outline" onclick="closeA4ReceiptModal()" style="border-color: #CBD5E1; color: #475569;">إغلاق</button>
+        <div style="display: flex; gap: 10px;">
+          <button type="button" class="btn btn--outline" onclick="openReceiptModal(window.__currentPaymentIdForPrint)" style="border-color: #0284C7; color: #0284C7;">🧾 التبديل للوصل الحراري (80mm)</button>
+          <button type="button" class="btn btn--primary" onclick="window.print()" style="background: linear-gradient(135deg, #0284C7, #0369A1);">🖨️ طباعة الوصل (ورقة عادية A4 / A5)</button>
+        </div>
+      </div>
+
     </div>
   </div>
 

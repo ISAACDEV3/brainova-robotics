@@ -876,7 +876,8 @@ document.addEventListener('DOMContentLoaded', () => {
         <td><span style="font-size:0.8rem; color:var(--color-text-muted);">${p.method || 'نقداً'}</span></td>
         <td style="text-align: center;">
           <div style="display:inline-flex; gap:6px;">
-            <button class="btn btn--primary" style="padding:4px 10px; font-size:0.75rem; background:#0284c7;" onclick="openReceiptModal('${p.id}')">🖨️ طباعة الوصل</button>
+            <button class="btn btn--primary" style="padding:4px 9px; font-size:0.73rem; background:#0284c7;" onclick="openA4ReceiptModal('${p.id}')">📄 وصل A4</button>
+            <button class="btn btn--outline" style="padding:4px 9px; font-size:0.73rem; border-color:#38bdf8; color:#38bdf8;" onclick="openReceiptModal('${p.id}')">🧾 حراري</button>
             <button class="btn-icon" style="width:28px; height:28px; border:none; color:#ef4444;" onclick="deletePayment('${p.id}')">حذف</button>
           </div>
         </td>
@@ -994,7 +995,13 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // --- RECEIPT MODAL ---
-      window.openReceiptModal = function(paymentId) {
+  window.__currentPaymentIdForPrint = null;
+
+  window.openReceiptModal = function(paymentId) {
+    window.__currentPaymentIdForPrint = paymentId;
+    if (document.getElementById('a4ReceiptModal')) {
+      document.getElementById('a4ReceiptModal').classList.remove('active');
+    }
     const payments = getData('brainova_payments');
     const payment = payments.find(p => p.id === paymentId) || payments[0];
     if (!payment) {
@@ -1006,18 +1013,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const stu = students.find(s => s.id === payment.studentId) || students[0];
 
     const opNum = payment.opNumber || (payment.id ? payment.id.replace('REC-', '') : '94789');
-    const username = (stu && stu.username) ? stu.username : (payment.username || 'HpHJIbPT');
-    const password = (stu && stu.password) ? stu.password : (payment.password || 'lylLuhTX');
+    const username = (stu && stu.username) ? stu.username : (payment.username || 'user');
+    const password = (stu && stu.password) ? stu.password : (payment.password || 'pass');
 
     document.getElementById('rcptOpNumber').textContent = opNum;
     document.getElementById('rcptOpNumberCell').textContent = opNum;
-    document.getElementById('rcptStudentName').textContent = (stu && stu.name) || payment.studentName || 'نزار تسنيم';
+    document.getElementById('rcptStudentName').textContent = (stu && stu.name) || payment.studentName || '—';
     document.getElementById('rcptLevelGroup').textContent = `${(stu && stu.level) || payment.level || 'المستوى الأول'} • ${(stu && stu.group) || payment.group || 'الفوج أ'}`;
     document.getElementById('rcptDateTime').textContent = payment.date || new Date().toLocaleString('ar-DZ');
     document.getElementById('rcptAmountPaid').textContent = `${Number(payment.amountPaid || 2000).toLocaleString()} دج`;
 
     document.getElementById('rcptPrevBalance').textContent = `${payment.prevBalance || 0} دج`;
-    document.getElementById('rcptCurrentBalance').textContent = `${stu ? stu.sessionsRemaining : 4} حصص متبقية / ${stu ? stu.balance : 2000} دج`;
+    document.getElementById('rcptCurrentBalance').textContent = `${stu ? stu.sessionsRemaining : (payment.sessionsPurchased || 4)} حصص متبقية / ${stu ? stu.balance : (payment.amountPaid || 2000)} دج`;
     
     document.getElementById('rcptUsername').textContent = username;
     document.getElementById('rcptPassword').textContent = password;
@@ -1035,6 +1042,63 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.closeReceiptModal = function() {
     document.getElementById('receiptModal').classList.remove('active');
+  };
+
+  window.openA4ReceiptModal = function(paymentId) {
+    window.__currentPaymentIdForPrint = paymentId;
+    if (document.getElementById('receiptModal')) {
+      document.getElementById('receiptModal').classList.remove('active');
+    }
+
+    const payments = getData('brainova_payments');
+    const payment = payments.find(p => p.id === paymentId) || payments[0];
+    if (!payment) {
+      showToast('لم يتم العثور على بيانات الوصل!', 'error');
+      return;
+    }
+
+    const students = getData('brainova_students');
+    const stu = students.find(s => s.id === payment.studentId) || students[0];
+
+    const opNum = payment.opNumber || (payment.id ? payment.id : 'REC-94801');
+    const username = (stu && stu.username) ? stu.username : (payment.username || 'user');
+    const password = (stu && stu.password) ? stu.password : (payment.password || 'pass');
+
+    document.getElementById('a4RcptOpNumber').textContent = opNum;
+    document.getElementById('a4RcptDate').textContent = payment.date || new Date().toLocaleString('ar-DZ');
+    document.getElementById('a4RcptStudentName').textContent = (stu && stu.name) || payment.studentName || '—';
+    document.getElementById('a4RcptLevel').textContent = (stu && stu.level) || payment.level || 'المستوى الأول — استكشاف';
+    document.getElementById('a4RcptGroup').textContent = `${(stu && stu.group) || payment.group || 'الفوج الأول'} • ${(stu && stu.schedule) || 'السبت'}`;
+    
+    document.getElementById('a4RcptParentName').textContent = (stu && stu.parentName) || 'ولي أمر التلميذ';
+    document.getElementById('a4RcptParentPhone').textContent = (stu && stu.parentPhone) || '0791 19 46 33';
+    document.getElementById('a4RcptMethod').textContent = payment.method || 'نقداً (Cash)';
+
+    document.getElementById('a4RcptDescription').textContent = payment.notes || 'تسديد اشتراك دورة الروبوتيك والبرمجة';
+    document.getElementById('a4RcptMonth').textContent = payment.month || 'الدورة الحالية';
+    document.getElementById('a4RcptSessions').textContent = `${payment.sessionsPurchased || 4} حصص`;
+    document.getElementById('a4RcptAmountPaid').textContent = `${Number(payment.amountPaid || 2000).toLocaleString()} دج`;
+    document.getElementById('a4RcptTotalAmount').textContent = `${Number(payment.amountPaid || 2000).toLocaleString()} دج`;
+
+    document.getElementById('a4RcptRemainingSessions').textContent = `${stu ? stu.sessionsRemaining : (payment.sessionsPurchased || 4)} حصص متاحة`;
+    document.getElementById('a4RcptRemainingBalance').textContent = `${stu ? stu.balance : 0} دج`;
+
+    document.getElementById('a4RcptUser').textContent = username;
+    document.getElementById('a4RcptPass').textContent = password;
+
+    const studentIdForUrl = (stu && stu.id) || payment.studentId || 'STU-001';
+    const portalUrl = `${window.location.origin}${window.location.pathname.replace('dashboard.html', 'parent.html')}?id=${studentIdForUrl}&u=${encodeURIComponent(username)}&p=${encodeURIComponent(password)}`;
+    
+    const qrImg = document.getElementById('a4RcptQrCode');
+    if (qrImg) {
+      qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=2&data=${encodeURIComponent(portalUrl)}`;
+    }
+
+    document.getElementById('a4ReceiptModal').classList.add('active');
+  };
+
+  window.closeA4ReceiptModal = function() {
+    document.getElementById('a4ReceiptModal').classList.remove('active');
   };
 
   // --- STUDENT PROFILE MODAL ---

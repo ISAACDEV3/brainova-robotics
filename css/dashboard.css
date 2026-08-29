@@ -1648,10 +1648,19 @@ html[dir="ltr"] .profile-hero-kpi {
 @media print {
   body * { visibility: hidden; }
   .sidebar, .topbar, .btn, #toastContainer, .modal__close, .modal__actions, #electronWinControls { display: none !important; }
+  
+  /* Thermal 80mm Receipt Print */
   body:has(#receiptModal.active) #receiptModal, body:has(#receiptModal.active) #receiptModal * { visibility: visible; }
   body:has(#receiptModal.active) #receiptModal { position: absolute; left: 0; top: 0; width: 100%; background: transparent !important; display: flex !important; justify-content: center; opacity: 1 !important; }
   .receipt-modal-container { box-shadow: none !important; border: none !important; padding: 0 !important; width: 80mm !important; max-width: 80mm !important; }
-  
+
+  /* Full A4 / A5 Official Receipt Print */
+  body:has(#a4ReceiptModal.active) #a4ReceiptModal, body:has(#a4ReceiptModal.active) #a4ReceiptModal * { visibility: visible; }
+  body:has(#a4ReceiptModal.active) #a4ReceiptModal { position: absolute; left: 0; top: 0; width: 100%; background: transparent !important; display: block !important; opacity: 1 !important; }
+  body:has(#a4ReceiptModal.active) #a4ReceiptModal .modal { max-width: 100% !important; width: 100% !important; box-shadow: none !important; border: none !important; border-radius: 0 !important; padding: 0 !important; }
+  .a4-receipt-sheet { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; padding: 20px !important; }
+
+  /* Student ID Card Print */
   body:has(#studentIdCardModal.active) #studentIdCardModal, body:has(#studentIdCardModal.active) #studentIdCardModal * { visibility: visible !important; }
   body:has(#studentIdCardModal.active) #studentIdCardModal { position: absolute; left: 0; top: 0; width: 100%; background: transparent !important; display: flex !important; justify-content: center; opacity: 1 !important; }
   .cr80-card-frame { width: 85.6mm !important; height: 54mm !important; box-shadow: none !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
