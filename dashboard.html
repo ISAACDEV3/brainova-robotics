@@ -1234,9 +1234,13 @@
 
       <div class="receipt-slip-80mm" id="printableReceiptArea">
         <div class="receipt-slip-header" style="text-align:center;">
-          <img src="assets/images/logo.png" alt="Brainova Robotics" style="width:160px; max-width:85%; height:auto; object-fit:contain; margin-bottom:4px; display:block; margin-left:auto; margin-right:auto;">
-          <div class="receipt-slip-title">أكاديمية BRAINOVA ROBOTICS</div>
-          <div class="receipt-slip-sub">مدرسة الروبوتيك والذكاء الاصطناعي — أم البواقي</div>
+          <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:4px;">
+            <img src="assets/images/robot.png" alt="Brainova" style="width:38px; height:38px; object-fit:contain;">
+            <div style="text-align:right;">
+              <div style="font-size:14.5px; font-weight:900; color:#0F172A; letter-spacing:0.5px; line-height:1.1;">BRAINOVA <span style="color:#0284C7;">ROBOTICS</span></div>
+              <div style="font-size:9px; color:#475569; font-weight:700; margin-top:2px;">مدرسة الروبوتيك والذكاء الاصطناعي — أم البواقي</div>
+            </div>
+          </div>
           <div class="receipt-slip-code" id="rcptOpNumber">94789</div>
         </div>
 
@@ -1271,29 +1275,13 @@
           </tr>
           <tr style="background:#F0FDF4;">
             <th>المبلغ بالحروف</th>
-            <td id="rcptAmountWords" style="font-size:0.75rem; font-weight:700; color:#065F46;">خمسة آلاف دينار جزائري</td>
+            <td id="rcptAmountWords" style="font-size:0.75rem; font-weight:700; color:#065F46;">خمسة آلاف دينار جزائري فقط</td>
           </tr>
           <tr>
             <th>الرصيد والحصص</th>
             <td id="rcptCurrentBalance">4 حصص متبقية / 5,000 دج</td>
           </tr>
-          <tr style="background:#F8FAFC; font-family:monospace;">
-            <th>اسم المستخدم</th>
-            <td id="rcptUsername" style="color:#0284C7; font-weight:800;">userSTU001</td>
-          </tr>
-          <tr style="background:#F8FAFC; font-family:monospace;">
-            <th>كلمة المرور</th>
-            <td id="rcptPassword" style="color:#0284C7; font-weight:800;">123456</td>
-          </tr>
         </table>
-
-        <div style="display:flex; align-items:center; justify-content:space-between; margin:8px 0 4px; padding:6px 8px; background:#F8FAFC; border-radius:6px; border:1px solid #E2E8F0;">
-          <div style="font-size:8.5px; color:#475569; font-weight:700; line-height:1.3;">
-            <div>📲 بوابة متابعة الأولياء:</div>
-            <div style="font-family:monospace; color:#0284C7; font-size:8px;">portal.brainova.dz</div>
-          </div>
-          <img id="rcptQrCode" alt="QR" style="width:46px; height:46px; border:1px solid #CBD5E1; border-radius:4px; padding:2px; background:#fff;">
-        </div>
 
         <div class="receipt-slip-footer">
           <div>الهاتف: <strong style="font-family:monospace;" dir="ltr">0791 19 46 33</strong> • البريد: <strong>brainovarobotics@gmail.com</strong></div>
