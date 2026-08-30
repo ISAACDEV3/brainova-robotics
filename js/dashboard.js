@@ -993,6 +993,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  function convertAmountToArabicWords(num) {
+    const val = Number(num) || 0;
+    if (val === 5000) return 'خمسة آلاف دينار جزائري فقط (5,000 دج)';
+    if (val === 8000) return 'ثمانية آلاف دينار جزائري فقط (باقة طفلين - 8,000 دج)';
+    if (val === 11000) return 'أحد عشر ألف دينار جزائري فقط (باقة 3 أطفال - 11,000 دج)';
+    if (val === 2000) return 'ألفان دينار جزائري فقط';
+    if (val === 3000) return 'ثلاثة آلاف دينار جزائري فقط';
+    if (val === 4000) return 'أربعة آلاف دينار جزائري فقط';
+    if (val === 6000) return 'ستة آلاف دينار جزائري فقط';
+    if (val === 7000) return 'سبعة آلاف دينار جزائري فقط';
+    if (val === 9000) return 'تسعة آلاف دينار جزائري فقط';
+    if (val === 10000) return 'عشرة آلاف دينار جزائري فقط';
+    if (val === 12000) return 'اثنا عشر ألف دينار جزائري فقط';
+    if (val === 15000) return 'خمسة عشر ألف دينار جزائري فقط';
+    return `${Number(val).toLocaleString()} دينار جزائري`;
+  }
+
   // --- RECEIPT MODAL ---
   window.openReceiptModal = function(paymentId) {
     const payments = getData('brainova_payments');
@@ -1008,19 +1025,47 @@ document.addEventListener('DOMContentLoaded', () => {
     const opNum = payment.opNumber || (payment.id ? payment.id.replace('REC-', '') : '94789');
     const username = (stu && stu.username) ? stu.username : (payment.username || 'user');
     const password = (stu && stu.password) ? stu.password : (payment.password || 'pass');
+    const exactAmount = Number(payment.amountPaid || 5000);
 
-    document.getElementById('rcptOpNumber').textContent = opNum;
-    document.getElementById('rcptOpNumberCell').textContent = opNum;
-    document.getElementById('rcptStudentName').textContent = (stu && stu.name) || payment.studentName || '—';
-    document.getElementById('rcptLevelGroup').textContent = `${(stu && stu.level) || payment.level || 'المستوى الأول'} • ${(stu && stu.group) || payment.group || 'الفوج أ'}`;
-    document.getElementById('rcptDateTime').textContent = payment.date || new Date().toLocaleString('ar-DZ');
-    document.getElementById('rcptAmountPaid').textContent = `${Number(payment.amountPaid || 2000).toLocaleString()} دج`;
+    const elOpNum = document.getElementById('rcptOpNumber');
+    if (elOpNum) elOpNum.textContent = opNum;
 
-    document.getElementById('rcptPrevBalance').textContent = `${payment.prevBalance || 0} دج`;
-    document.getElementById('rcptCurrentBalance').textContent = `${stu ? stu.sessionsRemaining : (payment.sessionsPurchased || 4)} حصص متبقية / ${stu ? stu.balance : (payment.amountPaid || 2000)} دج`;
+    const elOpNumCell = document.getElementById('rcptOpNumberCell');
+    if (elOpNumCell) elOpNumCell.textContent = opNum;
+
+    const elStudent = document.getElementById('rcptStudentName');
+    if (elStudent) elStudent.textContent = (stu && stu.name) || payment.studentName || '—';
+
+    const elParent = document.getElementById('rcptParentName');
+    if (elParent) elParent.textContent = (stu && stu.parentName) || payment.parentName || 'ولي أمر التلميذ';
+
+    const elLevelGroup = document.getElementById('rcptLevelGroup');
+    if (elLevelGroup) elLevelGroup.textContent = `${(stu && stu.level) || payment.level || 'المستوى الأول'} • ${(stu && stu.group) || payment.group || 'الفوج أ'}`;
+
+    const elDateTime = document.getElementById('rcptDateTime');
+    if (elDateTime) elDateTime.textContent = payment.date || new Date().toLocaleString('ar-DZ');
+
+    const elMethod = document.getElementById('rcptMethod');
+    if (elMethod) elMethod.textContent = payment.method || 'نقداً (Cash)';
+
+    const elAmount = document.getElementById('rcptAmountPaid');
+    if (elAmount) elAmount.textContent = `${exactAmount.toLocaleString()} دج`;
+
+    const elWords = document.getElementById('rcptAmountWords');
+    if (elWords) elWords.textContent = convertAmountToArabicWords(exactAmount);
+
+    const elCurrentBalance = document.getElementById('rcptCurrentBalance');
+    if (elCurrentBalance) {
+      const remainingSessions = (stu && stu.sessionsRemaining !== undefined) ? stu.sessionsRemaining : (payment.sessionsPurchased || 4);
+      const balanceAmount = (stu && stu.balance !== undefined) ? stu.balance : exactAmount;
+      elCurrentBalance.textContent = `${remainingSessions} حصص متاحة / ${Number(balanceAmount).toLocaleString()} دج`;
+    }
     
-    document.getElementById('rcptUsername').textContent = username;
-    document.getElementById('rcptPassword').textContent = password;
+    const elUser = document.getElementById('rcptUsername');
+    if (elUser) elUser.textContent = username;
+
+    const elPass = document.getElementById('rcptPassword');
+    if (elPass) elPass.textContent = password;
 
     const studentIdForUrl = (stu && stu.id) || payment.studentId || 'STU-001';
     const portalUrl = `${window.location.origin}${window.location.pathname.replace('dashboard.html', 'parent.html')}?id=${studentIdForUrl}&u=${encodeURIComponent(username)}&p=${encodeURIComponent(password)}`;
