@@ -83,14 +83,14 @@
           </div>
 
           <!-- Windows 11 Frameless Controls -->
-          <div id="electronWinControls" style="display:flex; align-items:center; gap:3px; margin-left:6px; direction:ltr; -webkit-app-region:no-drag;">
-            <button onclick="if(window.electronAPI)window.electronAPI.minimize()" title="تصغير" style="width:30px; height:26px; border:1px solid rgba(56,189,248,0.2); border-radius:5px; background:rgba(255,255,255,0.04); color:#94A3B8; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+          <div id="electronWinControls" style="display:flex; align-items:center; gap:4px; margin-left:6px; direction:ltr; -webkit-app-region:no-drag;">
+            <button onclick="if(window.electronAPI)window.electronAPI.minimize()" title="تصغير" style="width:30px; height:26px; border:1px solid rgba(255,255,255,0.08); border-radius:5px; background:rgba(255,255,255,0.03); color:#94A3B8; cursor:pointer; display:flex; align-items:center; justify-content:center;">
               <svg width="11" height="11" viewBox="0 0 12 12"><rect fill="currentColor" width="10" height="1.6" x="1" y="5.2"/></svg>
             </button>
-            <button onclick="if(window.electronAPI)window.electronAPI.maximize()" title="تكبير / استعادة" style="width:30px; height:26px; border:1px solid rgba(56,189,248,0.2); border-radius:5px; background:rgba(255,255,255,0.04); color:#94A3B8; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+            <button onclick="if(window.electronAPI)window.electronAPI.maximize()" title="تكبير / استعادة" style="width:30px; height:26px; border:1px solid rgba(255,255,255,0.08); border-radius:5px; background:rgba(255,255,255,0.03); color:#94A3B8; cursor:pointer; display:flex; align-items:center; justify-content:center;">
               <svg width="11" height="11" viewBox="0 0 12 12"><rect fill="none" stroke="currentColor" stroke-width="1.3" width="9" height="9" x="1.5" y="1.5" rx="1"/></svg>
             </button>
-            <button onclick="if(window.electronAPI)window.electronAPI.close()" title="إغلاق البرنامج" style="width:30px; height:26px; border:1px solid rgba(239,68,68,0.3); border-radius:5px; background:rgba(239,68,68,0.12); color:#F87171; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+            <button onclick="if(window.electronAPI)window.electronAPI.close()" title="إغلاق البرنامج" style="width:30px; height:26px; border:1px solid rgba(239,68,68,0.25); border-radius:5px; background:rgba(239,68,68,0.1); color:#F87171; cursor:pointer; display:flex; align-items:center; justify-content:center;">
               <svg width="11" height="11" viewBox="0 0 12 12"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M2.5 2.5l7 7m0-7l-7 7"/></svg>
             </button>
           </div>
@@ -159,7 +159,7 @@
               <div class="table-container">
                 <div class="table-header">
                   <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#38BDF8; box-shadow:0 0 8px #38BDF8;"></span>
+                    <span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#3B82F6;"></span>
                     <h3 class="table-title">أحدث طلبات التسجيل الواردة</h3>
                   </div>
                   <button class="btn btn--outline btn--small" onclick="document.querySelector('[data-view=\'registrations\']').click()">إدارة كل الطلبات</button>
@@ -185,7 +185,7 @@
               <div class="table-container" style="margin-top:18px;">
                 <div class="table-header">
                   <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10B981; box-shadow:0 0 8px #10B981;"></span>
+                    <span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#10B981;"></span>
                     <h3 class="table-title">الأفواج التدريبية وجدول الحصص</h3>
                   </div>
                   <button class="btn btn--outline btn--small" onclick="document.querySelector('[data-view=\'schedule\']').click()">عرض الجدول الكامل</button>
@@ -216,32 +216,32 @@
                 </div>
                 <div class="quick-actions-grid">
                   <button type="button" class="qa-tile" onclick="openAddStudentModal()">
-                    <div class="qa-tile__icon" style="color:#38BDF8; background:rgba(56,189,248,0.12);">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                    <div class="qa-tile__icon" style="color:#60A5FA; background:rgba(59,130,246,0.1);">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
                     </div>
                     <span class="qa-tile__title">إضافة تلميذ</span>
                     <span class="qa-tile__sub">تسجيل ملف كامل</span>
                   </button>
 
                   <button type="button" class="qa-tile" onclick="openRecordPaymentModal()">
-                    <div class="qa-tile__icon" style="color:#10B981; background:rgba(16,185,129,0.12);">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+                    <div class="qa-tile__icon" style="color:#34D399; background:rgba(16,185,129,0.1);">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
                     </div>
                     <span class="qa-tile__title">تسجيل دفعة</span>
                     <span class="qa-tile__sub">تحصيل وطباعة وصل</span>
                   </button>
 
                   <button type="button" class="qa-tile" onclick="document.querySelector('[data-view=\'attendance\']').click()">
-                    <div class="qa-tile__icon" style="color:#F59E0B; background:rgba(245,158,11,0.12);">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    <div class="qa-tile__icon" style="color:#FBBF24; background:rgba(245,158,11,0.1);">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
                     </div>
                     <span class="qa-tile__title">تفقد الحضور</span>
                     <span class="qa-tile__sub">مناداة مباشرة للحصة</span>
                   </button>
 
                   <button type="button" class="qa-tile" onclick="document.querySelector('[data-view=\'students\']').click()">
-                    <div class="qa-tile__icon" style="color:#A78BFA; background:rgba(167,139,250,0.12);">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <div class="qa-tile__icon" style="color:#C084FC; background:rgba(192,132,252,0.1);">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                     </div>
                     <span class="qa-tile__title">قائمة الطلاب</span>
                     <span class="qa-tile__sub">عرض وإدارة الملفات</span>
