@@ -388,10 +388,229 @@ ipcMain.on('print-window', (event) => {
 });
 
 ipcMain.on('print-receipt', (event, payload) => {
-  const paymentId = (typeof payload === 'object' && payload && payload.id) ? payload.id : (typeof payload === 'string' ? payload : '');
-  const url = `http://localhost:${PARENT_PORT}/print-receipt.html?id=${encodeURIComponent(paymentId)}`;
-  console.log('[Brainova] Opening Google Chrome for Receipt Printing:', url);
-  shell.openExternal(url);
+  try {
+    const paymentId = (typeof payload === 'object' && payload && payload.id) ? payload.id : (typeof payload === 'string' ? payload : '');
+    const payments = store.get('brainova_payments', []);
+    const pay = paymentId ? payments.find(p => p.id === paymentId || p.opNumber === paymentId || p.id === 'REC-' + paymentId) : payments[payments.length - 1];
+    const students = store.get('brainova_students', []);
+    const stu = pay ? students.find(s => s.id === pay.studentId) : null;
+
+    const opNum = (pay && pay.opNumber) || (pay && pay.id ? pay.id.replace('REC-', '') : '63336');
+    const stuName = (stu && stu.name) || (pay && pay.studentName) || 'تلميذ';
+    const parentName = (stu && stu.parentName) || (pay && pay.parentName) || 'ولي الأمر';
+    const levelGroup = `${(pay && pay.level) || 'المستوى الأول'} • ${(pay && pay.group) || 'الفوج أ'}`;
+    const dateStr = (pay && pay.date) || new Date().toLocaleString('ar-DZ');
+    const payMethod = (pay && pay.method) || 'نقداً (Cash)';
+    const amountNum = Number((pay && pay.amountPaid) || 5000);
+    const amountStr = `${amountNum.toLocaleString()} دج`;
+
+    let wordsTafqeet = `${amountNum.toLocaleString()} دينار جزائري فقط`;
+    if (amountNum === 2000) wordsTafqeet = 'ألفان دينار جزائري فقط';
+    else if (amountNum === 5000) wordsTafqeet = 'خمسة آلاف دينار جزائري فقط (5,000 دج)';
+    else if (amountNum === 8000) wordsTafqeet = 'ثمانية آلاف دينار جزائري فقط (باقة طفلين - 8,000 دج)';
+    else if (amountNum === 11000) wordsTafqeet = 'أحد عشر ألف دينار جزائري فقط (باقة 3 أطفال - 11,000 دج)';
+
+    const remainingSessions = (stu && stu.sessionsRemaining !== undefined) ? stu.sessionsRemaining : ((pay && pay.sessionsPurchased) || 4);
+    const balanceNum = (stu && stu.balance !== undefined) ? stu.balance : amountNum;
+    const balanceStr = `${remainingSessions} حصص متاحة / ${Number(balanceNum).toLocaleString()} دج`;
+
+    // High resolution robot icon base64
+    let robotDataUri = '';
+    try {
+      const robotPath = path.join(__dirname, '..', 'assets', 'images', 'robot.png');
+      if (fs.existsSync(robotPath)) {
+        robotDataUri = `data:image/png;base64,${fs.readFileSync(robotPath).toString('base64')}`;
+      }
+    } catch(e){}
+
+    const receiptHtml = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>وصل تسديد — ${opNum} — ${stuName}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #1e293b;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 14px;
+    }
+    .screen-actions-bar {
+      width: 100%;
+      max-width: 440px;
+      margin-bottom: 16px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      background: #1e293b;
+      padding: 10px 16px;
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .btn-action {
+      background: #0284c7;
+      color: #ffffff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 800;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: inherit;
+    }
+    .btn-action:hover { background: #0369a1; }
+    .btn-secondary { background: rgba(255, 255, 255, 0.1); color: #f1f5f9; }
+    .receipt-wrapper {
+      width: 80mm;
+      max-width: 100%;
+      background: #ffffff;
+      border: 1.5px dashed #64748b;
+      border-radius: 6px;
+      padding: 12px 14px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+      position: relative;
+    }
+    .scissor-guide {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 9px;
+      color: #94a3b8;
+      font-weight: 700;
+    }
+    .scissor-guide::before, .scissor-guide::after {
+      content: ''; flex: 1; height: 1px; border-bottom: 1px dashed #cbd5e1;
+    }
+    .receipt-header {
+      text-align: center;
+      border-bottom: 2px dashed #94a3b8;
+      padding-bottom: 8px;
+      margin-bottom: 8px;
+    }
+    .receipt-brand-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .receipt-logo-icon { width: 36px; height: 36px; object-fit: contain; }
+    .receipt-brand-title { font-size: 14.5px; font-weight: 900; color: #0f172a; letter-spacing: 0.5px; line-height: 1.1; }
+    .receipt-brand-title span { color: #0284c7; }
+    .receipt-sub { font-size: 9px; color: #475569; font-weight: 700; margin-top: 2px; }
+    .receipt-code-badge {
+      display: inline-block;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      padding: 2px 10px;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #0f172a;
+      margin: 5px 0 2px;
+    }
+    .receipt-table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 11px; }
+    .receipt-table tr { border-bottom: 1px solid #e2e8f0; }
+    .receipt-table th { background: #f8fafc; color: #475569; padding: 5px 6px; font-weight: 800; width: 36%; text-align: right; border: 1px solid #e2e8f0; }
+    .receipt-table td { padding: 5px 6px; color: #0f172a; font-weight: 700; border: 1px solid #e2e8f0; }
+    .highlight-amount { font-size: 14px; font-weight: 900; color: #059669; font-family: 'JetBrains Mono', 'Cairo', monospace; }
+    .highlight-words { font-size: 9px; color: #065f46; font-weight: 800; background: #f0fdf4; }
+    .receipt-footer { text-align: center; border-top: 2px dashed #94a3b8; padding-top: 8px; margin-top: 8px; font-size: 8.5px; color: #475569; line-height: 1.4; }
+    @media print {
+      body { background: #ffffff !important; padding: 0 !important; margin: 0 !important; display: block !important; }
+      .screen-actions-bar { display: none !important; }
+      .receipt-wrapper {
+        box-shadow: none !important;
+        border: 1.5px dashed #64748b !important;
+        width: 80mm !important;
+        padding: 8px 10px !important;
+        margin: 0 auto !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="screen-actions-bar">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <button type="button" class="btn-action" onclick="window.print()">
+        🖨️ طباعة الوصل الآن (Google Chrome)
+      </button>
+      <button type="button" class="btn-action btn-secondary" onclick="window.close()">إغلاق</button>
+    </div>
+    <span style="font-size:11px; color:#94a3b8; font-weight:600;">✂️ A4 / 80mm</span>
+  </div>
+
+  <div class="receipt-wrapper">
+    <div class="scissor-guide">✂️ خط قص الوصل (80 مم) ✂️</div>
+    <div class="receipt-header">
+      <div class="receipt-brand-row">
+        \${robotDataUri ? \`<img src="\${robotDataUri}" alt="Brainova" class="receipt-logo-icon">\` : ''}
+        <div style="text-align:right;">
+          <div class="receipt-brand-title">BRAINOVA <span>ROBOTICS</span></div>
+          <div class="receipt-sub">مدرسة الروبوتيك والذكاء الاصطناعي — أم البواقي</div>
+        </div>
+      </div>
+      <div class="receipt-code-badge">\${opNum}</div>
+    </div>
+
+    <table class="receipt-table">
+      <tr><th>رقم العملية</th><td style="font-family:'JetBrains Mono', monospace; font-weight:900;">\${opNum}</td></tr>
+      <tr><th>اسم التلميذ</th><td style="font-size:12px; font-weight:900; color:#0f172a;">\${stuName}</td></tr>
+      <tr><th>ولي الأمر</th><td>\${parentName}</td></tr>
+      <tr><th>المستوى والفوج</th><td>\${levelGroup}</td></tr>
+      <tr><th>تاريخ الدفع</th><td style="font-family:'JetBrains Mono', monospace;">\${dateStr}</td></tr>
+      <tr><th>طريقة الدفع</th><td style="color:#0284c7; font-weight:800;">\${payMethod}</td></tr>
+      <tr><th>المبلغ المدفوع</th><td class="highlight-amount">\${amountStr}</td></tr>
+      <tr class="highlight-words"><th>المبلغ بالحروف</th><td>\${wordsTafqeet}</td></tr>
+      <tr><th>الرصيد والحصص</th><td>\${balanceStr}</td></tr>
+    </table>
+
+    <div class="receipt-footer">
+      <div>الهاتف: <strong style="font-family:'JetBrains Mono', monospace;" dir="ltr">0791 19 46 33</strong> • البريد: <strong>brainovarobotics@gmail.com</strong></div>
+      <div style="font-weight:800; color:#0f172a; margin-top:2px;">يرجى الاحتفاظ بهذا الوصل كإثبات رسمي لعملية التسديد</div>
+      <div style="font-family:'JetBrains Mono', monospace; font-size:7.5px; color:#94a3b8; margin-top:2px;">BRAINOVA POS ENGINE · VALIDATED</div>
+    </div>
+  </div>
+
+  <script>
+    window.onload = function() {
+      setTimeout(function() {
+        window.focus();
+        window.print();
+      }, 350);
+    };
+  </script>
+</body>
+</html>`;
+
+    const tempDir = app.getPath('temp') || os.tmpdir();
+    const tempFile = path.join(tempDir, `Brainova-Receipt-${opNum}.html`);
+    fs.writeFileSync(tempFile, receiptHtml, 'utf8');
+
+    const fileUrl = 'file:///' + tempFile.replace(/\\/g, '/');
+    console.log('[Brainova] Launching Google Chrome Print for:', fileUrl);
+    shell.openExternal(fileUrl);
+  } catch (err) {
+    console.error('[Brainova Print Receipt Error]:', err);
+  }
 });
 
 // ── IPC: AUTO UPDATER MANUAL TRIGGER ──────────────────────────────────────────
