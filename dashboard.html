@@ -862,6 +862,49 @@
     </div>
   </div>
 
+  <!-- ===== GROUP STUDENTS ROSTER MODAL ===== -->
+  <div class="modal-overlay" id="groupStudentsModal">
+    <div class="modal" style="max-width: 800px; width: 95%;">
+      <div class="modal__header">
+        <div>
+          <h2 class="modal__title" id="groupRosterTitle">قائمة طلاب الفوج</h2>
+          <p style="font-size: 0.8rem; color: var(--color-text-muted); margin: 2px 0 0 0;" id="groupRosterSubtitle">تفاصيل الطلاب المسجلين في هذا الفوج</p>
+        </div>
+        <button class="modal__close" onclick="closeGroupStudentsModal()">×</button>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px; flex-wrap:wrap; background:rgba(255,255,255,0.03); padding:10px 14px; border-radius:8px; border:1px solid var(--color-border);">
+        <div style="display:flex; gap:14px; font-size:0.85rem; flex-wrap:wrap;">
+          <span>المدرب: <strong id="groupRosterEducator" style="color:var(--color-primary);">—</strong></span>
+          <span>القاعة: <strong id="groupRosterRoom">—</strong></span>
+          <span>الفئة العمرية: <strong id="groupRosterAge">—</strong></span>
+        </div>
+        <button type="button" class="btn btn--primary btn--small" id="groupRosterAddBtn" onclick="openAddStudentForCurrentGroup()">+ إضافة تلميذ للفوج</button>
+      </div>
+
+      <div class="table-container" style="max-height: 420px; overflow-y: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>اسم التلميذ</th>
+              <th>ولي الأمر والهاتف</th>
+              <th>الحصص والرصيد</th>
+              <th style="text-align: center;">الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="groupStudentsTableBody">
+            <!-- Rendered by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal__actions" style="margin-top: 14px;">
+        <button type="button" class="btn btn--outline" onclick="closeGroupStudentsModal()">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Add Session Modal -->
   <div class="modal-overlay" id="addSessionModal">
     <div class="modal">

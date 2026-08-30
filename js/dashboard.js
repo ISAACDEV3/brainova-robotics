@@ -1848,12 +1848,114 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           <div style="display:flex; justify-content:space-between; align-items:center; border-top: 1px solid var(--color-border); padding-top: 8px;">
             <span style="font-size:0.78rem; color:var(--color-text-muted);">الطلاب: <strong style="color:#fff;">${studentCount} / ${g.maxStudents || 12}</strong></span>
-            <button class="btn btn--outline btn--small" onclick="document.querySelector('[data-view=\'students\']').click();">عرض الطلاب</button>
+            <button type="button" class="btn btn--primary btn--small" style="background:#0284C7; font-weight:700; font-size:0.78rem;" onclick="openGroupStudentsModal('${encodeURIComponent(g.name)}')">👥 عرض الطلاب (${studentCount})</button>
           </div>
         </div>
       `;
     }).join('');
   }
+
+  // --- GROUP STUDENTS ROSTER MODAL LOGIC ---
+  window.__currentRosterGroupName = '';
+
+  window.openGroupStudentsModal = function(encodedGroupName) {
+    const groupName = decodeURIComponent(encodedGroupName);
+    window.__currentRosterGroupName = groupName;
+
+    const groups = getData('brainova_groups');
+    const group = groups.find(g => g.name === groupName) || { name: groupName, educator: 'عابد اسحاق تقي الدين', room: 'قاعة Brainova', ageCategory: 'جميع الفئات' };
+    const allStudents = getData('brainova_students');
+    const groupStudents = allStudents.filter(s => s.group === groupName || (s.group && s.group.includes(groupName)));
+
+    const titleEl = document.getElementById('groupRosterTitle');
+    if (titleEl) titleEl.textContent = `طلاب ${group.name} (${groupStudents.length} تلميذ)`;
+
+    const subEl = document.getElementById('groupRosterSubtitle');
+    if (subEl) subEl.textContent = `المستوى: ${group.level || 'دورة الروبوتيك'} • الطاقة الاستيعابية: ${groupStudents.length} / ${group.maxStudents || 12}`;
+
+    const eduEl = document.getElementById('groupRosterEducator');
+    if (eduEl) eduEl.textContent = group.educator || 'عابد اسحاق تقي الدين';
+
+    const roomEl = document.getElementById('groupRosterRoom');
+    if (roomEl) roomEl.textContent = group.room || 'قاعة Brainova';
+
+    const ageEl = document.getElementById('groupRosterAge');
+    if (ageEl) ageEl.textContent = group.ageCategory || '8 - 11 سنة';
+
+    const tbody = document.getElementById('groupStudentsTableBody');
+    if (tbody) {
+      if (groupStudents.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" style="text-align:center; padding:36px 20px; color:var(--color-text-muted);">
+              <div style="font-size:1.5rem; margin-bottom:8px;">👥</div>
+              <strong style="color:var(--color-text);">لا يوجد طلاب مسجلين في هذا الفوج حتى الآن.</strong>
+              <div style="margin-top:12px;">
+                <button type="button" class="btn btn--primary btn--small" onclick="openAddStudentForCurrentGroup()">+ إضافة أول طالب لهذا الفوج الآن</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      } else {
+        tbody.innerHTML = groupStudents.map(stu => {
+          const sessions = Number(stu.sessionsRemaining) || 0;
+          const balance = Number(stu.balance) || 0;
+          const cleanPhone = (stu.parentPhone || '').replace(/\D/g, '');
+          const waPhone = cleanPhone.startsWith('0') ? '213' + cleanPhone.slice(1) : cleanPhone;
+
+          return `
+            <tr>
+              <td><span style="font-family:monospace; font-weight:700; color:var(--color-primary);">${stu.id}</span></td>
+              <td>
+                <a href="#" onclick="closeGroupStudentsModal(); openStudentProfile('${stu.id}'); return false;" style="color:#fff; font-weight:700; text-decoration:underline;">
+                  ${stu.name}
+                </a>
+                <br><small style="color:var(--color-text-muted);">${stu.level || ''}</small>
+              </td>
+              <td>
+                <div style="font-weight:600; color:var(--color-text);">${stu.parentName || 'ولي الأمر'}</div>
+                <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
+                  <a href="tel:${stu.parentPhone}" dir="ltr" style="font-size:0.8rem; color:var(--color-primary); font-family:monospace;">${stu.parentPhone || '—'}</a>
+                  ${cleanPhone ? `
+                    <a href="https://wa.me/${waPhone}" target="_blank" style="color:#25D366; font-size:0.75rem; text-decoration:none;" title="محادثة واتساب">💬</a>
+                  ` : ''}
+                </div>
+              </td>
+              <td>
+                <div style="font-weight:700; color:${sessions > 0 ? '#10B981' : '#EF4444'};">
+                  ${sessions > 0 ? `${sessions} حصص متبقية` : 'نفدت الحصص'}
+                </div>
+                <small style="color:var(--color-text-muted);">${balance > 0 ? `الرصيد: ${Number(balance).toLocaleString()} دج` : '0 دج'}</small>
+              </td>
+              <td style="text-align: center;">
+                <div style="display:inline-flex; gap:6px;">
+                  <button type="button" class="btn btn--outline btn--small" style="padding:4px 8px; font-size:0.75rem;" onclick="closeGroupStudentsModal(); openStudentProfile('${stu.id}')">الملف</button>
+                  <button type="button" class="btn btn--primary btn--small" style="padding:4px 8px; font-size:0.75rem; background:#0284C7;" onclick="closeGroupStudentsModal(); openRecordPaymentModal('${stu.id}')">💳 دفع</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    const modal = document.getElementById('groupStudentsModal');
+    if (modal) modal.classList.add('active');
+  };
+
+  window.closeGroupStudentsModal = function() {
+    const modal = document.getElementById('groupStudentsModal');
+    if (modal) modal.classList.remove('active');
+  };
+
+  window.openAddStudentForCurrentGroup = function() {
+    closeGroupStudentsModal();
+    openAddStudentModal();
+    const groupSelect = document.getElementById('newStudentGroup');
+    if (groupSelect && window.__currentRosterGroupName) {
+      groupSelect.value = window.__currentRosterGroupName;
+    }
+  };
 
   // --- ROOMS & LABS SYSTEM ---
       function renderRooms() {
