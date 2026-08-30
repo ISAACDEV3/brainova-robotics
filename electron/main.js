@@ -562,25 +562,25 @@ ipcMain.on('print-receipt', (event, payload) => {
     <div class="scissor-guide">✂️ خط قص الوصل (80 مم) ✂️</div>
     <div class="receipt-header">
       <div class="receipt-brand-row">
-        \${robotDataUri ? \`<img src="\${robotDataUri}" alt="Brainova" class="receipt-logo-icon">\` : ''}
+        ${robotDataUri ? `<img src="${robotDataUri}" alt="Brainova" class="receipt-logo-icon">` : ''}
         <div style="text-align:right;">
           <div class="receipt-brand-title">BRAINOVA <span>ROBOTICS</span></div>
           <div class="receipt-sub">مدرسة الروبوتيك والذكاء الاصطناعي — أم البواقي</div>
         </div>
       </div>
-      <div class="receipt-code-badge">\${opNum}</div>
+      <div class="receipt-code-badge">${opNum}</div>
     </div>
 
     <table class="receipt-table">
-      <tr><th>رقم العملية</th><td style="font-family:'JetBrains Mono', monospace; font-weight:900;">\${opNum}</td></tr>
-      <tr><th>اسم التلميذ</th><td style="font-size:12px; font-weight:900; color:#0f172a;">\${stuName}</td></tr>
-      <tr><th>ولي الأمر</th><td>\${parentName}</td></tr>
-      <tr><th>المستوى والفوج</th><td>\${levelGroup}</td></tr>
-      <tr><th>تاريخ الدفع</th><td style="font-family:'JetBrains Mono', monospace;">\${dateStr}</td></tr>
-      <tr><th>طريقة الدفع</th><td style="color:#0284c7; font-weight:800;">\${payMethod}</td></tr>
-      <tr><th>المبلغ المدفوع</th><td class="highlight-amount">\${amountStr}</td></tr>
-      <tr class="highlight-words"><th>المبلغ بالحروف</th><td>\${wordsTafqeet}</td></tr>
-      <tr><th>الرصيد والحصص</th><td>\${balanceStr}</td></tr>
+      <tr><th>رقم العملية</th><td style="font-family:'JetBrains Mono', monospace; font-weight:900;">${opNum}</td></tr>
+      <tr><th>اسم التلميذ</th><td style="font-size:12px; font-weight:900; color:#0f172a;">${stuName}</td></tr>
+      <tr><th>ولي الأمر</th><td>${parentName}</td></tr>
+      <tr><th>المستوى والفوج</th><td>${levelGroup}</td></tr>
+      <tr><th>تاريخ الدفع</th><td style="font-family:'JetBrains Mono', monospace;">${dateStr}</td></tr>
+      <tr><th>طريقة الدفع</th><td style="color:#0284c7; font-weight:800;">${payMethod}</td></tr>
+      <tr><th>المبلغ المدفوع</th><td class="highlight-amount">${amountStr}</td></tr>
+      <tr class="highlight-words"><th>المبلغ بالحروف</th><td>${wordsTafqeet}</td></tr>
+      <tr><th>الرصيد والحصص</th><td>${balanceStr}</td></tr>
     </table>
 
     <div class="receipt-footer">
