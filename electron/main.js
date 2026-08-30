@@ -361,7 +361,7 @@ ipcMain.on('open-parent-portal', () => openWindow('parent.html', 1100, 750));
 ipcMain.on('open-main-site',     () => openWindow('index.html', 1300, 800));
 ipcMain.handle('win-is-maximized', () => mainWindow ? mainWindow.isMaximized() : false);
 
-// ── IPC: PRINT DIALOG ─────────────────────────────────────────────────────────
+// ── IPC: PRINT DIALOG & RECEIPT PRINTING ──────────────────────────────────────
 ipcMain.on('print-window', (event) => {
   const win = BrowserWindow.fromWebContents(event.sender) || mainWindow;
   if (win) {
@@ -374,6 +374,128 @@ ipcMain.on('print-window', (event) => {
       }
     });
   }
+});
+
+ipcMain.on('print-receipt', (event, receiptHtml) => {
+  const printWin = new BrowserWindow({
+    width: 480,
+    height: 720,
+    show: true,
+    title: 'طباعة وصل التسديد — Brainova Robotics',
+    backgroundColor: '#ffffff',
+    icon: path.join(__dirname, '..', 'assets', 'images', 'robot.png'),
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true
+    }
+  });
+
+  printWin.setMenuBarVisibility(false);
+
+  const fullHtml = `
+    <!DOCTYPE html>
+    <html lang="ar" dir="rtl">
+    <head>
+      <meta charset="UTF-8">
+      <title>طباعة وصل — Brainova Robotics</title>
+      <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+          font-family: 'Cairo', system-ui, -apple-system, sans-serif;
+          background: #f3f4f6;
+          color: #111827;
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          min-height: 100vh;
+        }
+        .print-actions-bar {
+          width: 80mm;
+          margin-bottom: 12px;
+          display: flex;
+          gap: 8px;
+        }
+        .btn-print {
+          flex: 1;
+          background: #0284C7;
+          color: #ffffff;
+          border: none;
+          padding: 8px 14px;
+          border-radius: 6px;
+          font-weight: 700;
+          font-size: 13px;
+          cursor: pointer;
+          font-family: inherit;
+          box-shadow: 0 2px 6px rgba(2,132,199,0.3);
+        }
+        .receipt-slip-80mm {
+          width: 80mm;
+          background: #ffffff;
+          border: 1px dashed #9CA3AF;
+          border-radius: 6px;
+          padding: 12px 14px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .receipt-slip-header {
+          text-align: center;
+          border-bottom: 2px dashed #9CA3AF;
+          padding-bottom: 8px;
+          margin-bottom: 8px;
+        }
+        .receipt-slip-title { font-size: 13.5px; font-weight: 900; color: #111827; }
+        .receipt-slip-sub { font-size: 9px; color: #4B5563; font-weight: 600; }
+        .receipt-slip-code {
+          display: inline-block;
+          background: #F3F4F6;
+          border: 1px solid #D1D5DB;
+          border-radius: 4px;
+          padding: 2px 10px;
+          font-size: 12px;
+          font-weight: 900;
+          letter-spacing: 2px;
+          font-family: 'JetBrains Mono', monospace;
+          margin: 6px 0;
+        }
+        .receipt-slip-table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 11px; }
+        .receipt-slip-table tr { border-bottom: 1px solid #E5E7EB; }
+        .receipt-slip-table th { background: #F9FAFB; color: #374151; padding: 5px 6px; font-weight: 700; width: 36%; text-align: right; border: 1px solid #E5E7EB; }
+        .receipt-slip-table td { padding: 5px 6px; color: #111827; font-weight: 600; border: 1px solid #E5E7EB; }
+        .receipt-slip-table .highlight-amount { font-size: 14px; font-weight: 900; color: #059669; font-family: 'JetBrains Mono', monospace; }
+        .receipt-slip-footer { text-align: center; border-top: 2px dashed #9CA3AF; padding-top: 8px; margin-top: 8px; font-size: 9px; color: #4B5563; }
+        @media print {
+          body { background: #ffffff !important; padding: 0 !important; }
+          .print-actions-bar { display: none !important; }
+          .receipt-slip-80mm {
+            box-shadow: none !important;
+            border: 1px dashed #64748B !important;
+            width: 80mm !important;
+            padding: 8px !important;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="print-actions-bar">
+        <button class="btn-print" onclick="window.print()">🖨️ اختيار الطابعة والطباعة الآن</button>
+      </div>
+      <div class="receipt-slip-80mm">
+        ${receiptHtml}
+      </div>
+      <script>
+        window.onload = function() {
+          setTimeout(function() {
+            window.focus();
+            window.print();
+          }, 350);
+        };
+      </script>
+    </body>
+    </html>
+  `;
+
+  printWin.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(fullHtml));
 });
 
 // ── IPC: AUTO UPDATER MANUAL TRIGGER ──────────────────────────────────────────

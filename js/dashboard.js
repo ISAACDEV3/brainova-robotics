@@ -1081,6 +1081,14 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.triggerAppPrint = function() {
+    const receiptArea = document.getElementById('printableReceiptArea');
+    const receiptHtml = receiptArea ? receiptArea.innerHTML : '';
+
+    if (window.electronAPI && window.electronAPI.printReceipt && receiptHtml) {
+      window.electronAPI.printReceipt(receiptHtml);
+      return;
+    }
+
     if (window.electronAPI && window.electronAPI.print) {
       window.electronAPI.print();
     } else {
