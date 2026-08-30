@@ -621,6 +621,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const groups = getData('brainova_groups');
     const groupSelect = document.getElementById('attGroupSelect');
     const dateInput = document.getElementById('attDateSelect');
+    const timeSelect = document.getElementById('attSessionTimeSelect');
     const tbody = document.getElementById('attendanceTableBody');
     if (!tbody || !groupSelect || !dateInput) return;
 
@@ -634,10 +635,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const selectedGroup = groupSelect.value || (groups[0] ? groups[0].name : '');
     const selectedDate = dateInput.value;
+    const selectedTime = timeSelect ? timeSelect.value : '09:00 - 11:00';
 
     const allStudents = getData('brainova_students');
-    const groupStudents = allStudents.filter(s => s.group === selectedGroup);
-    const existingRecords = getData('brainova_attendance').filter(a => a.date === selectedDate && (a.groupName === selectedGroup || a.groupId === selectedGroup));
+    const groupStudents = allStudents.filter(s => s.group === selectedGroup || (s.group && s.group.includes(selectedGroup)));
+    const existingRecords = getData('brainova_attendance').filter(a => a.date === selectedDate && (a.groupName === selectedGroup || a.groupId === selectedGroup) && (!a.sessionTime || a.sessionTime === selectedTime));
 
     activeAttendanceDraft = {};
     groupStudents.forEach(stu => {
@@ -682,7 +684,6 @@ document.addEventListener('DOMContentLoaded', () => {
               <button type="button" class="att-seg-btn ${draft.status === 'present' ? 'is-active-present' : ''}" onclick="setAttendanceStatus('${stu.id}', 'present')">حاضر</button>
               <button type="button" class="att-seg-btn ${draft.status === 'absent' ? 'is-active-absent' : ''}" onclick="setAttendanceStatus('${stu.id}', 'absent')">غائب</button>
               <button type="button" class="att-seg-btn ${draft.status === 'late' ? 'is-active-late' : ''}" onclick="setAttendanceStatus('${stu.id}', 'late')">متأخر</button>
-              
             </div>
           </td>
 
@@ -695,7 +696,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td style="text-align: center;">
             <div style="display:flex; justify-content:center; gap:6px;">
               ${isAbsent && stu.parentPhone ? `
-                <a href="https://wa.me/${stu.parentPhone.replace(/\D/g, '').replace(/^0/, '213')}?text=${encodeURIComponent('السلام عليكم ولي أمر التلميذ(ة) ' + stu.name + '، نعلمكم بغياب الطالب عن ورشة الروبوتيك المقررة اليوم بتاريخ ' + selectedDate + '. يرجى التواصل معنا في حال وجود أي استفسار.')}" target="_blank" class="btn btn--outline btn--small" style="color:#25D366; border-color:rgba(37,211,102,0.3);" title="إشعار الولي عبر واتساب">
+                <a href="https://wa.me/${stu.parentPhone.replace(/\D/g, '').replace(/^0/, '213')}?text=${encodeURIComponent('السلام عليكم ولي أمر التلميذ(ة) ' + stu.name + '، نعلمكم بغياب الطالب عن ورشة الروبوتيك المقررة اليوم بتاريخ ' + selectedDate + ' (توقيت ' + selectedTime + '). يرجى التواصل معنا في حال وجود أي استفسار.')}" target="_blank" class="btn btn--outline btn--small" style="color:#25D366; border-color:rgba(37,211,102,0.3);" title="إشعار الولي عبر واتساب">
                    إشعار
                 </a>
               ` : ''}
@@ -721,7 +722,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (b.textContent.trim() === 'حاضر' && status === 'present') b.classList.add('is-active-present');
         if (b.textContent.trim() === 'غائب' && status === 'absent') b.classList.add('is-active-absent');
         if (b.textContent.trim() === 'متأخر' && status === 'late') b.classList.add('is-active-late');
-        
       });
     }
 
@@ -747,7 +747,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const absent = values.filter(v => v.status === 'absent').length;
     const late = values.filter(v => v.status === 'late').length;
     
-
     const rate = Math.round(((present + late) / total) * 100);
 
     const elP = document.getElementById('attPresentCount');
@@ -766,11 +765,13 @@ document.addEventListener('DOMContentLoaded', () => {
   window.saveAttendanceRecord = function() {
     const groupSelect = document.getElementById('attGroupSelect');
     const dateInput = document.getElementById('attDateSelect');
+    const timeSelect = document.getElementById('attSessionTimeSelect');
     const selectedGroup = groupSelect.value;
     const selectedDate = dateInput.value;
+    const selectedTime = timeSelect ? timeSelect.value : '09:00 - 11:00';
 
     let allAttendance = getData('brainova_attendance');
-    allAttendance = allAttendance.filter(a => !(a.date === selectedDate && a.groupName === selectedGroup));
+    allAttendance = allAttendance.filter(a => !(a.date === selectedDate && a.groupName === selectedGroup && (!a.sessionTime || a.sessionTime === selectedTime)));
 
     const students = getData('brainova_students');
     const nowStr = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
@@ -781,6 +782,7 @@ document.addEventListener('DOMContentLoaded', () => {
         id: 'ATT-' + Date.now() + '-' + studentId,
         date: selectedDate,
         groupName: selectedGroup,
+        sessionTime: selectedTime,
         studentId,
         studentName: stu ? stu.name : 'Unknown',
         status: data.status,
@@ -788,7 +790,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (stu && (data.status === 'present' || data.status === 'late')) {
-        stu.lastAttendance = `${selectedDate} ${nowStr}`;
+        stu.lastAttendance = `${selectedDate} (${selectedTime})`;
         if (stu.sessionsRemaining > 0) {
           stu.sessionsRemaining = Math.max(0, stu.sessionsRemaining - 1);
         }
@@ -797,7 +799,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     saveData('brainova_attendance', allAttendance);
     saveData('brainova_students', students);
-    showToast('تم حفظ سجل الحضور والغياب بنجاح!', 'success');
+    showToast(`تم حفظ سجل الحضور لفوج (${selectedGroup}) بتوقيت (${selectedTime}) بنجاح!`, 'success');
   };
 
   // --- PAYMENTS & RECEIPTS SYSTEM ---
@@ -1846,14 +1848,63 @@ document.addEventListener('DOMContentLoaded', () => {
           <div style="font-size:0.8rem; color:var(--color-text-muted); margin-bottom:12px;">
             <span> الأستاذ: <strong>${g.educator || 'عابد اسحاق تقي الدين'}</strong></span>
           </div>
-          <div style="display:flex; justify-content:space-between; align-items:center; border-top: 1px solid var(--color-border); padding-top: 8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; border-top: 1px solid var(--color-border); padding-top: 8px; gap:6px; flex-wrap:wrap;">
             <span style="font-size:0.78rem; color:var(--color-text-muted);">الطلاب: <strong style="color:#fff;">${studentCount} / ${g.maxStudents || 12}</strong></span>
-            <button type="button" class="btn btn--primary btn--small" style="background:#0284C7; font-weight:700; font-size:0.78rem;" onclick="openGroupStudentsModal('${encodeURIComponent(g.name)}')">👥 عرض الطلاب (${studentCount})</button>
+            <div style="display:inline-flex; gap:6px;">
+              <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; border-color:var(--color-primary); color:var(--color-primary);" onclick="openAttendanceForGroup('${encodeURIComponent(g.name)}')">📝 الحضور</button>
+              <button type="button" class="btn btn--primary btn--small" style="background:#0284C7; font-weight:700; font-size:0.75rem;" onclick="openGroupStudentsModal('${encodeURIComponent(g.name)}')">👥 عرض الطلاب (${studentCount})</button>
+            </div>
           </div>
         </div>
       `;
     }).join('');
   }
+
+  // Navigation shortcuts to Attendance
+  window.openAttendanceForGroup = function(encodedGroupName) {
+    const groupName = decodeURIComponent(encodedGroupName);
+    const navBtn = document.querySelector('[data-view="attendance"]');
+    if (navBtn) navBtn.click();
+
+    setTimeout(() => {
+      const groupSelect = document.getElementById('attGroupSelect');
+      if (groupSelect) {
+        groupSelect.value = groupName;
+        renderAttendance();
+        showToast(`تم فتح شاشة الحضور لفوج (${groupName}) 📝`, 'info');
+      }
+    }, 100);
+  };
+
+  window.openAttendanceForSession = function(encodedGroupName, timeSlot) {
+    const groupName = decodeURIComponent(encodedGroupName);
+    const navBtn = document.querySelector('[data-view="attendance"]');
+    if (navBtn) navBtn.click();
+
+    setTimeout(() => {
+      const groupSelect = document.getElementById('attGroupSelect');
+      if (groupSelect) groupSelect.value = groupName;
+
+      const timeSelect = document.getElementById('attSessionTimeSelect');
+      if (timeSelect && timeSlot) {
+        let matched = false;
+        for (let opt of timeSelect.options) {
+          if (opt.value.includes(timeSlot) || timeSlot.includes(opt.value)) {
+            timeSelect.value = opt.value;
+            matched = true;
+            break;
+          }
+        }
+        if (!matched) {
+          const newOpt = new Option(timeSlot, timeSlot, true, true);
+          timeSelect.add(newOpt);
+        }
+      }
+
+      renderAttendance();
+      showToast(`تم فتح سجل الحضور لحصة ${groupName} بتوقيت (${timeSlot}) 📝`, 'success');
+    }, 100);
+  };
 
   // --- GROUP STUDENTS ROSTER MODAL LOGIC ---
   window.__currentRosterGroupName = '';
@@ -2130,13 +2181,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let sessionsHtml = '';
         sessions.forEach(s => {
+          const timeSlotStr = `${s.startTime} - ${s.endTime}`;
           sessionsHtml += `
             <div class="schedule-session">
               <button class="schedule-session__delete" onclick="deleteSession('${s.id}')">&times;</button>
               <div class="schedule-session__title">${s.groupName}</div>
-              <div style="font-size:0.73rem;"> ${s.educatorName}</div>
-              <div style="font-size:0.73rem;"> ${s.startTime} - ${s.endTime}</div>
-              ${s.room ? `<div style="font-size:0.71rem;color:var(--color-text-muted);"> ${s.room}</div>` : ''}
+              <div style="font-size:0.73rem;">👨‍🏫 ${s.educatorName}</div>
+              <div style="font-size:0.73rem;">⏰ ${timeSlotStr}</div>
+              ${s.room ? `<div style="font-size:0.71rem;color:var(--color-text-muted);">🏛️ ${s.room}</div>` : ''}
+              <button type="button" class="btn btn--primary btn--small" style="padding:3px 6px; font-size:0.69rem; margin-top:5px; width:100%; background:#0284C7; font-weight:700;" onclick="openAttendanceForSession('${encodeURIComponent(s.groupName)}', '${timeSlotStr}')">📝 تسجيل الحضور</button>
             </div>
           `;
         });

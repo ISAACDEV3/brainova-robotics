@@ -452,14 +452,25 @@
 
           <!-- Attendance Session Controls & Live Stats Header -->
           <div class="att-session-header">
-            <div class="att-controls-row">
+            <div class="att-controls-row" style="flex-wrap:wrap; gap:12px;">
               <div>
                 <label style="font-size:0.72rem; color:var(--color-text-dim); font-weight:700; display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">الفوج التدريبي</label>
-                <select id="attGroupSelect" onchange="renderAttendance()" class="form-input" style="width: 220px; height: 36px; font-weight:700;"></select>
+                <select id="attGroupSelect" onchange="renderAttendance()" class="form-input" style="width: 200px; height: 36px; font-weight:700;"></select>
               </div>
               <div>
                 <label style="font-size:0.72rem; color:var(--color-text-dim); font-weight:700; display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">تاريخ الحصة</label>
-                <input type="date" id="attDateSelect" onchange="renderAttendance()" class="form-input" style="width: 180px; height: 36px; font-family:monospace;">
+                <input type="date" id="attDateSelect" onchange="renderAttendance()" class="form-input" style="width: 160px; height: 36px; font-family:monospace;">
+              </div>
+              <div>
+                <label style="font-size:0.72rem; color:var(--color-text-dim); font-weight:700; display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">توقيت الحصة</label>
+                <select id="attSessionTimeSelect" onchange="renderAttendance()" class="form-input" style="width: 170px; height: 36px; font-weight:700; color:var(--color-primary);">
+                  <option value="09:00 - 11:00">09:00 - 11:00 (صباحي)</option>
+                  <option value="11:00 - 13:00">11:00 - 13:00 (صباحي 2)</option>
+                  <option value="14:00 - 16:00">14:00 - 16:00 (مسائي)</option>
+                  <option value="16:00 - 18:00">16:00 - 18:00 (مسائي 2)</option>
+                  <option value="17:00 - 19:00">17:00 - 19:00 (ليلي)</option>
+                  <option value="حصة مخصصة">حصة مخصصة / تعويضية</option>
+                </select>
               </div>
             </div>
 
