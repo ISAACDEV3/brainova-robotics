@@ -1012,6 +1012,8 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${Number(val).toLocaleString()} دينار جزائري`;
   }
 
+  let currentActiveReceiptPaymentId = null;
+
   // --- RECEIPT MODAL ---
   window.openReceiptModal = function(paymentId) {
     const payments = getData('brainova_payments');
@@ -1020,6 +1022,8 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast('لم يتم العثور على بيانات الوصل!', 'error');
       return;
     }
+
+    currentActiveReceiptPaymentId = payment.id || paymentId;
 
     const students = getData('brainova_students');
     const stu = students.find(s => s.id === payment.studentId) || students[0];
@@ -1081,19 +1085,12 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.triggerAppPrint = function() {
-    const receiptArea = document.getElementById('printableReceiptArea');
-    const receiptHtml = receiptArea ? receiptArea.innerHTML : '';
-
-    if (window.electronAPI && window.electronAPI.printReceipt && receiptHtml) {
-      window.electronAPI.printReceipt(receiptHtml);
+    if (window.electronAPI && window.electronAPI.printReceipt) {
+      window.electronAPI.printReceipt({ id: currentActiveReceiptPaymentId });
       return;
     }
 
-    if (window.electronAPI && window.electronAPI.print) {
-      window.electronAPI.print();
-    } else {
-      window.print();
-    }
+    window.open(`print-receipt.html?id=${encodeURIComponent(currentActiveReceiptPaymentId || '')}`, '_blank');
   };
 
   window.closeReceiptModal = function() {

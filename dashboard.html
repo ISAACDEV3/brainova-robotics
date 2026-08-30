@@ -1233,15 +1233,10 @@
       </div>
 
       <div class="receipt-slip-80mm" id="printableReceiptArea">
-        <div class="receipt-slip-header">
-          <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
-            <img src="assets/images/robot.png" alt="Brainova" style="width:40px; height:40px; object-fit:contain;">
-            <div style="flex:1;">
-              <div class="receipt-slip-title">مدرسة BRAINOVA ROBOTICS</div>
-              <div class="receipt-slip-sub">مدرسة الروبوتيك والذكاء الاصطناعي — أم البواقي</div>
-            </div>
-            <img id="rcptQrCode" alt="QR" style="width:54px; height:54px; border:1px solid #E5E7EB; border-radius:4px; padding:2px; background:#fff;">
-          </div>
+        <div class="receipt-slip-header" style="text-align:center;">
+          <img src="assets/images/logo.png" alt="Brainova Robotics" style="width:160px; max-width:85%; height:auto; object-fit:contain; margin-bottom:4px; display:block; margin-left:auto; margin-right:auto;">
+          <div class="receipt-slip-title">أكاديمية BRAINOVA ROBOTICS</div>
+          <div class="receipt-slip-sub">مدرسة الروبوتيك والذكاء الاصطناعي — أم البواقي</div>
           <div class="receipt-slip-code" id="rcptOpNumber">94789</div>
         </div>
 
@@ -1292,6 +1287,14 @@
           </tr>
         </table>
 
+        <div style="display:flex; align-items:center; justify-content:space-between; margin:8px 0 4px; padding:6px 8px; background:#F8FAFC; border-radius:6px; border:1px solid #E2E8F0;">
+          <div style="font-size:8.5px; color:#475569; font-weight:700; line-height:1.3;">
+            <div>📲 بوابة متابعة الأولياء:</div>
+            <div style="font-family:monospace; color:#0284C7; font-size:8px;">portal.brainova.dz</div>
+          </div>
+          <img id="rcptQrCode" alt="QR" style="width:46px; height:46px; border:1px solid #CBD5E1; border-radius:4px; padding:2px; background:#fff;">
+        </div>
+
         <div class="receipt-slip-footer">
           <div>الهاتف: <strong style="font-family:monospace;" dir="ltr">0791 19 46 33</strong> • البريد: <strong>brainovarobotics@gmail.com</strong></div>
           <div style="font-weight:700; color:#1F2937; margin-top:3px;">يرجى الاحتفاظ بهذا الوصل كإثبات رسمي لعملية التسديد</div>
@@ -1301,7 +1304,7 @@
 
       <div class="modal__actions" style="margin-top:14px; display:flex; gap:8px;">
         <button type="button" class="btn btn--outline" onclick="closeReceiptModal()" style="flex:1; border-color:#D1D5DB; color:#374151;">إلغاء</button>
-        <button type="button" class="btn btn--primary" onclick="triggerAppPrint()" style="flex:2; background:#0284C7;">🖨️ طباعة الوصل (A4 / حراري)</button>
+        <button type="button" class="btn btn--primary" onclick="triggerAppPrint()" style="flex:2; background:#0284C7;">🖨️ طباعة الوصل (Google Chrome)</button>
       </div>
     </div>
   </div>
