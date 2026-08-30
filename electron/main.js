@@ -300,8 +300,7 @@ function buildMenu() {
         { type: 'separator' },
         { label: '📁 مجلد النسخ الاحتياطية', click: () => shell.openPath(getBackupDirectory()) },
         { type: 'separator' },
-        { label: '🌐 بوابة الأولياء (شاشة)', click: () => openWindow('parent.html', 1100, 750) },
-        { label: '🏠 الموقع الرسمي',  click: () => openWindow('index.html', 1300, 800) },
+        { label: '🏠 الموقع الرسمي للأكاديمية',  click: () => openWindow('index.html', 1300, 800) },
         { type: 'separator' },
         { label: '🚪 خروج', role: 'quit' }
       ]
@@ -339,7 +338,6 @@ function buildTray() {
   const ctxMenu = Menu.buildFromTemplate([
     { label: '📊 لوحة التحكم',   click: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); } } },
     { label: '📁 فتح مجلد النسخ الاحتياطية', click: () => shell.openPath(getBackupDirectory()) },
-    { label: '🌐 بوابة الأولياء', click: () => openWindow('parent.html', 1100, 750) },
     { type: 'separator' },
     { label: '🚪 إغلاق البرنامج', click: () => app.quit() }
   ]);
@@ -368,7 +366,6 @@ ipcMain.on('win-minimize',  () => mainWindow && mainWindow.minimize());
 ipcMain.on('win-maximize',  () => mainWindow && (mainWindow.isMaximized() ? mainWindow.unmaximize() : mainWindow.maximize()));
 ipcMain.on('win-close',     () => mainWindow && mainWindow.close());
 ipcMain.on('win-hide',      () => mainWindow && mainWindow.hide());
-ipcMain.on('open-parent-portal', () => openWindow('parent.html', 1100, 750));
 ipcMain.on('open-main-site',     () => openWindow('index.html', 1300, 800));
 ipcMain.handle('win-is-maximized', () => mainWindow ? mainWindow.isMaximized() : false);
 

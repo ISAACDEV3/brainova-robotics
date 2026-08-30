@@ -1164,44 +1164,16 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>
 
-      <!-- 2. Parent Portal & QR Access -->
-      <div class="profile-section-heading">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h.01M17 7h.01M7 17h.01M17 17h.01"/></svg>
-        بيانات الدخول لبوابة الولي ورمز QR
-      </div>
-      <div class="portal-access-box">
-        <div style="flex:1;">
-          <div style="font-size:0.82rem; margin-bottom:4px;">
-            المستخدم: <code style="color:#38BDF8; font-weight:800; font-family:monospace; background:rgba(0,0,0,0.3); padding:2px 6px; border-radius:4px;">${stu.username || 'user' + stu.id}</code>
-          </div>
-          <div style="font-size:0.82rem; margin-bottom:8px;">
-            كلمة المرور: <code style="color:#38BDF8; font-weight:800; font-family:monospace; background:rgba(0,0,0,0.3); padding:2px 6px; border-radius:4px;">${stu.password || '123456'}</code>
-          </div>
-          <div style="display:flex; gap:6px;">
-            <button type="button" class="btn btn--outline btn--small" onclick="navigator.clipboard.writeText('المستخدم: ' + '${stu.username || ''}' + ' | كلمة المرور: ' + '${stu.password || ''}'); showToast('تم نسخ بيانات الدخول!', 'success');">
-              نسخ البيانات
-            </button>
-            <a href="${portalUrl}" target="_blank" class="btn btn--primary btn--small">
-              فتح البوابة
-            </a>
-          </div>
-        </div>
-        <div style="text-align:center;">
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&margin=2&data=${encodeURIComponent(portalUrl)}" alt="QR" style="width:58px; height:58px; border-radius:6px; background:#fff; padding:2px; display:block;">
-          <span style="font-size:0.65rem; color:var(--color-text-dim); margin-top:2px; display:block;">QR الدخول</span>
-        </div>
-      </div>
-
-      <!-- 3. Teacher Note to Parent -->
+      <!-- 2. Teacher Educational Notes -->
       <div class="profile-section-heading">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-        توجيه وملاحظة لولي الأمر (تظهر في بوابته)
+        ملاحظات وتوجيهات تربوية خاصة بالتلميذ
       </div>
-      <div style="background:rgba(245,158,11,0.03); border:1px solid rgba(245,158,11,0.2); border-radius:var(--radius-sm); padding:12px; margin-bottom:12px;">
-        <textarea id="profileStudentNote" rows="2" class="form-input" placeholder="اكتب ملاحظتك التربوية للتلميذ..." style="width:100%; resize:vertical; font-size:0.82rem; margin-bottom:6px;">${stu.teacherNote || ''}</textarea>
+      <div style="background:rgba(245,158,11,0.03); border:1px solid rgba(245,158,11,0.2); border-radius:var(--radius-sm); padding:12px; margin-bottom:14px;">
+        <textarea id="profileStudentNote" rows="2" class="form-input" placeholder="اكتب الملاحظات التربوية للتلميذ وتطوره في الروبوتيك..." style="width:100%; resize:vertical; font-size:0.82rem; margin-bottom:6px;">${stu.teacherNote || ''}</textarea>
         <div style="display:flex; justify-content:flex-end;">
           <button type="button" class="btn btn--primary btn--small" onclick="saveStudentTeacherNote('${stu.id}')">
-            حفظ ونشر الملاحظة
+            💾 حفظ الملاحظة التربوية
           </button>
         </div>
       </div>
