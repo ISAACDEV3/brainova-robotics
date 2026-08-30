@@ -579,7 +579,6 @@ ipcMain.on('print-receipt', (event, payload) => {
       <tr><th>تاريخ الدفع</th><td style="font-family:'JetBrains Mono', monospace;">${dateStr}</td></tr>
       <tr><th>طريقة الدفع</th><td style="color:#0284c7; font-weight:800;">${payMethod}</td></tr>
       <tr><th>المبلغ المدفوع</th><td class="highlight-amount">${amountStr}</td></tr>
-      <tr class="highlight-words"><th>المبلغ بالحروف</th><td>${wordsTafqeet}</td></tr>
       <tr><th>الرصيد والحصص</th><td>${balanceStr}</td></tr>
     </table>
 
