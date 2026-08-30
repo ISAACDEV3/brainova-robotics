@@ -1700,16 +1700,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const existing = students.find(s => s.name === regs[index].studentName || (s.parentPhone && s.parentPhone === regs[index].parentPhone));
     
     if (!existing) {
-      const newStudentId = (10000 + Math.floor(Math.random() * 90000)).toString();
+      const newStudentId = "STU-" + String(students.length + 1).padStart(3, '0');
+      const planStr = regs[index].pricingPlan || '';
+      const monthlyFee = planStr.includes('8000') ? 8000 : (planStr.includes('11000') ? 11000 : 5000);
       const newStudent = {
         id: newStudentId,
         name: regs[index].studentName,
-        parentName: regs[index].parentName,
-        parentPhone: regs[index].parentPhone,
-        group: regs[index].preferredLevel ? `الفوج (${regs[index].preferredLevel.split(':')[0]})` : "الفوج أ (صباحي)",
-        level: regs[index].preferredLevel || "المستوى الثاني: Builder (8 - 11 سنة)",
-        username: generateRandomCode(8), password: generateRandomCode(8),
-        balance: 2000,
+        parentName: regs[index].parentName || "—",
+        parentPhone: regs[index].parentPhone || "—",
+        group: regs[index].group || regs[index].preferredGroup || "الفوج أ (السبت)",
+        level: regs[index].preferredLevel || "المستوى الأول: Explorer",
+        username: generateRandomCode(8),
+        password: generateRandomCode(8),
+        monthlyFee: monthlyFee,
+        plan: planStr || 'طفل واحد (5,000 دج)',
+        balance: 0,
         sessionsRemaining: 4,
         lastAttendance: "جديد",
         joinDate: new Date().toISOString().split('T')[0]
@@ -2015,27 +2020,44 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('addStudentModal').classList.remove('active');
   };
 
+  window.setPaymentPreset = function(amount, sessions) {
+    const amountInput = document.getElementById('payAmount');
+    const sessionsInput = document.getElementById('paySessions');
+    if (amountInput) amountInput.value = amount;
+    if (sessionsInput) sessionsInput.value = sessions;
+  };
+
   window.submitAddStudent = function(e) {
     e.preventDefault();
     const students = getData('brainova_students');
+    const name = document.getElementById('newStudentName').value.trim();
+    const parentName = document.getElementById('newStudentParentName') ? document.getElementById('newStudentParentName').value.trim() : '—';
+    const parentPhone = document.getElementById('newStudentParentPhone') ? document.getElementById('newStudentParentPhone').value.trim() : '—';
+    const group = document.getElementById('newStudentGroup').value;
+    const level = document.getElementById('newStudentLevel').value;
+    const planValue = document.getElementById('newStudentPlan') ? document.getElementById('newStudentPlan').value : '5000';
+    const fee = Number(planValue) || 5000;
+
     const newStudent = {
       id: "STU-" + String(students.length + 1).padStart(3, '0'),
-      name: document.getElementById('newStudentName').value,
-      group: document.getElementById('newStudentGroup').value,
-      level: document.getElementById('newStudentLevel').value,
-      parentName: "—",
-      parentPhone: "—",
-      username: generateRandomCode(8), password: generateRandomCode(8),
-      monthlyFee: 2000,
+      name: name,
+      group: group,
+      level: level,
+      parentName: parentName || "—",
+      parentPhone: parentPhone || "—",
+      username: generateRandomCode(8),
+      password: generateRandomCode(8),
+      monthlyFee: fee,
+      plan: planValue === '8000' ? 'طفلين (خصم إخوة)' : (planValue === '11000' ? '3 أطفال (عائلي)' : 'طفل واحد'),
       balance: 0,
-      sessionsRemaining: 0,
+      sessionsRemaining: 4,
       lastAttendance: "جديد",
       joinedDate: new Date().toLocaleDateString('ar-DZ')
     };
     students.push(newStudent);
     saveData('brainova_students', students);
     closeAddStudentModal();
-    showToast('toast_student_added', 'success');
+    showToast('تم تسجيل التلميذ مع الفوج وتفاصيل الولي بنجاح! 🚀', 'success');
     renderActiveView();
   };
 

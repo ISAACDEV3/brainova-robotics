@@ -769,36 +769,65 @@
 
   <!-- Add Student Modal -->
   <div class="modal-overlay" id="addStudentModal">
-    <div class="modal">
+    <div class="modal" style="max-width: 540px;">
       <div class="modal__header">
-        <h3 class="modal__title" data-i18n="dash_add_student_title">إضافة طالب جديد</h3>
+        <h3 class="modal__title" data-i18n="dash_add_student_title">إضافة تلميذ جديد</h3>
         <button class="modal__close" onclick="closeAddStudentModal()">&times;</button>
       </div>
       <form id="addStudentForm" class="reg-form" onsubmit="submitAddStudent(event)">
+        <!-- Student Name -->
         <div class="form-group">
-          <label data-i18n="dash_student_name">اسم الطالب واللقب</label>
+          <label data-i18n="dash_student_name">اسم التلميذ واللقب *</label>
           <input type="text" id="newStudentName" required class="form-input" placeholder="مثال: يوسف بلحاج">
         </div>
+
+        <!-- Parent Info Row -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>اسم ولي الأمر *</label>
+            <input type="text" id="newStudentParentName" required class="form-input" placeholder="مثال: عبد القادر بلحاج">
+          </div>
+          <div class="form-group">
+            <label>رقم هاتف الولي (WhatsApp) *</label>
+            <input type="tel" id="newStudentParentPhone" required class="form-input" placeholder="0791 19 46 33" dir="ltr">
+          </div>
+        </div>
+
+        <!-- Group and Level Row -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label data-i18n="dash_group_name">اختيار الفوج *</label>
+            <select id="newStudentGroup" required class="form-input">
+              <!-- Populated via JS -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label data-i18n="dash_level_name">المستوى التعليمي *</label>
+            <select id="newStudentLevel" required class="form-input">
+              <option value="المستوى الأول">المستوى 1: التفكير المنطقي وأساسيات الروبوت</option>
+              <option value="المستوى الثاني">المستوى 2: البرمجة المرئية بسكراتش</option>
+              <option value="المستوى الثالث">المستوى 3: برمجة الأردوينو والمستشعرات</option>
+              <option value="المستوى الرابع">المستوى 4: الذكاء الاصطناعي والرؤية الحاسوبية</option>
+              <option value="المستوى الخامس">المستوى 5: الروبوتات المتقدمة و IoT</option>
+              <option value="المستوى السادس">المستوى 6: المشاريع الابتكارية والمسابقات</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Pricing / Subscription Package -->
         <div class="form-group">
-          <label data-i18n="dash_group_name">الفوج</label>
-          <select id="newStudentGroup" required class="form-input">
-            <!-- Populated via JS -->
+          <label>باقة المستحقات والاشتراك المالي *</label>
+          <select id="newStudentPlan" class="form-input" style="font-weight:700; color:var(--color-primary);">
+            <option value="5000" selected>🧒 طفل واحد — 5,000 دج (4 حصص شهرياً)</option>
+            <option value="8000">👥 طفلين (تخفيض الإخوة) — 8,000 دج (وفر 2,000 دج)</option>
+            <option value="11000">👨‍👩‍👦 3 أطفال (باقة العائلة) — 11,000 دج (وفر 4,000 دج)</option>
+            <option value="custom">✏️ مبلغ مخصص...</option>
           </select>
         </div>
-        <div class="form-group">
-          <label data-i18n="dash_level_name">المستوى التعليمي</label>
-          <select id="newStudentLevel" required class="form-input">
-            <option value="المستوى الأول">المستوى الأول: التفكير المنطقي وأساسيات الروبوت</option>
-            <option value="المستوى الثاني">المستوى الثاني: البرمجة المرئية بسكراتش</option>
-            <option value="المستوى الثالث">المستوى الثالث: برمجة الأردوينو والمستشعرات</option>
-            <option value="المستوى الرابع">المستوى الرابع: الذكاء الاصطناعي والرؤية الحاسوبية</option>
-            <option value="المستوى الخامس">المستوى الخامس: الروبوتات المتقدمة و IoT</option>
-            <option value="المستوى السادس">المستوى السادس: المشاريع الابتكارية والمسابقات</option>
-          </select>
-        </div>
+
         <div class="modal__actions">
           <button type="button" class="btn btn--outline" onclick="closeAddStudentModal()" data-i18n="dash_cancel">إلغاء</button>
-          <button type="submit" class="btn btn--primary" data-i18n="dash_save">+ حفظ الطالب</button>
+          <button type="submit" class="btn btn--primary" data-i18n="dash_save">+ حفظ وإضافة التلميذ</button>
         </div>
       </form>
     </div>
@@ -1068,10 +1097,26 @@
           </select>
         </div>
 
+        <!-- Pricing Presets -->
+        <div class="form-group" style="margin-bottom:12px;">
+          <label style="font-size:0.8rem; color:var(--color-text-muted); font-weight:700;">باقات المستحقات والاشتراك السريع:</label>
+          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-top:4px;">
+            <button type="button" class="btn btn--outline btn--small" onclick="setPaymentPreset(5000, 4)" style="padding:6px; font-size:0.75rem; text-align:center;">
+              <strong>5,000 دج</strong><br><span style="font-size:0.7rem; color:var(--color-text-dim);">طفل واحد (4 حصص)</span>
+            </button>
+            <button type="button" class="btn btn--outline btn--small" onclick="setPaymentPreset(8000, 8)" style="padding:6px; font-size:0.75rem; text-align:center; border-color:var(--color-primary); color:var(--color-primary);">
+              <strong>8,000 دج</strong><br><span style="font-size:0.7rem;">طفلين (خصم إخوة)</span>
+            </button>
+            <button type="button" class="btn btn--outline btn--small" onclick="setPaymentPreset(11000, 12)" style="padding:6px; font-size:0.75rem; text-align:center;">
+              <strong>11,000 دج</strong><br><span style="font-size:0.7rem; color:var(--color-text-dim);">3 أطفال (عائلي)</span>
+            </button>
+          </div>
+        </div>
+
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
           <div class="form-group">
             <label>المبلغ المدفوع (دج)</label>
-            <input type="number" id="payAmount" required min="100" step="100" value="2000" class="form-input">
+            <input type="number" id="payAmount" required min="100" step="100" value="5000" class="form-input">
           </div>
           <div class="form-group">
             <label>عدد الحصص المشتراة</label>

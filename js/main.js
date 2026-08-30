@@ -128,8 +128,10 @@
     const studentName  = document.getElementById('studentName').value.trim();
     const studentAge   = document.getElementById('studentAge').value;
     const studentGrade = document.getElementById('studentGrade').value.trim();
-    const level        = document.getElementById('preferredLevel').value;
-    const schedule     = document.getElementById('schedule').value;
+    const level        = document.getElementById('preferredLevel') ? document.getElementById('preferredLevel').value : 'المستوى الأول';
+    const group        = document.getElementById('preferredGroup') ? document.getElementById('preferredGroup').value : 'الفوج أ';
+    const pricingPlan  = document.getElementById('pricingPlan') ? document.getElementById('pricingPlan').value : '5000';
+    const planLabel    = pricingPlan === '8000' ? 'طفلين (8,000 دج)' : (pricingPlan === '11000' ? '3 أطفال (11,000 دج)' : 'طفل واحد (5,000 دج)');
     const notes        = document.getElementById('notes').value.trim();
 
     const successEl = document.getElementById('formSuccess');
@@ -151,7 +153,8 @@
         parentPhone: parentPhone,
         parentEmail: parentEmail,
         preferredLevel: level,
-        schedule: schedule,
+        group: group,
+        pricingPlan: planLabel,
         notes: notes || 'تسجيل عبر الموقع الرسمي',
         status: 'pending',
         date: new Date().toLocaleDateString('ar-DZ') + ' ' + new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' }),
