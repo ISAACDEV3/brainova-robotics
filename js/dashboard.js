@@ -3469,9 +3469,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const DEFAULT_WA_SETTINGS = {
     autoAttendance: true,
     autoPayment: true,
-    lateTemplate: 'السلام عليكم سيدي ولي أمر التلميذ(ة) {student}،\nنعلمكم بتأخره عن موعد حصة الروبوتيك اليوم المقررة على الساعة {time} بأكاديمية Brainova.\nنرجو الاطمئنان عليه.',
-    absentTemplate: 'السلام عليكم سيدي ولي أمر التلميذ(ة) {student}،\nسجلنا غيابه اليوم عن حصة الروبوتيك المقررة على الساعة {time} بأكاديمية Brainova.\nنتمنى له السلامة والتوفيق.',
-    overdueTemplate: 'تحية طيبة سيدي ولي أمر التلميذ(ة) {student}،\nنود تذكيركم بانتهاء اشتراك الشهر في تدريب الروبوتيك بأكاديمية Brainova (آخر تسديد: {last_payment}).\nيرجى تسوية مستحقات الشهر القادم لضمان استمرارية الحصص.\nشكراً لثقتكم بأكاديمية Brainova.'
+    lateTemplate: 'السلام عليكم السيد(ة) {parent} المحترم(ة)، ولي أمر التلميذ(ة) {student}،\nنعلمكم بتأخره عن موعد حصة الروبوتيك اليوم المقررة على الساعة {time} (فوج: {group}) بأكاديمية Brainova.\nنرجو الاطمئنان عليه.',
+    absentTemplate: 'السلام عليكم السيد(ة) {parent} المحترم(ة)، ولي أمر التلميذ(ة) {student}،\nسجلنا غياب التلميذ(ة) اليوم عن حصة الروبوتيك المقررة على الساعة {time} بأكاديمية Brainova.\nنتمنى له السلامة والتوفيق.',
+    overdueTemplate: 'تحية طيبة السيد(ة) {parent} المحترم(ة)، ولي أمر التلميذ(ة) {student}،\nنود تذكيركم بانتهاء اشتراك الشهر في تدريب الروبوتيك بأكاديمية Brainova (آخر تسديد: {last_payment} - منذ {days_ago} يوماً).\nيرجى تسوية مستحقات الشهر القادم لضمان استمرارية الحصص.\nشكراً لثقتكم بأكاديمية Brainova.'
   };
 
   function getWhatsAppSettings() {
@@ -3519,6 +3519,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const payToggle = document.getElementById('waAutoPaymentToggle');
     if (payToggle) payToggle.checked = settings.autoPayment !== false;
 
+    populateWaStudentAutoSelect();
+    renderWaQueues();
     await refreshWhatsAppStatus();
   }
   window.renderWhatsAppView = renderWhatsAppView;
@@ -3642,6 +3644,335 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   window.sendTestWhatsAppMessage = sendTestWhatsAppMessage;
 
+  // --- AUTOMATIC STUDENT & PARENT AUTO-SELECTION ---
+  function populateWaStudentAutoSelect() {
+    const select = document.getElementById('waStudentAutoSelect');
+    if (!select) return;
+    const students = getData('brainova_students');
+    const currentVal = select.value;
+
+    select.innerHTML = '<option value="">-- اضغط هنا لاختيار تلميذ وولي أمر أوتوماتيكياً --</option>' +
+      students.map(s => {
+        const pName = s.parentName && s.parentName.trim() ? s.parentName.trim() : 'غير مسجل';
+        const phone = s.parentPhone || 'بدون هاتف';
+        return `<option value="${s.id}">${s.name} | الولي: ${pName} (${phone})</option>`;
+      }).join('');
+
+    if (currentVal) select.value = currentVal;
+  }
+  window.populateWaStudentAutoSelect = populateWaStudentAutoSelect;
+
+  function handleWaStudentAutoSelectChange() {
+    const select = document.getElementById('waStudentAutoSelect');
+    const parentNameEl = document.getElementById('waAutoParentName');
+    const phoneEl = document.getElementById('waTestPhone');
+    if (!select) return;
+
+    const studentId = select.value;
+    if (!studentId) {
+      if (parentNameEl) parentNameEl.value = '';
+      if (phoneEl) phoneEl.value = '';
+      const msgEl = document.getElementById('waTestMessage');
+      if (msgEl) msgEl.value = '';
+      return;
+    }
+
+    const students = getData('brainova_students');
+    const stu = students.find(s => s.id === studentId);
+    if (!stu) return;
+
+    const parentName = stu.parentName && stu.parentName.trim() ? stu.parentName.trim() : `ولي أمر ${stu.name}`;
+    if (parentNameEl) parentNameEl.value = parentName;
+    if (phoneEl) phoneEl.value = stu.parentPhone || '';
+
+    // Automatically load overdue or late template for this selected student
+    loadAutoTemplateForSelected('overdue');
+  }
+  window.handleWaStudentAutoSelectChange = handleWaStudentAutoSelectChange;
+
+  function loadAutoTemplateForSelected(type) {
+    const select = document.getElementById('waStudentAutoSelect');
+    const msgEl = document.getElementById('waTestMessage');
+    if (!select || !msgEl) return;
+
+    const studentId = select.value;
+    if (!studentId) {
+      showToast('يرجى اختيار التلميذ من القائمة أولاً ليتم تجهيز الرسالة باسمه واسم وليه أوتوماتيكياً!', 'info');
+      return;
+    }
+
+    const students = getData('brainova_students');
+    const allPayments = getData('brainova_payments');
+    const stu = students.find(s => s.id === studentId);
+    if (!stu) return;
+
+    const settings = getWhatsAppSettings();
+    const parentName = stu.parentName && stu.parentName.trim() ? stu.parentName.trim() : `ولي أمر ${stu.name}`;
+    const timeline = getStudentPaymentTimeline(stu.id, stu, allPayments);
+
+    let template = settings.overdueTemplate;
+    if (type === 'late') template = settings.lateTemplate;
+    else if (type === 'absent') template = settings.absentTemplate;
+
+    const text = template
+      .replace(/{student}/g, stu.name)
+      .replace(/{parent}/g, parentName)
+      .replace(/{group}/g, stu.group || 'الفوج العام')
+      .replace(/{time}/g, stu.sessionTime || '16:00 - 18:00')
+      .replace(/{date}/g, new Date().toLocaleDateString('ar-DZ'))
+      .replace(/{last_payment}/g, timeline.lastDateStr)
+      .replace(/{days_ago}/g, String(timeline.daysElapsed));
+
+    msgEl.value = text;
+    showToast(`تم تجهيز الرسالة لولي أمر (${stu.name}) أوتوماتيكياً!`, 'success');
+  }
+  window.loadAutoTemplateForSelected = loadAutoTemplateForSelected;
+
+  // --- LIVE QUEUES: AUTOMATICALLY DETECTED PARENTS & STUDENTS ---
+  function renderWaQueues() {
+    const students = getData('brainova_students');
+    const allPayments = getData('brainova_payments');
+    const allAttendance = getData('brainova_attendance');
+
+    // 1. Overdue Queue
+    const overdueStudents = students.filter(s => {
+      const timeline = getStudentPaymentTimeline(s.id, s, allPayments);
+      return timeline.status === 'overdue';
+    });
+
+    const overdueCountEl = document.getElementById('waOverdueCountBadge');
+    const overdueListCountEl = document.getElementById('waOverdueListCount');
+    const overdueTbody = document.getElementById('waOverdueTableBody');
+
+    if (overdueCountEl) overdueCountEl.textContent = overdueStudents.length;
+    if (overdueListCountEl) overdueListCountEl.textContent = overdueStudents.length;
+
+    if (overdueTbody) {
+      if (overdueStudents.length === 0) {
+        overdueTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:18px; color:var(--color-text-dim);">🎉 رائع! لا يوجد أي تلاميذ متأخرين عن تسديد الشهر حالياً.</td></tr>`;
+      } else {
+        overdueTbody.innerHTML = overdueStudents.map(s => {
+          const timeline = getStudentPaymentTimeline(s.id, s, allPayments);
+          const pName = s.parentName && s.parentName.trim() ? s.parentName.trim() : `ولي أمر ${s.name}`;
+          const phone = s.parentPhone || '<span style="color:#EF4444;">غير مسجل</span>';
+          return `
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+              <td style="padding:10px 12px; font-weight:700; color:#f8fafc;">${s.name}</td>
+              <td style="padding:10px 12px; color:#38BDF8; font-weight:600;">${pName}</td>
+              <td style="padding:10px 12px; font-family:monospace;">${phone}</td>
+              <td style="padding:10px 12px; color:#94A3B8;">${timeline.lastDateStr}</td>
+              <td style="padding:10px 12px;"><span style="color:#EF4444; font-weight:700;">${timeline.elapsedText}</span></td>
+              <td style="padding:10px 12px; text-align:center;">
+                <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; color:#25D366; border-color:rgba(37,211,102,0.4);" onclick="sendIndividualWaPaymentReminder('${s.id}')">
+                  ⚡ إرسال للولي
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    // 2. Attendance Late/Absent Queue
+    const todayStr = new Date().toISOString().slice(0, 10);
+    let todayAtt = allAttendance.filter(a => a.date === todayStr && (a.status === 'late' || a.status === 'absent'));
+    if (todayAtt.length === 0) {
+      todayAtt = allAttendance.filter(a => a.status === 'late' || a.status === 'absent').slice(0, 10);
+    }
+
+    const attCountEl = document.getElementById('waAttendanceCountBadge');
+    const attListCountEl = document.getElementById('waAttendanceListCount');
+    const attTbody = document.getElementById('waAttendanceTableBody');
+
+    if (attCountEl) attCountEl.textContent = todayAtt.length;
+    if (attListCountEl) attListCountEl.textContent = todayAtt.length;
+
+    if (attTbody) {
+      if (todayAtt.length === 0) {
+        attTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:18px; color:var(--color-text-dim);">✅ سجل الحضور ممتاز، لا يوجد متأخرون أو غائبون مسجلون.</td></tr>`;
+      } else {
+        attTbody.innerHTML = todayAtt.map(a => {
+          const stu = students.find(s => s.id === a.studentId) || {};
+          const pName = stu.parentName && stu.parentName.trim() ? stu.parentName.trim() : `ولي أمر ${a.studentName || 'التلميذ'}`;
+          const phone = stu.parentPhone || '<span style="color:#EF4444;">غير مسجل</span>';
+          const statusBadge = a.status === 'late' 
+            ? '<span style="color:#F59E0B; background:rgba(245,158,11,0.1); padding:2px 8px; border-radius:4px; font-weight:700;">متأخر ⏳</span>'
+            : '<span style="color:#EF4444; background:rgba(239,68,68,0.1); padding:2px 8px; border-radius:4px; font-weight:700;">غائب ❌</span>';
+          return `
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+              <td style="padding:10px 12px; font-weight:700; color:#f8fafc;">${a.studentName || stu.name}</td>
+              <td style="padding:10px 12px; color:#38BDF8; font-weight:600;">${pName}</td>
+              <td style="padding:10px 12px; font-family:monospace;">${phone}</td>
+              <td style="padding:10px 12px; color:#94A3B8;">${a.groupName || stu.group || '—'} (${a.sessionTime || '—'})</td>
+              <td style="padding:10px 12px;">${statusBadge}</td>
+              <td style="padding:10px 12px; text-align:center;">
+                <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; color:#25D366; border-color:rgba(37,211,102,0.4);" onclick="sendIndividualWaAttendanceAlert('${a.id}')">
+                  ⚡ إرسال للولي
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+  }
+  window.renderWaQueues = renderWaQueues;
+
+  function switchWaQueueTab(tab) {
+    const overdueSec = document.getElementById('waQueueOverdueSection');
+    const attSec = document.getElementById('waQueueAttendanceSection');
+    const overdueBtn = document.getElementById('waQueueTabOverdueBtn');
+    const attBtn = document.getElementById('waQueueTabAttendanceBtn');
+
+    if (tab === 'overdue') {
+      if (overdueSec) overdueSec.style.display = 'block';
+      if (attSec) attSec.style.display = 'none';
+      if (overdueBtn) { overdueBtn.className = 'btn btn--primary btn--small'; }
+      if (attBtn) { attBtn.className = 'btn btn--outline btn--small'; }
+    } else {
+      if (overdueSec) overdueSec.style.display = 'none';
+      if (attSec) attSec.style.display = 'block';
+      if (overdueBtn) { overdueBtn.className = 'btn btn--outline btn--small'; }
+      if (attBtn) { attBtn.className = 'btn btn--primary btn--small'; }
+    }
+  }
+  window.switchWaQueueTab = switchWaQueueTab;
+
+  async function sendIndividualWaPaymentReminder(studentId) {
+    if (!window.electronAPI || !window.electronAPI.whatsapp) {
+      showToast('ميزة البوت متاحة فقط داخل تطبيق الديسكتوب', 'error');
+      return;
+    }
+    const waStatus = await window.electronAPI.whatsapp.getStatus();
+    if (!waStatus || !waStatus.connected) {
+      showToast('بوت الواتساب غير متصل حالياً! يرجى ربط الرقم أولاً.', 'error');
+      return;
+    }
+
+    const students = getData('brainova_students');
+    const allPayments = getData('brainova_payments');
+    const s = students.find(item => item.id === studentId);
+    if (!s || !s.parentPhone) {
+      showToast('رقم هاتف ولي الأمر غير مسجل لهذا التلميذ!', 'error');
+      return;
+    }
+
+    const settings = getWhatsAppSettings();
+    const timeline = getStudentPaymentTimeline(s.id, s, allPayments);
+    const parentName = s.parentName && s.parentName.trim() ? s.parentName.trim() : `ولي أمر ${s.name}`;
+
+    const text = settings.overdueTemplate
+      .replace(/{student}/g, s.name)
+      .replace(/{parent}/g, parentName)
+      .replace(/{last_payment}/g, timeline.lastDateStr)
+      .replace(/{days_ago}/g, String(timeline.daysElapsed));
+
+    showToast(`جاري إرسال تذكير لولي أمر (${s.name})...`, 'info');
+    const res = await window.electronAPI.whatsapp.sendMessage(s.parentPhone, text);
+    if (res && res.success) {
+      s.lastWaReminderDate = new Date().toISOString().slice(0, 10);
+      saveData('brainova_students', students);
+      showToast(`✅ تم إرسال تذكير التسديد لولي أمر (${s.name}) بنجاح!`, 'success');
+      renderWaQueues();
+    } else {
+      showToast(`فشل الإرسال: ${res?.error || 'خطأ غير معروف'}`, 'error');
+    }
+  }
+  window.sendIndividualWaPaymentReminder = sendIndividualWaPaymentReminder;
+
+  async function sendIndividualWaAttendanceAlert(attendanceId) {
+    if (!window.electronAPI || !window.electronAPI.whatsapp) {
+      showToast('ميزة البوت متاحة فقط داخل تطبيق الديسكتوب', 'error');
+      return;
+    }
+    const waStatus = await window.electronAPI.whatsapp.getStatus();
+    if (!waStatus || !waStatus.connected) {
+      showToast('بوت الواتساب غير متصل حالياً! يرجى ربط الرقم أولاً.', 'error');
+      return;
+    }
+
+    const allAttendance = getData('brainova_attendance');
+    const students = getData('brainova_students');
+    const att = allAttendance.find(a => a.id === attendanceId);
+    if (!att) return;
+
+    const s = students.find(item => item.id === att.studentId);
+    if (!s || !s.parentPhone) {
+      showToast('رقم هاتف ولي الأمر غير مسجل!', 'error');
+      return;
+    }
+
+    const settings = getWhatsAppSettings();
+    const parentName = s.parentName && s.parentName.trim() ? s.parentName.trim() : `ولي أمر ${s.name}`;
+    const template = att.status === 'late' ? settings.lateTemplate : settings.absentTemplate;
+
+    const text = template
+      .replace(/{student}/g, s.name)
+      .replace(/{parent}/g, parentName)
+      .replace(/{group}/g, att.groupName || s.group || '—')
+      .replace(/{time}/g, att.sessionTime || '—')
+      .replace(/{date}/g, att.date || 'اليوم');
+
+    showToast(`جاري إرسال تنبيه الحضور لولي أمر (${s.name})...`, 'info');
+    const res = await window.electronAPI.whatsapp.sendMessage(s.parentPhone, text);
+    if (res && res.success) {
+      showToast(`✅ تم إرسال تنبيه الحضور لولي أمر (${s.name}) بنجاح!`, 'success');
+    } else {
+      showToast(`فشل الإرسال: ${res?.error || 'خطأ غير معروف'}`, 'error');
+    }
+  }
+  window.sendIndividualWaAttendanceAlert = sendIndividualWaAttendanceAlert;
+
+  async function triggerBatchAttendanceAlerts() {
+    if (!window.electronAPI || !window.electronAPI.whatsapp) {
+      showToast('ميزة البوت متاحة فقط داخل تطبيق الديسكتوب', 'error');
+      return;
+    }
+    const waStatus = await window.electronAPI.whatsapp.getStatus();
+    if (!waStatus || !waStatus.connected) {
+      showToast('بوت الواتساب غير متصل حالياً! يرجى ربط الرقم أولاً.', 'error');
+      return;
+    }
+
+    const allAttendance = getData('brainova_attendance');
+    const students = getData('brainova_students');
+    const settings = getWhatsAppSettings();
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    let todayAtt = allAttendance.filter(a => a.date === todayStr && (a.status === 'late' || a.status === 'absent'));
+    if (todayAtt.length === 0) {
+      todayAtt = allAttendance.filter(a => a.status === 'late' || a.status === 'absent').slice(0, 10);
+    }
+
+    if (todayAtt.length === 0) {
+      showToast('لا يوجد طلاب مسجلون كمتأخرين أو غائبين حالياً!', 'info');
+      return;
+    }
+
+    showToast(`جاري إرسال تنبيهات الحضور لـ (${todayAtt.length}) من الأولياء آلياً...`, 'info');
+    let count = 0;
+    for (const att of todayAtt) {
+      const s = students.find(item => item.id === att.studentId);
+      if (!s || !s.parentPhone) continue;
+
+      const parentName = s.parentName && s.parentName.trim() ? s.parentName.trim() : `ولي أمر ${s.name}`;
+      const template = att.status === 'late' ? settings.lateTemplate : settings.absentTemplate;
+      const text = template
+        .replace(/{student}/g, s.name)
+        .replace(/{parent}/g, parentName)
+        .replace(/{group}/g, att.groupName || s.group || '—')
+        .replace(/{time}/g, att.sessionTime || '—')
+        .replace(/{date}/g, att.date || 'اليوم');
+
+      const res = await window.electronAPI.whatsapp.sendMessage(s.parentPhone, text);
+      if (res && res.success) count++;
+      await new Promise(r => setTimeout(r, 2500));
+    }
+
+    showToast(`✅ تم إرسال (${count}) تنبيهات حضور للأولياء بنجاح!`, 'success');
+  }
+  window.triggerBatchAttendanceAlerts = triggerBatchAttendanceAlerts;
+
   // --- TRIGGER 1: AUTO ATTENDANCE (ZERO-CLICK) ---
   async function triggerAutoAttendanceWhatsApp(student, status, time, date) {
     if (!window.electronAPI || !window.electronAPI.whatsapp) return;
@@ -3653,9 +3984,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const waStatus = await window.electronAPI.whatsapp.getStatus();
       if (!waStatus || !waStatus.connected) return;
 
+      const parentName = student.parentName && student.parentName.trim() ? student.parentName.trim() : `ولي أمر ${student.name}`;
       const template = status === 'late' ? settings.lateTemplate : settings.absentTemplate;
       const text = template
         .replace(/{student}/g, student.name || 'التلميذ')
+        .replace(/{parent}/g, parentName)
         .replace(/{group}/g, student.group || 'الفوج')
         .replace(/{time}/g, time || '—')
         .replace(/{date}/g, date || 'اليوم');
@@ -3710,8 +4043,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (s.lastWaReminderDate === todayStr) continue;
 
       const timeline = getStudentPaymentTimeline(s.id, s, allPayments);
+      const parentName = s.parentName && s.parentName.trim() ? s.parentName.trim() : `ولي أمر ${s.name}`;
+
       const text = settings.overdueTemplate
         .replace(/{student}/g, s.name)
+        .replace(/{parent}/g, parentName)
         .replace(/{last_payment}/g, timeline.lastDateStr)
         .replace(/{days_ago}/g, String(timeline.daysElapsed));
 
@@ -3727,6 +4063,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sentCount > 0) {
       saveData('brainova_students', students);
       showToast(`✅ أرسل البوت (${sentCount}) تذكير تسديد عبر واتساب للأولياء بنجاح!`, 'success');
+      renderWaQueues();
     } else if (!isSilentAuto) {
       showToast('تم إرسال تذكيرات لهؤلاء الأولياء اليوم مسبقاً لمنع التكرار.', 'info');
     }

@@ -878,16 +878,132 @@
                 </div>
               </div>
 
-              <!-- Test Box -->
+              <!-- Smart Auto-Select Box -->
               <div class="card" style="background:rgba(255,255,255,0.015);">
-                <h3 class="card__title" style="font-size:0.85rem; margin-bottom:8px;">🧪 تجربة إرسال رسالة فورية عبر البوت</h3>
-                <div style="display:grid; grid-template-columns: 140px 1fr auto; gap:8px;">
-                  <input type="text" id="waTestPhone" class="form-input" placeholder="0550XXXXXX" style="font-size:0.8rem; font-family:monospace;">
-                  <input type="text" id="waTestMessage" class="form-input" placeholder="اكتب نص التجربة هنا..." style="font-size:0.8rem;">
-                  <button type="button" class="btn btn--primary btn--small" onclick="sendTestWhatsAppMessage()">إرسال</button>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                  <h3 class="card__title" style="font-size:0.9rem; margin-bottom:0;">⚡ اختيار تلميذ وولي أمر أوتوماتيكياً</h3>
+                  <span style="font-size:0.75rem; color:#38BDF8; font-weight:700;">🤖 نظام الربط الذكي</span>
+                </div>
+                
+                <div class="form-group" style="margin-bottom:10px;">
+                  <label style="font-size:0.78rem; font-weight:700; color:#94a3b8;">اختر التلميذ (سيقوم النظام بجلب اسم الولي ورقم هاتفه ونص الرسالة فوراً):</label>
+                  <select id="waStudentAutoSelect" class="form-input" onchange="handleWaStudentAutoSelectChange()">
+                    <option value="">-- اضغط هنا لاختيار تلميذ وولي أمر أوتوماتيكياً --</option>
+                  </select>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label style="font-size:0.75rem; color:#94a3b8;">اسم ولي الأمر (أوتوماتيكي):</label>
+                    <input type="text" id="waAutoParentName" class="form-input" placeholder="اسم ولي الأمر" style="font-size:0.82rem;" readonly>
+                  </div>
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label style="font-size:0.75rem; color:#94a3b8;">رقم هاتف الولي:</label>
+                    <input type="text" id="waTestPhone" class="form-input" placeholder="0550XXXXXX" style="font-size:0.82rem; font-family:monospace;">
+                  </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:10px;">
+                  <label style="font-size:0.75rem; color:#94a3b8;">توليد نص الرسالة المناسب أوتوماتيكياً:</label>
+                  <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <button type="button" class="btn btn--outline btn--small" onclick="loadAutoTemplateForSelected('late')">⏳ رسالة تأخر</button>
+                    <button type="button" class="btn btn--outline btn--small" onclick="loadAutoTemplateForSelected('absent')">❌ رسالة غياب</button>
+                    <button type="button" class="btn btn--outline btn--small" onclick="loadAutoTemplateForSelected('overdue')">💳 تذكير تسديد الشهر</button>
+                  </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:10px;">
+                  <textarea id="waTestMessage" rows="3" class="form-input" placeholder="نص الرسالة الموجهة لولي الأمر..." style="font-size:0.8rem; resize:vertical;"></textarea>
+                </div>
+
+                <div style="display:flex; justify-content:flex-end;">
+                  <button type="button" class="btn btn--primary" style="background:#25D366; display:flex; align-items:center; gap:6px;" onclick="sendTestWhatsAppMessage()">
+                    <span>🚀 إرسال الرسالة لولي الأمر الآن</span>
+                  </button>
                 </div>
               </div>
 
+            </div>
+
+          </div>
+
+          <!-- Auto-Selected Target Queues (Grand Live Panel) -->
+          <div class="card" style="margin-top:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+              <div>
+                <h3 class="card__title" style="display:flex; align-items:center; gap:8px; font-size:1.05rem;">
+                  <span>📋</span> الأولياء والتلاميذ المختارون أوتوماتيكياً للتنبيهات والتذكيرات
+                </h3>
+                <p style="font-size:0.78rem; color:#94a3b8; margin-top:2px;">
+                  يقوم البوت باختيار أسماء التلاميذ والأولياء وأرقامهم تلقائياً من قاعدة البيانات وجدولتهم للإرسال.
+                </p>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <button type="button" class="btn btn--primary btn--small" id="waQueueTabOverdueBtn" onclick="switchWaQueueTab('overdue')">
+                  💳 المتأخرون عن دفع الشهر (<span id="waOverdueCountBadge">0</span>)
+                </button>
+                <button type="button" class="btn btn--outline btn--small" id="waQueueTabAttendanceBtn" onclick="switchWaQueueTab('attendance')">
+                  ⏳ متأخرو الحضور اليوم (<span id="waAttendanceCountBadge">0</span>)
+                </button>
+              </div>
+            </div>
+
+            <!-- Overdue Table -->
+            <div id="waQueueOverdueSection">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.2); padding:10px 14px; border-radius:8px; flex-wrap:wrap; gap:8px;">
+                <div style="font-size:0.82rem; color:#fca5a5;">
+                  ⚠️ تم رصد <strong><span id="waOverdueListCount">0</span> أولياء وتلاميذ</strong> انتهى اشتراكهم الشهري وتجاوز 30 يوماً.
+                </div>
+                <button type="button" class="btn btn--primary btn--small" style="background:#0284C7;" onclick="triggerBatchPaymentReminders()">
+                  🚀 إرسال التذكيرات لجميع هؤلاء الأولياء دفعة واحدة
+                </button>
+              </div>
+              <div style="max-height:280px; overflow-y:auto; border:1px solid var(--color-border); border-radius:8px;">
+                <table style="width:100%; border-collapse:collapse; font-size:0.8rem; text-align:right;">
+                  <thead>
+                    <tr style="background:rgba(255,255,255,0.04); color:#94A3B8;">
+                      <th style="padding:8px 12px;">التلميذ</th>
+                      <th style="padding:8px 12px;">ولي الأمر (تلقائي)</th>
+                      <th style="padding:8px 12px;">رقم هاتف الولي</th>
+                      <th style="padding:8px 12px;">تاريخ آخر تسديد</th>
+                      <th style="padding:8px 12px;">مدة التأخر</th>
+                      <th style="padding:8px 12px; text-align:center;">إرسال فردي</th>
+                    </tr>
+                  </thead>
+                  <tbody id="waOverdueTableBody">
+                    <!-- Rendered by JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Attendance Late Table -->
+            <div id="waQueueAttendanceSection" style="display:none;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.2); padding:10px 14px; border-radius:8px; flex-wrap:wrap; gap:8px;">
+                <div style="font-size:0.82rem; color:#fde68a;">
+                  ⏳ سجل الحضور لليوم: تم رصد <strong><span id="waAttendanceListCount">0</span> تلاميذ</strong> بحالة متأخر أو غائب.
+                </div>
+                <button type="button" class="btn btn--primary btn--small" style="background:#F59E0B;" onclick="triggerBatchAttendanceAlerts()">
+                  🚀 إرسال تنبيه الحضور لجميع هؤلاء الأولياء الآن
+                </button>
+              </div>
+              <div style="max-height:280px; overflow-y:auto; border:1px solid var(--color-border); border-radius:8px;">
+                <table style="width:100%; border-collapse:collapse; font-size:0.8rem; text-align:right;">
+                  <thead>
+                    <tr style="background:rgba(255,255,255,0.04); color:#94A3B8;">
+                      <th style="padding:8px 12px;">التلميذ</th>
+                      <th style="padding:8px 12px;">ولي الأمر (تلقائي)</th>
+                      <th style="padding:8px 12px;">رقم هاتف الولي</th>
+                      <th style="padding:8px 12px;">الفوج والتوقيت</th>
+                      <th style="padding:8px 12px;">الحالة</th>
+                      <th style="padding:8px 12px; text-align:center;">إرسال فردي</th>
+                    </tr>
+                  </thead>
+                  <tbody id="waAttendanceTableBody">
+                    <!-- Rendered by JS -->
+                  </tbody>
+                </table>
+              </div>
             </div>
 
           </div>
