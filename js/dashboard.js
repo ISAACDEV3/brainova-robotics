@@ -776,6 +776,110 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   window.getArabicDayName = getArabicDayName;
 
+  function formatIsoDate(d) {
+    if (!d || isNaN(d.getTime())) return '';
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  window.formatIsoDate = formatIsoDate;
+
+  // --- WEEKLY GROUP ATTENDANCE CYCLE CALCULATION ---
+  function getGroupWeeklyCycleInfo(groupName, allAttendance = null) {
+    if (!groupName) {
+      const today = new Date().toISOString().slice(0, 10);
+      return {
+        hasPreviousSession: false,
+        lastSessionDate: null,
+        nextSessionDate: today,
+        daysSinceLastSession: null,
+        weekElapsed: false,
+        isDueToday: false,
+        badgeText: 'جاهز للحصة الأولى',
+        badgeStyle: 'background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid rgba(56,189,248,0.3);',
+        suggestedDate: today,
+        allDates: []
+      };
+    }
+
+    const attList = allAttendance || getData('brainova_attendance') || [];
+    const groupAtt = attList.filter(a => isStudentInGroup({ group: a.groupName }, groupName));
+    const rawDates = [...new Set(groupAtt.map(a => a.date))].filter(Boolean);
+
+    rawDates.sort((a, b) => {
+      const da = parseBrainovaDate(a) || new Date(0);
+      const db = parseBrainovaDate(b) || new Date(0);
+      return da - db;
+    });
+
+    const now = new Date();
+    now.setHours(12, 0, 0, 0);
+
+    if (rawDates.length === 0) {
+      const todayStr = formatIsoDate(now);
+      return {
+        hasPreviousSession: false,
+        lastSessionDate: null,
+        nextSessionDate: todayStr,
+        daysSinceLastSession: null,
+        weekElapsed: false,
+        isDueToday: true,
+        badgeText: '🆕 فوج جديد — جاهز للحصة الأولى',
+        badgeStyle: 'background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid rgba(56,189,248,0.3);',
+        suggestedDate: todayStr,
+        allDates: []
+      };
+    }
+
+    const lastDateStr = rawDates[rawDates.length - 1];
+    const lastDate = parseBrainovaDate(lastDateStr) || new Date();
+    lastDate.setHours(12, 0, 0, 0);
+
+    // Exactly 7 days after the last recorded session date
+    const nextDate = new Date(lastDate.getTime() + (7 * 24 * 60 * 60 * 1000));
+    const nextDateStr = formatIsoDate(nextDate);
+
+    const diffMs = now.getTime() - lastDate.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const weekElapsed = diffDays >= 7;
+    const isDueToday = nextDateStr === formatIsoDate(now) || (diffDays % 7 === 0 && diffDays > 0);
+
+    let badgeText = '';
+    let badgeStyle = '';
+
+    if (diffDays === 0) {
+      badgeText = '✅ تم تسجيل حضور اليوم';
+      badgeStyle = 'background:rgba(16,185,129,0.15); color:#10B981; border:1px solid rgba(16,185,129,0.3);';
+    } else if (isDueToday) {
+      badgeText = '🔴 موعد حصة هذا الأسبوع اليوم!';
+      badgeStyle = 'background:rgba(239,68,68,0.18); color:#EF4444; border:1px solid rgba(239,68,68,0.35); font-weight:700;';
+    } else if (weekElapsed) {
+      badgeText = `🟢 انقضى أسبوع (${diffDays} يوماً) — موعد الحصة الجديدة: ${nextDateStr}`;
+      badgeStyle = 'background:rgba(16,185,129,0.18); color:#10B981; border:1px solid rgba(16,185,129,0.35); font-weight:700;';
+    } else {
+      const rem = 7 - diffDays;
+      badgeText = `⏳ متبقي ${rem} ${rem === 1 ? 'يوم' : 'أيام'} على الحصة القادمة (${nextDateStr})`;
+      badgeStyle = 'background:rgba(245,158,11,0.15); color:#F59E0B; border:1px solid rgba(245,158,11,0.3);';
+    }
+
+    const suggestedDate = weekElapsed ? nextDateStr : (diffDays === 0 ? formatIsoDate(now) : nextDateStr);
+
+    return {
+      hasPreviousSession: true,
+      lastSessionDate: lastDateStr,
+      nextSessionDate: nextDateStr,
+      daysSinceLastSession: diffDays,
+      weekElapsed,
+      isDueToday,
+      badgeText,
+      badgeStyle,
+      suggestedDate,
+      allDates: rawDates
+    };
+  }
+  window.getGroupWeeklyCycleInfo = getGroupWeeklyCycleInfo;
+
   // --- TIMELINE & PAYMENT TRACKER CALCULATION ---
   function getStudentPaymentTimeline(studentId, stuObj, allPaymentsList) {
     const payments = (allPaymentsList || getData('brainova_payments')).filter(p => p.studentId === studentId);
@@ -1106,17 +1210,26 @@ document.addEventListener('DOMContentLoaded', () => {
       window.__selectedAttendanceTime = '';
     }
 
-    if (!dateInput.value) {
-      dateInput.value = new Date().toISOString().split('T')[0];
+    const selectedGroup = groupSelect.value || (groups[0] ? groups[0].name : '');
+    const allAttendance = getData('brainova_attendance') || [];
+    const cycle = getGroupWeeklyCycleInfo(selectedGroup, allAttendance);
+
+    if (!window.__lastRenderedAttGroup || window.__lastRenderedAttGroup !== selectedGroup) {
+      window.__lastRenderedAttGroup = selectedGroup;
+      if (!window.__preserveAttDate) {
+        dateInput.value = cycle.suggestedDate;
+      }
+      window.__preserveAttDate = false;
+    } else if (!dateInput.value) {
+      dateInput.value = cycle.suggestedDate;
     }
 
-    const selectedGroup = groupSelect.value || (groups[0] ? groups[0].name : '');
     const selectedDate = dateInput.value;
     const selectedTime = timeSelect ? timeSelect.value : '09:00 - 11:00';
 
     const allStudents = getData('brainova_students');
     const groupStudents = allStudents.filter(s => isStudentInGroup(s, selectedGroup));
-    const existingRecords = getData('brainova_attendance').filter(a => a.date === selectedDate && (String(a.groupName || '').trim().toLowerCase() === String(selectedGroup || '').trim().toLowerCase() || a.groupId === selectedGroup) && (!a.sessionTime || a.sessionTime === selectedTime));
+    const existingRecords = allAttendance.filter(a => a.date === selectedDate && isStudentInGroup({ group: a.groupName }, selectedGroup) && (!a.sessionTime || a.sessionTime === selectedTime));
 
     activeAttendanceDraft = {};
     groupStudents.forEach(stu => {
@@ -1281,6 +1394,38 @@ document.addEventListener('DOMContentLoaded', () => {
     if (elR) elR.textContent = `${rate}%`;
   }
 
+  window.attJumpToNextSession = function() {
+    const groupSelect = document.getElementById('attGroupSelect');
+    const selectedGroup = groupSelect ? groupSelect.value : '';
+    const allAtt = getData('brainova_attendance') || [];
+    const cycle = getGroupWeeklyCycleInfo(selectedGroup, allAtt);
+    const dateInput = document.getElementById('attDateSelect');
+    if (dateInput) {
+      dateInput.value = cycle.nextSessionDate;
+      window.__preserveAttDate = true;
+      renderAttendance();
+      showToast(`🗓️ تم الانتقال لموعد الحصة الجديدة (${cycle.nextSessionDate}) بعد أسبوع (+7 أيام)!`, 'success');
+    }
+  };
+
+  window.attJumpToPrevSession = function() {
+    const groupSelect = document.getElementById('attGroupSelect');
+    const selectedGroup = groupSelect ? groupSelect.value : '';
+    const allAtt = getData('brainova_attendance') || [];
+    const cycle = getGroupWeeklyCycleInfo(selectedGroup, allAtt);
+    if (cycle.hasPreviousSession) {
+      const dateInput = document.getElementById('attDateSelect');
+      if (dateInput) {
+        dateInput.value = cycle.lastSessionDate;
+        window.__preserveAttDate = true;
+        renderAttendance();
+        showToast(`⏮️ تم الانتقال إلى الحصة السابقة المسجلة (${cycle.lastSessionDate})`, 'info');
+      }
+    } else {
+      showToast('لا توجد حصص سابقة مسجلة لهذا الفوج', 'info');
+    }
+  };
+
   window.saveAttendanceRecord = function() {
     const groupSelect = document.getElementById('attGroupSelect');
     const dateInput = document.getElementById('attDateSelect');
@@ -1289,29 +1434,50 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedDate = dateInput.value;
     const selectedTime = timeSelect ? timeSelect.value : '09:00 - 11:00';
 
-    let allAttendance = getData('brainova_attendance');
-    allAttendance = allAttendance.filter(a => !(a.date === selectedDate && a.groupName === selectedGroup && (!a.sessionTime || a.sessionTime === selectedTime)));
+    let allAttendance = getData('brainova_attendance') || [];
+    const existingAttForSession = allAttendance.filter(a => 
+      a.date === selectedDate && 
+      isStudentInGroup({ group: a.groupName }, selectedGroup) && 
+      (!a.sessionTime || a.sessionTime === selectedTime || selectedTime.includes(a.sessionTime))
+    );
 
-    const students = getData('brainova_students');
-    const nowStr = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
+    // Keep all other sessions intact in history - remove only exact matching records being replaced
+    allAttendance = allAttendance.filter(a => !(
+      a.date === selectedDate && 
+      isStudentInGroup({ group: a.groupName }, selectedGroup) && 
+      (!a.sessionTime || a.sessionTime === selectedTime || selectedTime.includes(a.sessionTime))
+    ));
+
+    const students = getData('brainova_students') || [];
+    let savedCount = 0;
 
     for (const [studentId, data] of Object.entries(activeAttendanceDraft)) {
       const stu = students.find(s => s.id === studentId);
       allAttendance.push({
-        id: 'ATT-' + Date.now() + '-' + studentId,
+        id: 'ATT-' + Date.now() + '-' + studentId + '-' + Math.floor(Math.random() * 1000),
         date: selectedDate,
         groupName: selectedGroup,
         sessionTime: selectedTime,
         studentId,
         studentName: stu ? stu.name : 'Unknown',
         status: data.status,
-        note: data.note
+        note: data.note || ''
       });
+      savedCount++;
 
-      if (stu && (data.status === 'present' || data.status === 'late')) {
-        stu.lastAttendance = `${selectedDate} (${selectedTime})`;
-        if (stu.sessionsRemaining > 0) {
-          stu.sessionsRemaining = Math.max(0, stu.sessionsRemaining - 1);
+      // Safe deduction logic: only deduct if not already deducted in a previous save of this session
+      const prevRecord = existingAttForSession.find(a => a.studentId === studentId);
+      const wasDeducted = prevRecord && (prevRecord.status === 'present' || prevRecord.status === 'late');
+      const isNowPresentOrLate = data.status === 'present' || data.status === 'late';
+
+      if (stu) {
+        if (isNowPresentOrLate && !wasDeducted) {
+          if (stu.sessionsRemaining > 0) {
+            stu.sessionsRemaining = Math.max(0, stu.sessionsRemaining - 1);
+          }
+          stu.lastAttendance = `${selectedDate} (${selectedTime})`;
+        } else if (!isNowPresentOrLate && wasDeducted) {
+          stu.sessionsRemaining = (stu.sessionsRemaining || 0) + 1;
         }
       }
 
@@ -1323,7 +1489,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     saveData('brainova_attendance', allAttendance);
     saveData('brainova_students', students);
-    showToast(`تم حفظ سجل الحضور لفوج (${selectedGroup}) بتوقيت (${selectedTime}) بنجاح!`, 'success');
+    showToast(`✅ تم حفظ وتثبيت سجل حضور وغياب (${savedCount}) تلميذ لفوج (${selectedGroup}) بتاريخ (${selectedDate}) بنجاح!`, 'success');
   };
 
   // --- PAYMENTS & RECEIPTS SYSTEM ---
@@ -3288,10 +3454,32 @@ document.addEventListener('DOMContentLoaded', () => {
           <div style="font-size:0.8rem; color:var(--color-text-muted); margin-bottom:6px;">
             <span> الأستاذ: <strong>${g.educator || 'عابد اسحاق تقي الدين'}</strong></span>
           </div>
-          <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.78rem; color:var(--color-text-muted); margin-bottom:12px; background:rgba(255,255,255,0.03); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">
+          <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.78rem; color:var(--color-text-muted); margin-bottom:8px; background:rgba(255,255,255,0.03); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">
             <span>التوقيت الأسبوعي</span>
             <span style="color:var(--color-text); font-weight:700; font-family:monospace;">${dayStr} • ${timeSlot}</span>
           </div>
+
+          <!-- Weekly Session Cycle Box -->
+          ${(() => {
+            const allAttendance = getData('brainova_attendance') || [];
+            const cycle = getGroupWeeklyCycleInfo(g.name, allAttendance);
+            return `
+              <div style="background:rgba(255,255,255,0.02); border:1px solid var(--color-border); border-radius:var(--radius-sm); padding:8px 10px; margin-bottom:10px; font-size:0.78rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                  <span style="color:var(--color-text-muted);">📅 موعد الحصة الجديدة:</span>
+                  <strong style="color:#38BDF8; font-family:monospace; font-size:0.84rem;">${cycle.nextSessionDate || '—'}</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                  <span style="color:var(--color-text-muted);">🕒 آخر حصة مسجلة:</span>
+                  <span style="color:${cycle.hasPreviousSession ? '#10B981' : '#94A3B8'}; font-weight:600;">${cycle.hasPreviousSession ? cycle.lastSessionDate : 'لا توجد حصص سابقة'}</span>
+                </div>
+                <div>
+                  <span class="status-pill" style="${cycle.badgeStyle}; font-size:0.72rem; padding:2px 8px; border-radius:6px; display:inline-block;">${cycle.badgeText}</span>
+                </div>
+              </div>
+            `;
+          })()}
+
           <div style="display:flex; justify-content:space-between; align-items:center; border-top: 1px solid var(--color-border); padding-top: 8px; gap:6px; flex-wrap:wrap;">
             <span style="font-size:0.78rem; color:var(--color-text-muted);">الطلاب: <strong style="color:var(--color-text);">${studentCount} / ${g.maxStudents || 12}</strong></span>
             <div style="display:inline-flex; gap:6px; flex-wrap:wrap;">
@@ -3454,6 +3642,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   window.__quickAttGroupName = '';
   window.__quickAttDraft = {};
+  window.__quickAttDraftDate = '';
 
   function openQuickGroupAttendanceModal(encodedGroupName, customTimeSlot) {
     const rawGroupName = decodeURIComponent(encodedGroupName || '').trim();
@@ -3471,25 +3660,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.__quickAttGroupName = groupName;
     window.__quickAttDraft = {};
+    window.__quickAttDraftDate = '';
+
+    const allAttendance = getData('brainova_attendance') || [];
+    const cycle = getGroupWeeklyCycleInfo(groupName, allAttendance);
 
     const titleEl = document.getElementById('quickAttModalTitle');
     if (titleEl) {
       titleEl.textContent = 'تفقد حضور وغياب: ' + groupName + (customTimeSlot ? ` (${customTimeSlot})` : '');
     }
 
-    // Set Date to Today
+    // Set Date to suggested weekly date (next weekly date +7 days or today)
     const dateInput = document.getElementById('quickAttDate');
     if (dateInput) {
-      dateInput.value = new Date().toISOString().slice(0, 10);
+      dateInput.value = cycle.suggestedDate;
+      window.__quickAttDraftDate = cycle.suggestedDate;
     }
 
     // Find scheduled time for this group
     const schedules = getData('brainova_schedule') || [];
-    const sch = schedules.find(s => s.groupId === (matchedGroup ? matchedGroup.id : '') || s.groupName === groupName || (s.groupName && s.groupName.includes(groupName)));
+    const sch = schedules.find(s => s.groupId === (matchedGroup ? matchedGroup.id : '') || isStudentInGroup({ group: s.groupName }, groupName));
     const timeInput = document.getElementById('quickAttTime');
     if (timeInput) {
       const scheduledTime = customTimeSlot || (sch ? `${sch.startTime} - ${sch.endTime}` : (matchedGroup?.timeSlot || '14:00 - 16:00'));
       timeInput.value = scheduledTime;
+    }
+
+    // Update cycle display in modal
+    const cycleHeader = document.getElementById('quickAttCycleHeader');
+    if (cycleHeader) {
+      cycleHeader.innerHTML = `${cycle.hasPreviousSession ? 'آخر حصة: <span style="color:#10B981;">' + cycle.lastSessionDate + '</span> • ' : ''}<span style="color:#38BDF8;">موعد الحصة القادمة (+7 أيام): ${cycle.nextSessionDate}</span>`;
+    }
+    const prevDateLabel = document.getElementById('quickAttPrevDateLabel');
+    if (prevDateLabel) {
+      prevDateLabel.textContent = cycle.hasPreviousSession ? cycle.lastSessionDate : 'لا توجد';
+    }
+    const prevWeekBtn = document.getElementById('quickAttPrevWeekBtn');
+    if (prevWeekBtn) {
+      prevWeekBtn.style.display = cycle.hasPreviousSession ? 'inline-flex' : 'none';
     }
 
     renderQuickAttendanceStudents();
@@ -3498,6 +3706,49 @@ document.addEventListener('DOMContentLoaded', () => {
     if (modal) modal.classList.add('active');
   }
   window.openQuickGroupAttendanceModal = openQuickGroupAttendanceModal;
+
+  window.quickAttJumpToPrevSession = function() {
+    const groupName = window.__quickAttGroupName;
+    const allAttendance = getData('brainova_attendance') || [];
+    const cycle = getGroupWeeklyCycleInfo(groupName, allAttendance);
+    if (cycle.hasPreviousSession) {
+      const dateInput = document.getElementById('quickAttDate');
+      if (dateInput) {
+        dateInput.value = cycle.lastSessionDate;
+        window.__quickAttDraft = {};
+        window.__quickAttDraftDate = cycle.lastSessionDate;
+        renderQuickAttendanceStudents();
+        showToast(`⏮️ تم الانتقال إلى الحصة السابقة المسجلة (${cycle.lastSessionDate})`, 'info');
+      }
+    } else {
+      showToast('لا توجد حصص سابقة مسجلة لهذا الفوج', 'info');
+    }
+  };
+
+  window.quickAttJumpToNextSession = function() {
+    const groupName = window.__quickAttGroupName;
+    const allAttendance = getData('brainova_attendance') || [];
+    const cycle = getGroupWeeklyCycleInfo(groupName, allAttendance);
+    const dateInput = document.getElementById('quickAttDate');
+    if (dateInput) {
+      dateInput.value = cycle.nextSessionDate;
+      window.__quickAttDraft = {};
+      window.__quickAttDraftDate = cycle.nextSessionDate;
+      renderQuickAttendanceStudents();
+      showToast(`🗓️ تم الانتقال لموعد الحصة الجديدة (${cycle.nextSessionDate}) بعد أسبوع (+7 أيام)!`, 'success');
+    }
+  };
+
+  window.quickAttJumpToToday = function() {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const dateInput = document.getElementById('quickAttDate');
+    if (dateInput) {
+      dateInput.value = todayStr;
+      window.__quickAttDraft = {};
+      window.__quickAttDraftDate = todayStr;
+      renderQuickAttendanceStudents();
+    }
+  };
 
   window.switchToFullAttendanceViewFromQuickModal = function() {
     const groupName = window.__quickAttGroupName;
@@ -3536,6 +3787,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedDate = document.getElementById('quickAttDate')?.value || new Date().toISOString().slice(0, 10);
     const selectedTime = document.getElementById('quickAttTime')?.value || '14:00 - 16:00';
 
+    // If user changed date picker manually, reset draft for that date
+    if (window.__quickAttDraftDate !== selectedDate) {
+      window.__quickAttDraft = {};
+      window.__quickAttDraftDate = selectedDate;
+    }
+
     const allStudents = getData('brainova_students') || [];
     const groupStudents = allStudents.filter(s => isStudentInGroup(s, groupName));
 
@@ -3552,9 +3809,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const allAttendance = getData('brainova_attendance') || [];
     const existingAtt = allAttendance.filter(a => 
       a.date === selectedDate && 
-      String(a.groupName || '').trim().toLowerCase() === String(groupName || '').trim().toLowerCase() &&
+      isStudentInGroup({ group: a.groupName }, groupName) &&
       (!a.sessionTime || a.sessionTime === selectedTime || selectedTime.includes(a.sessionTime))
     );
+
+    // Update Archive Notice Badge
+    const noticeEl = document.getElementById('quickAttArchiveNotice');
+    if (noticeEl) {
+      if (existingAtt.length > 0) {
+        noticeEl.innerHTML = `<span style="color:#F59E0B;">⚠️ هذه الحصة مسجلة سابقاً في الأرشيف بتاريخ (${selectedDate}) — يمكنك مراجعة الغيابات وتعديلها.</span>`;
+      } else {
+        noticeEl.innerHTML = `<span style="color:#10B981;">✨ حصة أسبوعية جديدة (${selectedDate}) — لم تسجل بعد، جاهزة لرصد الغيابات وتثبيتها في الأرشيف.</span>`;
+      }
+    }
 
     // Initialize draft state if empty
     groupStudents.forEach(stu => {
@@ -3631,11 +3898,10 @@ document.addEventListener('DOMContentLoaded', () => {
             </button>
           </div>
 
-          <!-- Note Input -->
-          <div style="flex:1; min-width:140px; max-width:200px;">
-            <input type="text" class="form-input" placeholder="ملاحظة..." 
+          <div style="flex:1; min-width:150px;">
+            <input type="text" class="form-input" style="height:32px; font-size:0.8rem;" 
+              placeholder="ملاحظة خاصة بالطالب..." 
               value="${state.note || ''}" 
-              style="height:28px; font-size:0.75rem; padding:3px 8px;" 
               oninput="setQuickStudentNote('${stu.id}', this.value)">
           </div>
         </div>
@@ -3678,7 +3944,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedTime = document.getElementById('quickAttTime')?.value || '14:00 - 16:00';
 
     let allAttendance = getData('brainova_attendance') || [];
-    allAttendance = allAttendance.filter(a => !(a.date === selectedDate && a.groupName === groupName && (!a.sessionTime || a.sessionTime === selectedTime)));
+    const existingAttForSession = allAttendance.filter(a => 
+      a.date === selectedDate && 
+      isStudentInGroup({ group: a.groupName }, groupName) && 
+      (!a.sessionTime || a.sessionTime === selectedTime || selectedTime.includes(a.sessionTime))
+    );
+
+    // Keep all other sessions intact in history - remove only exact matching records being replaced
+    allAttendance = allAttendance.filter(a => !(
+      a.date === selectedDate && 
+      isStudentInGroup({ group: a.groupName }, groupName) && 
+      (!a.sessionTime || a.sessionTime === selectedTime || selectedTime.includes(a.sessionTime))
+    ));
 
     const students = getData('brainova_students') || [];
     let savedCount = 0;
@@ -3687,7 +3964,7 @@ document.addEventListener('DOMContentLoaded', () => {
     for (const [studentId, data] of Object.entries(window.__quickAttDraft)) {
       const stu = students.find(s => s.id === studentId);
       allAttendance.push({
-        id: 'ATT-' + Date.now() + '-' + studentId,
+        id: 'ATT-' + Date.now() + '-' + studentId + '-' + Math.floor(Math.random() * 1000),
         date: selectedDate,
         groupName: groupName,
         sessionTime: selectedTime,
@@ -3698,10 +3975,19 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       savedCount++;
 
-      if (stu && (data.status === 'present' || data.status === 'late')) {
-        stu.lastAttendance = `${selectedDate} (${selectedTime})`;
-        if (stu.sessionsRemaining > 0) {
-          stu.sessionsRemaining = Math.max(0, stu.sessionsRemaining - 1);
+      // Safe deduction logic: only deduct if not already deducted in a previous save of this session
+      const prevRecord = existingAttForSession.find(a => a.studentId === studentId);
+      const wasDeducted = prevRecord && (prevRecord.status === 'present' || prevRecord.status === 'late');
+      const isNowPresentOrLate = data.status === 'present' || data.status === 'late';
+
+      if (stu) {
+        if (isNowPresentOrLate && !wasDeducted) {
+          if (stu.sessionsRemaining > 0) {
+            stu.sessionsRemaining = Math.max(0, stu.sessionsRemaining - 1);
+          }
+          stu.lastAttendance = `${selectedDate} (${selectedTime})`;
+        } else if (!isNowPresentOrLate && wasDeducted) {
+          stu.sessionsRemaining = (stu.sessionsRemaining || 0) + 1;
         }
       }
 
@@ -3716,7 +4002,7 @@ document.addEventListener('DOMContentLoaded', () => {
     saveData('brainova_students', students);
 
     closeQuickGroupAttendanceModal();
-    showToast(`تم حفظ تفقد حضور وغياب (${savedCount}) تلميذ لفوج (${groupName}) بنجاح`, 'success');
+    showToast(`✅ تم حفظ وتثبيت حضور وغياب (${savedCount}) تلميذ لفوج (${groupName}) بتاريخ (${selectedDate}) بنجاح!`, 'success');
     renderActiveView();
   }
   window.saveQuickGroupAttendance = saveQuickGroupAttendance;

@@ -484,7 +484,11 @@
               </div>
               <div>
                 <label style="font-size:0.72rem; color:var(--color-text-dim); font-weight:700; display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">تاريخ الحصة</label>
-                <input type="date" id="attDateSelect" onchange="renderAttendance()" class="form-input" style="width: 160px; height: 36px; font-family:monospace;">
+                <div style="display:flex; gap:6px; align-items:center;">
+                  <input type="date" id="attDateSelect" onchange="renderAttendance()" class="form-input" style="width: 155px; height: 36px; font-family:monospace;">
+                  <button type="button" class="btn btn--outline btn--small" style="height:36px; padding:0 8px; font-size:0.72rem; white-space:nowrap; color:#38BDF8; border-color:rgba(56,189,248,0.4); background:rgba(56,189,248,0.06); font-weight:700;" onclick="attJumpToNextSession()" title="الانتقال للحصة الجديدة (+7 أيام)">🗓️ +7 أيام</button>
+                  <button type="button" class="btn btn--outline btn--small" style="height:36px; padding:0 8px; font-size:0.72rem; white-space:nowrap;" onclick="attJumpToPrevSession()" title="عرض الحصة السابقة المسجلة">⏮️ السابقة</button>
+                </div>
               </div>
               <div>
                 <label style="font-size:0.72rem; color:var(--color-text-dim); font-weight:700; display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">توقيت الحصة</label>
@@ -1332,6 +1336,28 @@
       </div>
 
       <div style="padding:16px 20px;">
+        <!-- Weekly Cycle Navigation Bar -->
+        <div id="quickAttWeeklyNav" style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.25); border-radius:10px; padding:10px 14px; margin-bottom:14px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div>
+              <div style="font-size:0.75rem; color:#94A3B8;">الحصة الأسبوعية للفوج:</div>
+              <strong id="quickAttCycleHeader" style="color:#fff; font-size:0.92rem;">-</strong>
+            </div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button type="button" class="btn btn--outline btn--small" id="quickAttPrevWeekBtn" onclick="quickAttJumpToPrevSession()" style="font-size:0.75rem; padding:4px 8px; border-color:rgba(255,255,255,0.2);">
+                ⏮️ الحصة السابقة (<span id="quickAttPrevDateLabel">—</span>)
+              </button>
+              <button type="button" class="btn btn--outline btn--small" id="quickAttNextWeekBtn" onclick="quickAttJumpToNextSession()" style="font-size:0.75rem; padding:4px 8px; color:#38BDF8; border-color:rgba(56,189,248,0.4); background:rgba(56,189,248,0.1); font-weight:700;">
+                🗓️ الحصة الجديدة (+7 أيام)
+              </button>
+              <button type="button" class="btn btn--outline btn--small" onclick="quickAttJumpToToday()" style="font-size:0.75rem; padding:4px 8px;">
+                📅 اليوم
+              </button>
+            </div>
+          </div>
+          <div id="quickAttArchiveNotice" style="font-size:0.75rem; margin-top:6px; font-weight:600;"></div>
+        </div>
+
         <!-- Session Timing and Controls Box -->
         <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:12px; background:rgba(255,255,255,0.02); border:1px solid var(--color-border); border-radius:var(--radius-sm); padding:12px 14px; margin-bottom:14px;">
           <div>
