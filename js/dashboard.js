@@ -542,6 +542,92 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    // ── Retention & Risk Prediction Radar
+    const retentionContainer = document.getElementById('retentionRadarContainer');
+    if (retentionContainer) {
+      const atRiskStudents = students.map(s => ({
+        student: s,
+        risk: calculateStudentRetentionRisk(s)
+      })).filter(item => item.risk.level === 'high' || item.risk.level === 'medium')
+        .sort((a, b) => b.risk.score - a.risk.score);
+
+      const highRiskCount = atRiskStudents.filter(item => item.risk.level === 'high').length;
+      const medRiskCount = atRiskStudents.filter(item => item.risk.level === 'medium').length;
+
+      if (atRiskStudents.length === 0) {
+        retentionContainer.innerHTML = `
+          <div style="background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.25); border-radius:10px; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span style="font-size:1.2rem;">🛡️</span>
+              <div>
+                <strong style="color:#10B981; font-size:0.88rem;">رادار استبقاء الطلاب ممتاز (Zero Retention Risk)</strong>
+                <div style="font-size:0.75rem; color:#94A3B8;">كافة الطلاب منتظمون في الحضور ولا توجد مخاطر انقطاع أو تأخرات حرجة.</div>
+              </div>
+            </div>
+            <span class="status-pill status-pill--active" style="font-size:0.75rem;">100% نسبة استقرار</span>
+          </div>
+        `;
+      } else {
+        retentionContainer.innerHTML = `
+          <div class="card" style="border:1px solid rgba(239,68,68,0.28); background:linear-gradient(145deg, rgba(30,15,20,0.6) 0%, rgba(15,23,42,0.85) 100%); border-radius:12px; padding:16px 18px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:34px; height:34px; border-radius:8px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); display:flex; align-items:center; justify-content:center; color:#EF4444; font-size:1rem;">
+                  ⚠️
+                </div>
+                <div>
+                  <h3 class="card__title" style="margin:0; font-size:1.02rem; color:#F8FAFC;">رادار التنبؤ بالغياب والانسحاب (Retention & Risk Radar)</h3>
+                  <p style="font-size:0.76rem; color:#94A3B8; margin:2px 0 0 0;">رصد استباقي للطلاب المعرضين للانقطاع لتمكين الإدارة من التدخل الودي وإنقاذ الاشتراكات.</p>
+                </div>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                ${highRiskCount > 0 ? `<span class="risk-pill-high">🔴 ${highRiskCount} خطر مرتفع</span>` : ''}
+                ${medRiskCount > 0 ? `<span class="risk-pill-medium">🟡 ${medRiskCount} متابعة وتدارك</span>` : ''}
+                <button class="btn btn--outline btn--small" style="font-size:0.75rem;" onclick="document.querySelector('[data-view=\\'students\\']').click(); document.getElementById('studentSubFilter').value = 'risk_high'; renderStudents();">
+                  عرض كل الحالات
+                </button>
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:12px;">
+              ${atRiskStudents.slice(0, 4).map(item => {
+                const s = item.student;
+                const r = item.risk;
+                const isHigh = r.level === 'high';
+                return `
+                  <div class="${isHigh ? 'risk-card-high' : 'risk-card-medium'}" style="padding:12px 14px; border-radius:8px; display:flex; flex-direction:column; justify-content:space-between; gap:10px;">
+                    <div>
+                      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+                        <div>
+                          <div style="font-weight:700; font-size:0.88rem; color:#fff;">${s.name}</div>
+                          <div style="font-size:0.74rem; color:#94A3B8;">${s.group || 'غير محدد'} • ${s.level || ''}</div>
+                        </div>
+                        <span class="${isHigh ? 'risk-pill-high' : 'risk-pill-medium'}">${isHigh ? 'خطر مرتفع' : 'خطر متوسط'}</span>
+                      </div>
+                      <div style="font-size:0.74rem; color:#CBD5E1; line-height:1.5;">
+                        ${r.reasons.map(reason => `<div>• ${reason}</div>`).join('')}
+                      </div>
+                    </div>
+                    <div style="display:flex; gap:6px; align-items:center; padding-top:6px; border-top:1px solid rgba(255,255,255,0.06);">
+                      <button class="btn btn--small" style="background:#25D366; color:#fff; font-size:0.72rem; padding:3px 8px; flex:1;" onclick="openFriendlyRetentionWhatsApp('${s.id}')">
+                        💬 رسالة تدارك ودية
+                      </button>
+                      <button class="btn btn--outline btn--small" style="font-size:0.72rem; padding:3px 8px; border-color:rgba(16,185,129,0.35); color:#10B981;" onclick="openPedagogicalReportModal('${s.id}')">
+                        📊 تقييم
+                      </button>
+                      <button class="btn btn--outline btn--small" style="font-size:0.72rem; padding:3px 6px;" onclick="openStudentProfile('${s.id}')">
+                        الملف
+                      </button>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }
+    }
+
     // Render Recent Registrations Table
     renderRegistrationsTable(regs.slice(0, 5), 'overviewTableBody', false);
 
@@ -764,6 +850,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (subFilter !== 'all') {
       students = students.filter(stu => {
+        if (subFilter === 'risk_high') {
+          return calculateStudentRetentionRisk(stu).level === 'high';
+        }
+        if (subFilter === 'risk_medium') {
+          return calculateStudentRetentionRisk(stu).level === 'medium';
+        }
         const timeline = getStudentPaymentTimeline(stu.id, stu, allPayments);
         return timeline.status === subFilter;
       });
@@ -826,6 +918,15 @@ document.addEventListener('DOMContentLoaded', () => {
             <a href="#" onclick="openStudentProfile('${stu.id}'); return false;" style="color:#fff; font-weight:700; text-decoration:underline;">
               ${stu.name}
             </a>
+            ${(() => {
+              const rk = calculateStudentRetentionRisk(stu);
+              if (rk.level === 'high') {
+                return `<div style="margin-top:3px;"><span class="risk-pill-high" title="${rk.reasons.join(' • ')}">⚠️ ${rk.reasons[0] || 'خطر انقطاع'}</span></div>`;
+              } else if (rk.level === 'medium') {
+                return `<div style="margin-top:3px;"><span class="risk-pill-medium" title="${rk.reasons.join(' • ')}">🟡 ${rk.reasons[0] || 'متابعة'}</span></div>`;
+              }
+              return '';
+            })()}
           </td>
           <td>
             <span style="font-weight:700; color:#F8FAFC;">${stu.group || 'غير محدد'}</span>
@@ -843,6 +944,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td style="text-align: center;">
             <div style="display:inline-flex; gap:4px; flex-wrap:nowrap;">
               <button class="btn btn--outline" style="padding: 4px 6px; font-size: 0.75rem;" title="الملف الشامل" onclick="openStudentProfile('${stu.id}')"> الملف</button>
+              <button class="btn btn--outline btn--small" style="padding: 4px 6px; font-size: 0.75rem; border-color:rgba(16,185,129,0.35); color:#10B981;" title="التقرير البيداغوجي والتقييم الشهري" onclick="openPedagogicalReportModal('${stu.id}')">تقييم</button>
               <button class="btn btn--outline" style="padding: 4px 6px; font-size: 0.75rem; color:#38BDF8; border-color:rgba(56,189,248,0.4);" title="كتابة ملاحظة للولي" onclick="openStudentNoteModal('${stu.id}')"> ملاحظة</button>
               <button class="btn btn--outline btn--small" style="padding: 4px 6px; font-size: 0.75rem; border-color:rgba(56,189,248,0.35); color:#38BDF8;" title="بطاقة الطالب الذكية (CR80)" onclick="openStudentIdCard('${stu.id}')">بطاقة</button>
               <button class="btn btn--small" style="padding: 4px 6px; font-size: 0.75rem; background:#25D366; color:#fff;" title="إشعار واتساب للولي" onclick="openWhatsAppDispatchModal('${stu.id}')">واتساب</button>
@@ -5580,6 +5682,8 @@ document.addEventListener('DOMContentLoaded', () => {
     populateWaStudentAutoSelect();
     renderWaQueues();
     renderWaGuardianLogs();
+    loadWaAiSettings();
+    loadWaChatLogs();
     await refreshWhatsAppStatus();
   }
   window.renderWhatsAppView = renderWhatsAppView;
@@ -6377,6 +6481,474 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(() => {
       runAutonomousGuardianLoop(false);
     }, 60000);
+  }
+
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ── RETENTION RISK ENGINE, PEDAGOGICAL REPORTS & AI WHATSAPP RECEPTIONIST ──
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  function calculateStudentRetentionRisk(student) {
+    if (!student) return { level: 'healthy', score: 0, reasons: [] };
+
+    const attendance = getData('brainova_attendance') || [];
+    const payments = getData('brainova_payments') || [];
+
+    const stuAtt = attendance
+      .filter(a => a.studentId === student.id || a.studentName === student.name)
+      .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+    const stuPayments = payments
+      .filter(p => p.studentId === student.id || p.studentName === student.name)
+      .sort((a, b) => (b.date || b.paymentDate || '').localeCompare(a.date || a.paymentDate || ''));
+
+    const remSessions = student.sessionsRemaining !== undefined ? Number(student.sessionsRemaining) : 4;
+
+    let score = 0;
+    const reasons = [];
+
+    // 1. Consecutive Absences
+    let consecutiveAbsences = 0;
+    for (let i = 0; i < stuAtt.length; i++) {
+      if (stuAtt[i].status === 'absent') {
+        consecutiveAbsences++;
+      } else {
+        break;
+      }
+    }
+
+    if (consecutiveAbsences >= 3) {
+      score += 50;
+      reasons.push(`غائب ${consecutiveAbsences} حصص متتالية`);
+    } else if (consecutiveAbsences === 2) {
+      score += 35;
+      reasons.push('غائب حصتين متتاليتين');
+    } else if (consecutiveAbsences === 1) {
+      score += 15;
+      reasons.push('غياب في آخر حصة');
+    }
+
+    // 2. Remaining Sessions Status
+    if (remSessions <= 0) {
+      score += 40;
+      reasons.push(`نفاد رصيد الحصص (${remSessions} حصة)`);
+    } else if (remSessions === 1) {
+      score += 20;
+      reasons.push('متبقي حصة واحدة فقط');
+    }
+
+    // 3. Payment Status / Days since last payment
+    const lastPay = stuPayments[0];
+    if (lastPay) {
+      const payDate = new Date(lastPay.date || lastPay.paymentDate || lastPay.createdAt);
+      const now = new Date();
+      const diffDays = Math.floor((now - payDate) / (1000 * 60 * 60 * 24));
+      if (diffDays > 35) {
+        score += 25;
+        reasons.push(`تأخر تجديد الاشتراك (${diffDays} يوم)`);
+      } else if (diffDays > 25 && remSessions <= 1) {
+        score += 15;
+        reasons.push('اقتراب موعد التجديد دون تسديد');
+      }
+    } else {
+      score += 20;
+      reasons.push('لم يسدد أي دفعة بعد');
+    }
+
+    let level = 'healthy';
+    if (score >= 45) {
+      level = 'high';
+    } else if (score >= 25) {
+      level = 'medium';
+    }
+
+    return {
+      level,
+      score,
+      reasons,
+      consecutiveAbsences,
+      remSessions,
+      lastPayment: lastPay || null,
+      latestAttendance: stuAtt[0] || null
+    };
+  }
+  window.calculateStudentRetentionRisk = calculateStudentRetentionRisk;
+
+  // ── PEDAGOGICAL PROGRESS REPORTS ──
+  let currentPedagogicalStudentId = null;
+  let currentPedagogicalReportVariant = 0;
+
+  function generateStudentPedagogicalReport(studentId, variant = 0) {
+    const student = (getData('brainova_students') || []).find(s => s.id === studentId);
+    if (!student) return '';
+
+    const attendance = (getData('brainova_attendance') || []).filter(a => a.studentId === student.id || a.studentName === student.name);
+    const groups = getData('brainova_groups') || [];
+    const group = groups.find(g => g.name === student.group);
+    const educatorName = (group && group.educatorName) ? group.educatorName : (student.educator || 'طاقم تدريس Brainova');
+
+    const total = attendance.length;
+    const present = attendance.filter(a => a.status === 'present' || a.status === 'late').length;
+    const attRate = total > 0 ? Math.round((present / total) * 100) : 100;
+    const rem = student.sessionsRemaining !== undefined ? student.sessionsRemaining : 4;
+
+    const notesWithContent = attendance.filter(a => a.note && a.note.trim().length > 2);
+    const latestNote = notesWithContent.length > 0 ? notesWithContent[notesWithContent.length - 1].note : null;
+    const todayStr = new Date().toLocaleDateString('ar-DZ', { month: 'long', year: 'numeric' });
+
+    if (variant === 0) {
+      return `تقرير المتابعة والتقييم البيداغوجي والتقني الشهري 🤖✨
+أكاديمية Brainova Robotics للروبوتيك والذكاء الاصطناعي
+📅 دورة: ${todayStr}
+
+عناية ولي الأمر الفاضل: ${student.parentName || 'المحترم'}
+السلام عليكم ورحمة الله وبركاته،
+
+يسر الطاقم البيداغوجي موافاتكم بتقرير المتابعة الشهري للتلميذ(ة):
+• الاسم الكامل: ${student.name} (المعرف: ${student.id})
+• الفوج: ${student.group || 'فوج الروبوتيك'} | المستوى: ${student.level || 'المستوى الأول'}
+• الأستاذ المؤطر: ${educatorName}
+
+1️⃣ المواظبة والانضباط العام:
+• نسبة الالتزام بالحضور: ${attRate}% (${present} من أصل ${total} حصة مسجلة).
+• رصيد الحصص المتبقي في الاشتراك الحالي: ${rem} حصص.
+${attRate >= 80 ? '• ملاحظة الانضباط: مواظبة ممتازة وحضور في الموعد بكل حيوية وشغف.' : '• ملاحظة الانضباط: نوصي بمزيد من الالتزام لتفادي انقطاع تسلسل المشاريع التطبيقية.'}
+
+2️⃣ التقييم التقني والمهارات المكتسبة:
+• التفكير المنطقي والبرمجة: تفاعل إيجابي مع المفاهيم الخوارزمية، وحل التحديات البرمجية بشكل تصاعدي ملحوظ.
+• التركيب الميكانيكي والحساسات: دقة في تجميع نماذج الروبوت والتعامل السليم مع العتاد والمحركات.
+• روح الفريق والإبداع: مشاركة فعالة مع زملاء الفوج وحرص دائم على اختبار وتجربة الأفكار الجديدة.
+${latestNote ? `• ملاحظة المؤطر الميدانية: "${latestNote}"` : ''}
+
+3️⃣ توصيات وتوجيهات للشهر القادم:
+• تشجيع التلميذ(ة) على استعراض ما تعلمه ومواصلة الشغف في المنزل.
+${rem <= 1 ? '⚠️ تنبيه إداري لطيف: الاشتراك الشهري قارب على الانتهاء، يرجى التنسيق مع الإدارة لتجديد الاشتراك لضمان استمرارية مقعد التلميذ بالفوج.' : '• الاشتراك منتظم وساري المفعول.'}
+
+مع خالص تحيات إدارة وأساتذة Brainova Robotics 🚀
+أم البواقي، الجزائر`;
+    } else {
+      return `كشف التقييم والتقدم البيداغوجي — Brainova Robotics 🎓
+📅 شهر: ${todayStr}
+
+أهلاً بحضرتكم، نضع بين أيديكم ملخص المسار التدريبي للابن(ة) المتميز(ة):
+👤 التلميذ: ${student.name}
+🏫 الفوج: ${student.group || 'فوج التدريب'} (${student.level || 'مبتدئ'})
+👨‍🏫 إشراف: ${educatorName}
+
+📊 مؤشرات الأداء والمواظبة:
+- معدل الحضور الفعلي: ${attRate}%
+- الحصص المتبقية بالرصيد: ${rem} حصة
+- التفاعل الصفي: ممتاز ومتعاون جداً مع زملائه
+
+💡 التطور المهاري:
+- إتقان تركيب الأجزاء الروبوتية وبرمجتها بنجاح.
+- قدرة جيدة على حل المشكلات التقنية وتجاوز الأخطاء أثناء التجربة.
+${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
+
+نتمنى لبطلنا الصغير دوام التألق والنجاح في عالم التكنولوجيا والروبوتيك!
+إدارة Brainova Robotics`;
+    }
+  }
+
+  function openPedagogicalReportModal(studentId) {
+    const student = (getData('brainova_students') || []).find(s => s.id === studentId);
+    if (!student) return;
+
+    currentPedagogicalStudentId = studentId;
+    currentPedagogicalReportVariant = 0;
+
+    const modal = document.getElementById('pedagogicalReportModal');
+    const title = document.getElementById('pedagogicalModalTitle');
+    const subtitle = document.getElementById('pedagogicalModalSubtitle');
+    const metricsCard = document.getElementById('pedagogicalMetricsCard');
+    const textEl = document.getElementById('pedagogicalReportText');
+
+    if (title) title.textContent = `التقرير البيداغوجي والتقييم: ${student.name}`;
+    if (subtitle) subtitle.textContent = `فوج: ${student.group || 'غير محدد'} • ولي الأمر: ${student.parentName || '—'} (${student.parentPhone || '—'})`;
+
+    const attendance = (getData('brainova_attendance') || []).filter(a => a.studentId === student.id || a.studentName === student.name);
+    const total = attendance.length;
+    const present = attendance.filter(a => a.status === 'present' || a.status === 'late').length;
+    const attRate = total > 0 ? Math.round((present / total) * 100) : 100;
+    const rem = student.sessionsRemaining !== undefined ? student.sessionsRemaining : 4;
+    const risk = calculateStudentRetentionRisk(student);
+
+    if (metricsCard) {
+      metricsCard.innerHTML = `
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; text-align:center;">
+          <div style="background:rgba(255,255,255,0.03); padding:8px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
+            <div style="font-size:0.72rem; color:#94A3B8;">نسبة الالتزام</div>
+            <div style="font-size:1.1rem; font-weight:800; color:${attRate >= 80 ? '#10B981' : '#F59E0B'};">${attRate}%</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03); padding:8px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
+            <div style="font-size:0.72rem; color:#94A3B8;">الحصص المنجزة</div>
+            <div style="font-size:1.1rem; font-weight:800; color:#38BDF8;">${present} حصة</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03); padding:8px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
+            <div style="font-size:0.72rem; color:#94A3B8;">الحصص المتبقية</div>
+            <div style="font-size:1.1rem; font-weight:800; color:${rem > 0 ? '#10B981' : '#EF4444'};">${rem} حصص</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03); padding:8px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
+            <div style="font-size:0.72rem; color:#94A3B8;">مؤشر الاستبقاء</div>
+            <div style="font-size:0.82rem; font-weight:800; margin-top:4px;">
+              ${risk.level === 'healthy' ? '<span class="status-pill status-pill--active">منتظم ومستقر</span>' : (risk.level === 'medium' ? '<span class="risk-pill-medium">متابعة مطلوبة</span>' : '<span class="risk-pill-high">خطر انقطاع</span>')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    if (textEl) {
+      textEl.value = generateStudentPedagogicalReport(studentId, 0);
+    }
+
+    if (modal) modal.classList.add('active');
+  }
+
+  function closePedagogicalReportModal() {
+    const modal = document.getElementById('pedagogicalReportModal');
+    if (modal) modal.classList.remove('active');
+  }
+
+  function regenerateCurrentPedagogicalReport() {
+    if (!currentPedagogicalStudentId) return;
+    currentPedagogicalReportVariant = currentPedagogicalReportVariant === 0 ? 1 : 0;
+    const textEl = document.getElementById('pedagogicalReportText');
+    if (textEl) {
+      textEl.value = generateStudentPedagogicalReport(currentPedagogicalStudentId, currentPedagogicalReportVariant);
+      showToast('🔄 تم تحديث صياغة التقرير بنجاح', 'info');
+    }
+  }
+
+  async function sendCurrentPedagogicalReportViaWhatsApp() {
+    if (!currentPedagogicalStudentId) return;
+    const student = (getData('brainova_students') || []).find(s => s.id === currentPedagogicalStudentId);
+    if (!student || !student.parentPhone) {
+      showToast('⚠️ لا يوجد رقم هاتف مسجل لولي أمر هذا التلميذ!', 'warning');
+      return;
+    }
+
+    const textEl = document.getElementById('pedagogicalReportText');
+    const reportText = textEl ? textEl.value.trim() : '';
+    if (!reportText) {
+      showToast('⚠️ نص التقرير فارغ!', 'warning');
+      return;
+    }
+
+    if (window.electronAPI && window.electronAPI.whatsapp) {
+      showToast('جاري إرسال التقرير البيداغوجي عبر واتساب...', 'info');
+      try {
+        const res = await window.electronAPI.whatsapp.sendMessage(student.parentPhone, reportText);
+        if (res.success) {
+          showToast(`✅ تم إرسال التقرير البيداغوجي لولي أمر ${student.name} بنجاح!`, 'success');
+          closePedagogicalReportModal();
+        } else {
+          showToast(`⚠️ تعذر الإرسال: ${res.error}`, 'warning');
+        }
+      } catch (err) {
+        showToast(`❌ خطأ في الإرسال: ${err.message}`, 'danger');
+      }
+    } else {
+      let cleanPhone = String(student.parentPhone).replace(/[^\d]/g, '');
+      if (cleanPhone.startsWith('0')) cleanPhone = '213' + cleanPhone.substring(1);
+      const url = `https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(reportText)}`;
+      window.open(url, '_blank');
+      showToast('تم فتح واتساب لإرسال التقرير', 'info');
+      closePedagogicalReportModal();
+    }
+  }
+
+  function printCurrentPedagogicalReport() {
+    if (!currentPedagogicalStudentId) return;
+    const student = (getData('brainova_students') || []).find(s => s.id === currentPedagogicalStudentId);
+    if (!student) return;
+
+    const textEl = document.getElementById('pedagogicalReportText');
+    const reportText = textEl ? textEl.value.trim() : '';
+
+    const html = `
+      <!DOCTYPE html>
+      <html lang="ar" dir="rtl">
+      <head>
+        <meta charset="UTF-8">
+        <title>التقرير البيداغوجي — ${student.name}</title>
+        <style>
+          @page { size: A4 portrait; margin: 15mm; }
+          body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #fff; color: #0f172a; margin: 0; padding: 15px; direction: rtl; }
+          .header { border-bottom: 2px solid #0284C7; padding-bottom: 12px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; }
+          .academy-title { font-size: 20px; font-weight: 800; color: #0284C7; }
+          .academy-sub { font-size: 11px; color: #64748B; margin-top: 2px; }
+          .report-box { white-space: pre-wrap; font-size: 13px; line-height: 1.8; color: #1E293B; background: #F8FAFC; border: 1px solid #E2E8F0; padding: 18px; border-radius: 8px; }
+          .footer-sign { display: flex; justify-content: space-between; margin-top: 35px; padding-top: 15px; }
+          .sign-col { text-align: center; width: 180px; }
+          .sign-line { border-bottom: 1px dashed #94A3B8; margin-top: 45px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <div class="academy-title">Brainova Robotics Academy</div>
+            <div class="academy-sub">أكاديمية الروبوتيك والذكاء الاصطناعي — أم البواقي، الجزائر</div>
+          </div>
+          <div style="text-align: left; font-size: 12px; color: #64748B;">
+            <div>تاريخ الاستخراج: ${new Date().toLocaleDateString('ar-DZ')}</div>
+            <div>رقم التلميذ: ${student.id}</div>
+          </div>
+        </div>
+
+        <div class="report-box">${reportText}</div>
+
+        <div class="footer-sign">
+          <div class="sign-col">
+            <div style="font-weight: 700; font-size: 13px;">الأستاذ المؤطر</div>
+            <div style="font-size: 11px; color: #64748B;">${student.educator || 'عابد اسحاق تقي الدين'}</div>
+            <div class="sign-line"></div>
+          </div>
+          <div class="sign-col">
+            <div style="font-weight: 700; font-size: 13px;">تأشيرة وخاتم الإدارة</div>
+            <div style="font-size: 11px; color: #64748B;">أكاديمية Brainova</div>
+            <div class="sign-line"></div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    if (window.electronAPI && window.electronAPI.printReceipt) {
+      window.electronAPI.printReceipt(html);
+    } else {
+      const w = window.open('', '_blank');
+      w.document.write(html);
+      w.document.close();
+      w.focus();
+      setTimeout(() => { w.print(); w.close(); }, 300);
+    }
+  }
+
+  function openFriendlyRetentionWhatsApp(studentId) {
+    const student = (getData('brainova_students') || []).find(s => s.id === studentId);
+    if (!student || !student.parentPhone) {
+      showToast('⚠️ لا يوجد رقم هاتف مسجل لولي الأمر!', 'warning');
+      return;
+    }
+
+    const rem = student.sessionsRemaining !== undefined ? student.sessionsRemaining : 4;
+    const msg = `السلام عليكم ورحمة الله وبركاته 🌸
+تحية طيبة من إدارة أكاديمية Brainova Robotics، نأمل أن تكونوا والتلميذ(ة) العزيز(ة) "${student.name}" بأفضل حال.
+
+نود الاطمئنان عنكم بخصوص فوج "${student.group || 'الروبوتيك'}"، حيث افتقدنا حضور بطلنا الصغير ونتمنى أن يكون المانع خيراً.
+نحن دوماً هنا لتنسيق أي تعويض للحصص ودعم مساره التطبيقي المشوق.
+
+يسعدنا دوماً تواصلكم الكريم وتشريفكم لنا! 🤖✨
+إدارة أكاديمية Brainova Robotics`;
+
+    if (window.electronAPI && window.electronAPI.whatsapp) {
+      const phoneInput = document.getElementById('waTestPhone');
+      const textInput = document.getElementById('waTestMessage');
+      if (phoneInput && textInput) {
+        phoneInput.value = student.parentPhone;
+        textInput.value = msg;
+        document.querySelector('[data-view="whatsapp"]').click();
+        showToast(`تم تجهيز رسالة التدارك الودية لولي أمر ${student.name}`, 'info');
+      } else {
+        window.electronAPI.whatsapp.sendMessage(student.parentPhone, msg).then(res => {
+          if (res.success) {
+            showToast(`✅ تم إرسال رسالة التدارك لولي أمر ${student.name} بنجاح!`, 'success');
+          } else {
+            showToast(`⚠️ تعذر الإرسال: ${res.error}`, 'warning');
+          }
+        });
+      }
+    } else {
+      let cleanPhone = String(student.parentPhone).replace(/[^\d]/g, '');
+      if (cleanPhone.startsWith('0')) cleanPhone = '213' + cleanPhone.substring(1);
+      window.open(`https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`, '_blank');
+    }
+  }
+
+  // ── AI RECEPTIONIST SETTINGS & LOGS ──
+  async function saveWaAiSettings() {
+    const toggle = document.getElementById('waAiAgentToggle');
+    const keyInput = document.getElementById('waAiApiKeyInput');
+    const enabled = toggle ? toggle.checked : true;
+    const apiKey = keyInput ? keyInput.value.trim() : '';
+
+    if (window.electronAPI && window.electronAPI.whatsapp && window.electronAPI.whatsapp.setAiSettings) {
+      try {
+        await window.electronAPI.whatsapp.setAiSettings({ enabled, apiKey });
+        showToast('✅ تم حفظ إعدادات موظف الاستقبال الذكي بنجاح!', 'success');
+      } catch (e) {
+        showToast('خطأ في حفظ الإعدادات: ' + e.message, 'danger');
+      }
+    } else {
+      localStorage.setItem('brainova_ai_settings', JSON.stringify({ enabled, apiKey }));
+      showToast('✅ تم حفظ الإعدادات محلياً', 'success');
+    }
+  }
+
+  async function loadWaAiSettings() {
+    if (window.electronAPI && window.electronAPI.whatsapp && window.electronAPI.whatsapp.getAiSettings) {
+      try {
+        const s = await window.electronAPI.whatsapp.getAiSettings();
+        const toggle = document.getElementById('waAiAgentToggle');
+        const keyInput = document.getElementById('waAiApiKeyInput');
+        if (toggle && typeof s.enabled === 'boolean') toggle.checked = s.enabled;
+        if (keyInput && s.hasApiKey) keyInput.placeholder = 'مفتاح Gemini مسجل حالياً (أدخل مفتاحاً جديداً للتغيير)';
+      } catch (e) {}
+    }
+  }
+
+  async function loadWaChatLogs() {
+    const tbody = document.getElementById('waAiChatLogsTableBody');
+    if (!tbody) return;
+
+    if (window.electronAPI && window.electronAPI.whatsapp && window.electronAPI.whatsapp.getChatLogs) {
+      try {
+        const logs = await window.electronAPI.whatsapp.getChatLogs();
+        renderWaAiChatLogs(logs);
+      } catch (e) {}
+    }
+  }
+
+  function renderWaAiChatLogs(logs) {
+    const tbody = document.getElementById('waAiChatLogsTableBody');
+    if (!tbody) return;
+
+    if (!logs || logs.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#64748B;">لا توجد محادثات واردة من الأولياء حتى الآن. البوت يستمع للرسائل الواردة على مدار الساعة!</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = logs.map(l => `
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+        <td style="padding:8px 12px; font-weight:700; color:#F8FAFC;">${l.studentName || 'زائر جديد'}</td>
+        <td style="padding:8px 12px; font-family:monospace; color:#38BDF8;">${l.phone || '—'}</td>
+        <td style="padding:8px 12px; color:#CBD5E1; max-width:240px; white-space:pre-wrap;">${l.incomingText}</td>
+        <td style="padding:8px 12px; color:#A7F3D0; max-width:320px; white-space:pre-wrap; line-height:1.4;">${l.replyText}</td>
+        <td style="padding:8px 12px; text-align:center;">
+          <span class="status-pill" style="font-size:0.68rem; background:rgba(56,189,248,0.1); color:#38BDF8; border:1px solid rgba(56,189,248,0.2);">${l.aiEngine || 'AI'}</span>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  window.openPedagogicalReportModal = openPedagogicalReportModal;
+  window.closePedagogicalReportModal = closePedagogicalReportModal;
+  window.regenerateCurrentPedagogicalReport = regenerateCurrentPedagogicalReport;
+  window.sendCurrentPedagogicalReportViaWhatsApp = sendCurrentPedagogicalReportViaWhatsApp;
+  window.printCurrentPedagogicalReport = printCurrentPedagogicalReport;
+  window.openFriendlyRetentionWhatsApp = openFriendlyRetentionWhatsApp;
+  window.saveWaAiSettings = saveWaAiSettings;
+  window.loadWaAiSettings = loadWaAiSettings;
+  window.loadWaChatLogs = loadWaChatLogs;
+  window.renderWaAiChatLogs = renderWaAiChatLogs;
+
+  // Listen for real-time incoming messages logged
+  if (window.electronAPI && window.electronAPI.whatsapp && window.electronAPI.whatsapp.onMessageLogged) {
+    window.electronAPI.whatsapp.onMessageLogged((log) => {
+      loadWaChatLogs();
+      showToast(`🤖 رد آلي جديد على ${log.studentName}: "${log.incomingText.slice(0, 25)}..."`, 'info');
+    });
   }
 
   // Initial render (fallback if loadFromPersistentStore already ran)

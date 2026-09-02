@@ -1160,6 +1160,43 @@ tr.att-row-late,
   display: inline-block;
 }
 
+/* ── Retention & Risk Radar Styles ── */
+.risk-card-high {
+  background: linear-gradient(145deg, rgba(239, 68, 68, 0.08) 0%, rgba(15, 23, 42, 0.85) 100%) !important;
+  border: 1px solid rgba(239, 68, 68, 0.32) !important;
+}
+
+.risk-card-medium {
+  background: linear-gradient(145deg, rgba(245, 158, 11, 0.08) 0%, rgba(15, 23, 42, 0.85) 100%) !important;
+  border: 1px solid rgba(245, 158, 11, 0.32) !important;
+}
+
+.risk-pill-high {
+  background: rgba(239, 68, 68, 0.16);
+  color: #EF4444;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.risk-pill-medium {
+  background: rgba(245, 158, 11, 0.16);
+  color: #F59E0B;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .student-att-meta {
   display: flex;
   align-items: center;

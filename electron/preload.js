@@ -49,13 +49,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onUpdateAvailable: (callback) => ipcRenderer.on('update-available', (_, ver) => callback(ver)),
   onUpdateDownloaded: (callback) => ipcRenderer.on('update-downloaded', (_, ver) => callback(ver)),
 
-  // ── WhatsApp Automation Bot (Zero-Click)
+  // ── WhatsApp Automation Bot (Zero-Click + AI Receptionist)
   whatsapp: {
     getStatus: () => ipcRenderer.invoke('whatsapp-get-status'),
     start: () => ipcRenderer.invoke('whatsapp-start'),
     logout: () => ipcRenderer.invoke('whatsapp-logout'),
     sendMessage: (phone, text) => ipcRenderer.invoke('whatsapp-send-message', { phone, text }),
+    setAiSettings: (settings) => ipcRenderer.invoke('whatsapp-set-ai-settings', settings),
+    getAiSettings: () => ipcRenderer.invoke('whatsapp-get-ai-settings'),
+    getChatLogs: () => ipcRenderer.invoke('whatsapp-get-chat-logs'),
     onQr: (callback) => ipcRenderer.on('whatsapp-qr', (_, qr) => callback(qr)),
     onStatus: (callback) => ipcRenderer.on('whatsapp-status', (_, status) => callback(status)),
+    onMessageLogged: (callback) => ipcRenderer.on('whatsapp-message-logged', (_, log) => callback(log)),
   },
 });

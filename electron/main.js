@@ -258,11 +258,26 @@ function createMain(splash) {
       // Initialize WhatsApp Automation Bot
       try {
         const waAuthDir = path.join(app.getPath('userData'), 'whatsapp_auth');
-        whatsappBot.init(waAuthDir, (channel, data) => {
-          if (mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.webContents.send(channel, data);
-          }
-        });
+        const savedAiSettings = store.get('brainova_ai_settings') || { enabled: true, apiKey: '' };
+        whatsappBot.setAiSettings(savedAiSettings);
+
+        whatsappBot.init(
+          waAuthDir,
+          (channel, data) => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send(channel, data);
+            }
+          },
+          () => ({
+            students: store.get('brainova_students') || [],
+            groups: store.get('brainova_groups') || [],
+            attendance: store.get('brainova_attendance') || [],
+            courses: store.get('brainova_courses') || [],
+            schedule: store.get('brainova_schedule') || [],
+            rooms: store.get('brainova_rooms') || [],
+            educators: store.get('brainova_educators') || []
+          })
+        );
         if (fs.existsSync(waAuthDir) && fs.readdirSync(waAuthDir).length > 0) {
           whatsappBot.start().catch(err => console.error('[WhatsApp Bot Auto-Start Error]:', err));
         }
@@ -791,4 +806,18 @@ ipcMain.handle('whatsapp-logout', async () => {
 
 ipcMain.handle('whatsapp-send-message', async (_, { phone, text }) => {
   return await whatsappBot.sendMessage(phone, text);
+});
+
+ipcMain.handle('whatsapp-set-ai-settings', async (_, settings) => {
+  whatsappBot.setAiSettings(settings);
+  store.set('brainova_ai_settings', settings);
+  return { success: true };
+});
+
+ipcMain.handle('whatsapp-get-ai-settings', async () => {
+  return whatsappBot.getAiSettings();
+});
+
+ipcMain.handle('whatsapp-get-chat-logs', async () => {
+  return whatsappBot.getChatLogs();
 });
