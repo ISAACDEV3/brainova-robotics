@@ -909,7 +909,7 @@ document.addEventListener('DOMContentLoaded', () => {
         badgeText = `🔄 تم تسجيل حصة تعويضية اليوم (${lastSessionTime}) بنجاح • الموعد القادم: ${nextDayName} ${nextDateStr}`;
         badgeStyle = 'background:rgba(168,85,247,0.15); color:#C084FC; border:1px solid rgba(168,85,247,0.35); font-weight:700;';
       } else {
-        badgeText = `✅ تم تسجيل حضور اليوم (${scheduledTime}) • الحصة القادمة: ${nextDayName} ${nextDateStr} (بعد 7 أيام)`;
+        badgeText = `✅ تم تسجيل حضور اليوم (${scheduledTime}) • الحصة القادمة: ${nextDayName} ${nextDateStr}`;
         badgeStyle = 'background:rgba(16,185,129,0.15); color:#10B981; border:1px solid rgba(16,185,129,0.3);';
       }
     } else if (isDueToday) {
@@ -1481,7 +1481,7 @@ document.addEventListener('DOMContentLoaded', () => {
       dateInput.value = cycle.nextSessionDate;
       window.__preserveAttDate = true;
       renderAttendance();
-      showToast(`🗓️ تم الانتقال لموعد الحصة الجديدة (${cycle.nextSessionDate}) بعد أسبوع (+7 أيام)!`, 'success');
+      showToast(`🗓️ تم الانتقال لموعد الحصة القادمة (${cycle.nextDayName} ${cycle.nextSessionDate})`, 'success');
     }
   };
 
@@ -3774,7 +3774,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update cycle display in modal
     const cycleHeader = document.getElementById('quickAttCycleHeader');
     if (cycleHeader) {
-      cycleHeader.innerHTML = `${cycle.hasPreviousSession ? 'آخر حصة: <span style="color:#10B981;">' + cycle.lastDayName + ' ' + cycle.lastSessionDate + '</span> • ' : ''}<span style="color:#38BDF8;">موعد الحصة القادمة: ${cycle.nextDayName} ${cycle.nextSessionDate} (+7 أيام)</span>`;
+      cycleHeader.innerHTML = `${cycle.hasPreviousSession ? 'آخر حصة: <span style="color:#10B981;">' + cycle.lastDayName + ' ' + cycle.lastSessionDate + '</span> • ' : ''}<span style="color:#38BDF8;">موعد الحصة القادمة: ${cycle.nextDayName} ${cycle.nextSessionDate}</span>`;
     }
     const scheduleLabel = document.getElementById('quickAttScheduleLabel');
     if (scheduleLabel) {
@@ -3847,7 +3847,7 @@ document.addEventListener('DOMContentLoaded', () => {
       window.__quickAttDraft = {};
       window.__quickAttDraftDate = cycle.nextSessionDate;
       renderQuickAttendanceStudents();
-      showToast(`🗓️ تم الانتقال لموعد الحصة الجديدة (${cycle.nextSessionDate}) بعد أسبوع (+7 أيام)!`, 'success');
+      showToast(`🗓️ تم الانتقال لموعد الحصة القادمة (${cycle.nextDayName} ${cycle.nextSessionDate})`, 'success');
     }
   };
 
