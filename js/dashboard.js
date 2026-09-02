@@ -6893,7 +6893,7 @@ ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
         const toggle = document.getElementById('waAiAgentToggle');
         const keyInput = document.getElementById('waAiApiKeyInput');
         if (toggle && typeof s.enabled === 'boolean') toggle.checked = s.enabled;
-        if (keyInput && s.hasApiKey) keyInput.placeholder = 'مفتاح Gemini مسجل حالياً (أدخل مفتاحاً جديداً للتغيير)';
+        if (keyInput) keyInput.placeholder = s.hasApiKey ? 'API KEY (مسجل)' : 'API KEY';
       } catch (e) {}
     }
   }
