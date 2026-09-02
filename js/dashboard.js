@@ -1206,7 +1206,8 @@ document.addEventListener('DOMContentLoaded', () => {
           </td>
           <td>
             <span style="font-weight:700; color:#F8FAFC;">${stu.group || 'غير محدد'}</span>
-            ${(stu.sessionTime || (stu.startTime ? (stu.startTime + ' - ' + (stu.endTime || '')) : '')) ? `<div style="font-size:0.75rem; color:#00E5FF; font-weight:700; margin-top:2px;">🕒 ${stu.sessionTime || (stu.startTime + ' - ' + (stu.endTime || ''))}</div>` : ''}
+            ${stu.day ? `<div style="font-size:0.75rem; color:#FBBF24; font-weight:700; margin-top:2px;">📅 يوم الدراسة: ${stu.day}</div>` : ''}
+            ${(stu.sessionTime || (stu.startTime ? (stu.startTime + ' - ' + (stu.endTime || '')) : '')) ? `<div style="font-size:0.75rem; color:#00E5FF; font-weight:700; margin-top:1px;">🕒 ${stu.sessionTime || (stu.startTime + ' - ' + (stu.endTime || ''))}</div>` : ''}
             <small style="color:var(--color-accent);">${stu.level || ''}</small>
           </td>
           <td>
@@ -1912,6 +1913,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="profile-name-title">${stu.name}</div>
             <div class="profile-tags-row">
               <span class="status-pill status-pill--active"><span class="pill-dot"></span> ${stu.group || 'الفوج أ'}</span>
+              ${stu.day ? `<span class="status-pill" style="background:rgba(245,158,11,0.15); color:#FBBF24; border:1px solid rgba(245,158,11,0.3); font-weight:700;">📅 يوم الدراسة: ${stu.day}</span>` : ''}
               ${(stu.sessionTime || (stu.startTime ? (stu.startTime + ' - ' + (stu.endTime || '')) : '')) ? `<span class="status-pill" style="background:rgba(0,188,212,0.12); color:#00E5FF; border:1px solid rgba(0,188,212,0.3); font-weight:700;">🕒 توقيت الحصة: ${stu.sessionTime || (stu.startTime + ' - ' + (stu.endTime || ''))}</span>` : ''}
               <span class="status-pill" style="background:rgba(56,189,248,0.1); color:#38BDF8; border:1px solid rgba(56,189,248,0.25);">${stu.level || 'المستوى الأول'}</span>
               <span style="font-family:monospace; font-size:0.72rem; color:var(--color-text-dim); background:rgba(255,255,255,0.05); padding:1px 6px; border-radius:4px;">ID: ${stu.id}</span>
@@ -5339,19 +5341,44 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
 
   // Student Modals
+  function onStudentDayChange() {
+    const daySelect = document.getElementById('newStudentDay');
+    const startDateInput = document.getElementById('newStudentStartDate');
+    if (!daySelect || !startDateInput) return;
+    const selectedDay = daySelect.value;
+    const nextDate = getNextDateForDayName(selectedDay, new Date());
+    if (nextDate) {
+      startDateInput.value = nextDate;
+    }
+  }
+  window.onStudentDayChange = onStudentDayChange;
+
   function onStudentGroupSelectChange() {
     const groupSelect = document.getElementById('newStudentGroup');
+    const daySelect = document.getElementById('newStudentDay');
     const startInput = document.getElementById('newStudentStartTime');
     const endInput = document.getElementById('newStudentEndTime');
-    if (!groupSelect || !startInput || !endInput) return;
+    if (!groupSelect) return;
 
     const selectedGroup = groupSelect.value;
     const schedule = getData('brainova_schedule') || [];
     const matched = schedule.find(s => isStudentInGroup({ group: s.groupName }, selectedGroup));
+    const groups = getData('brainova_groups') || [];
+    const matchedGroup = groups.find(g => isStudentInGroup({ group: g.name }, selectedGroup));
+
+    if (daySelect) {
+      const day = matched?.day || matchedGroup?.day || 'السبت';
+      daySelect.value = day;
+      onStudentDayChange();
+    }
 
     if (matched && matched.startTime && matched.endTime) {
-      startInput.value = matched.startTime;
-      endInput.value = matched.endTime;
+      if (startInput) startInput.value = matched.startTime;
+      if (endInput) endInput.value = matched.endTime;
+    } else if (matchedGroup?.timeSlot && matchedGroup.timeSlot.includes('-')) {
+      const [st, et] = matchedGroup.timeSlot.split('-').map(t => t.trim());
+      if (startInput && st) startInput.value = st;
+      if (endInput && et) endInput.value = et;
     }
   }
   window.onStudentGroupSelectChange = onStudentGroupSelectChange;
@@ -5390,6 +5417,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const parentPhone = document.getElementById('newStudentParentPhone') ? document.getElementById('newStudentParentPhone').value.trim() : '—';
     const group = document.getElementById('newStudentGroup').value;
     const level = document.getElementById('newStudentLevel').value;
+    const day = document.getElementById('newStudentDay')?.value || 'السبت';
     const startTime = document.getElementById('newStudentStartTime')?.value || '14:00';
     const endTime = document.getElementById('newStudentEndTime')?.value || '16:00';
     const sessionTime = `${startTime} - ${endTime}`;
@@ -5417,6 +5445,7 @@ document.addEventListener('DOMContentLoaded', () => {
       name: name,
       group: group,
       level: level,
+      day: day,
       startTime: startTime,
       endTime: endTime,
       sessionTime: sessionTime,
@@ -5524,6 +5553,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('editStudentParentName').value = stu.parentName !== '—' ? (stu.parentName || '') : '';
     document.getElementById('editStudentParentPhone').value = stu.parentPhone !== '—' ? (stu.parentPhone || '') : '';
     document.getElementById('editStudentLevel').value = stu.level || 'المستوى الأول';
+
+    const daySelect = document.getElementById('editStudentDay');
+    if (daySelect) {
+      daySelect.value = stu.day || 'السبت';
+    }
+
     document.getElementById('editStudentStartTime').value = stu.startTime || '14:00';
     document.getElementById('editStudentEndTime').value = stu.endTime || '16:00';
     document.getElementById('editStudentSessionsRemaining').value = stu.sessionsRemaining !== undefined ? stu.sessionsRemaining : 4;
@@ -5540,16 +5575,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.onEditStudentGroupSelectChange = function() {
     const groupSelect = document.getElementById('editStudentGroup');
+    const daySelect = document.getElementById('editStudentDay');
     const startInput = document.getElementById('editStudentStartTime');
     const endInput = document.getElementById('editStudentEndTime');
-    if (!groupSelect || !startInput || !endInput) return;
+    if (!groupSelect) return;
 
     const selectedGroup = groupSelect.value;
     const schedule = getData('brainova_schedule') || [];
     const matched = schedule.find(s => isStudentInGroup({ group: s.groupName }, selectedGroup));
+    const groups = getData('brainova_groups') || [];
+    const matchedGroup = groups.find(g => isStudentInGroup({ group: g.name }, selectedGroup));
+
+    if (daySelect) {
+      daySelect.value = matched?.day || matchedGroup?.day || 'السبت';
+    }
+
     if (matched && matched.startTime && matched.endTime) {
-      startInput.value = matched.startTime;
-      endInput.value = matched.endTime;
+      if (startInput) startInput.value = matched.startTime;
+      if (endInput) endInput.value = matched.endTime;
+    } else if (matchedGroup?.timeSlot && matchedGroup.timeSlot.includes('-')) {
+      const [st, et] = matchedGroup.timeSlot.split('-').map(t => t.trim());
+      if (startInput && st) startInput.value = st;
+      if (endInput && et) endInput.value = et;
     }
   };
 
@@ -5566,6 +5613,7 @@ document.addEventListener('DOMContentLoaded', () => {
     stu.parentPhone = document.getElementById('editStudentParentPhone').value.trim() || '—';
     stu.group = document.getElementById('editStudentGroup').value;
     stu.level = document.getElementById('editStudentLevel').value;
+    stu.day = document.getElementById('editStudentDay')?.value || 'السبت';
     stu.startTime = document.getElementById('editStudentStartTime').value || '14:00';
     stu.endTime = document.getElementById('editStudentEndTime').value || '16:00';
     stu.sessionTime = `${stu.startTime} - ${stu.endTime}`;
