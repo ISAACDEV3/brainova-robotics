@@ -1057,24 +1057,24 @@ html[dir="ltr"] .schedule-session__delete {
 
 .att-segmented-control {
   display: inline-flex;
-  background: var(--bg-base);
-  border: 1px solid var(--border-card);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-subtle);
   border-radius: 7px;
-  padding: 2px;
-  gap: 2px;
+  padding: 3px;
+  gap: 3px;
   user-select: none;
 }
 
 .att-seg-btn {
   background: transparent;
   border: none;
-  padding: 4px 10px;
-  font-size: 0.74rem;
+  padding: 5px 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   border-radius: 5px;
   color: var(--text-muted);
   cursor: pointer;
-  transition: all var(--ease-fast);
+  transition: all 0.15s ease;
   font-family: inherit;
 }
 
@@ -1084,24 +1084,80 @@ html[dir="ltr"] .schedule-session__delete {
 }
 
 .att-seg-btn.is-active-present {
-  background: rgba(16, 185, 129, 0.22);
-  color: #10B981;
-  border: 1px solid #10B981 !important;
+  background: #10B981 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 1px 4px rgba(16, 185, 129, 0.4);
   font-weight: 800;
 }
 
 .att-seg-btn.is-active-absent {
-  background: rgba(244, 63, 94, 0.22);
-  color: #F43F5E;
-  border: 1px solid #F43F5E !important;
+  background: #EF4444 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 1px 4px rgba(239, 68, 68, 0.4);
   font-weight: 800;
 }
 
 .att-seg-btn.is-active-late {
-  background: rgba(245, 158, 11, 0.22);
-  color: #F59E0B;
-  border: 1px solid #F59E0B !important;
+  background: #F59E0B !important;
+  color: #0F172A !important;
+  box-shadow: 0 1px 4px rgba(245, 158, 11, 0.4);
   font-weight: 800;
+}
+
+/* Row-level Attendance State Highlighting across the app */
+tr.att-row-present,
+.att-row-present {
+  border-right: 4px solid #10B981 !important;
+  background: rgba(16, 185, 129, 0.04) !important;
+  transition: all 0.15s ease;
+}
+
+tr.att-row-absent,
+.att-row-absent {
+  border-right: 4px solid #EF4444 !important;
+  background: rgba(239, 68, 68, 0.08) !important;
+  transition: all 0.15s ease;
+}
+
+tr.att-row-late,
+.att-row-late {
+  border-right: 4px solid #F59E0B !important;
+  background: rgba(245, 158, 11, 0.06) !important;
+  transition: all 0.15s ease;
+}
+
+/* Universal Attendance Status Badges */
+.badge-status-present {
+  background: rgba(16, 185, 129, 0.18) !important;
+  color: #10B981 !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: inline-block;
+}
+
+.badge-status-absent {
+  background: rgba(239, 68, 68, 0.18) !important;
+  color: #EF4444 !important;
+  border: 1px solid rgba(239, 68, 68, 0.35) !important;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: inline-block;
+}
+
+.badge-status-late {
+  background: rgba(245, 158, 11, 0.18) !important;
+  color: #F59E0B !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: inline-block;
 }
 
 .student-att-meta {

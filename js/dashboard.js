@@ -857,16 +857,36 @@ document.addEventListener('DOMContentLoaded', () => {
     tbody.innerHTML = groupStudents.map(stu => {
       const draft = activeAttendanceDraft[stu.id] || { status: 'present', note: '' };
       const sessions = Number(stu.sessionsRemaining) || 0;
-      const isAbsent = draft.status === 'absent';
+      const status = draft.status;
+      const isPresent = status === 'present';
+      const isLate = status === 'late';
+      const isAbsent = status === 'absent';
+
+      let rowClass = 'att-row-present';
+      let avatarBorder = 'border:1px solid rgba(16,185,129,0.4); background:rgba(16,185,129,0.12); color:#34D399;';
+      let statusBadge = '<span class="badge-status-present">حاضر</span>';
+
+      if (isAbsent) {
+        rowClass = 'att-row-absent';
+        avatarBorder = 'border:1px solid rgba(239,68,68,0.4); background:rgba(239,68,68,0.15); color:#FCA5A5;';
+        statusBadge = '<span class="badge-status-absent">غائب</span>';
+      } else if (isLate) {
+        rowClass = 'att-row-late';
+        avatarBorder = 'border:1px solid rgba(245,158,11,0.4); background:rgba(245,158,11,0.15); color:#FCD34D;';
+        statusBadge = '<span class="badge-status-late">متأخر</span>';
+      }
 
       return `
-        <tr id="att-row-${stu.id}">
+        <tr id="att-row-${stu.id}" class="${rowClass}">
           <!-- Student Info Column -->
           <td>
             <div class="student-att-meta">
-              <div class="student-att-avatar">${stu.name.trim().charAt(0)}</div>
+              <div class="student-att-avatar" id="att-avatar-${stu.id}" style="${avatarBorder}">${stu.name.trim().charAt(0)}</div>
               <div class="student-att-info">
-                <div class="student-att-name">${stu.name}</div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="student-att-name">${stu.name}</span>
+                  <span id="att-badge-${stu.id}">${statusBadge}</span>
+                </div>
                 <div class="student-att-balance">
                   ${sessions > 0 ? `<span style="color:#34D399; font-weight:700;">${sessions} حصص متبقية</span>` : `<span style="color:#EF4444; font-weight:700;">نفدت الحصص</span>`}
                   • ID: <span style="font-family:monospace;">${stu.id}</span>
@@ -878,9 +898,9 @@ document.addEventListener('DOMContentLoaded', () => {
           <!-- Status Segmented Control -->
           <td style="text-align: center;">
             <div class="att-segmented-control" id="att-toggles-${stu.id}">
-              <button type="button" class="att-seg-btn ${draft.status === 'present' ? 'is-active-present' : ''}" onclick="setAttendanceStatus('${stu.id}', 'present')">حاضر</button>
-              <button type="button" class="att-seg-btn ${draft.status === 'absent' ? 'is-active-absent' : ''}" onclick="setAttendanceStatus('${stu.id}', 'absent')">غائب</button>
-              <button type="button" class="att-seg-btn ${draft.status === 'late' ? 'is-active-late' : ''}" onclick="setAttendanceStatus('${stu.id}', 'late')">متأخر</button>
+              <button type="button" class="att-seg-btn ${isPresent ? 'is-active-present' : ''}" onclick="setAttendanceStatus('${stu.id}', 'present')">حاضر</button>
+              <button type="button" class="att-seg-btn ${isLate ? 'is-active-late' : ''}" onclick="setAttendanceStatus('${stu.id}', 'late')">متأخر</button>
+              <button type="button" class="att-seg-btn ${isAbsent ? 'is-active-absent' : ''}" onclick="setAttendanceStatus('${stu.id}', 'absent')">غائب</button>
             </div>
           </td>
 
@@ -910,6 +930,28 @@ document.addEventListener('DOMContentLoaded', () => {
   window.setAttendanceStatus = function(studentId, status) {
     if (!activeAttendanceDraft[studentId]) activeAttendanceDraft[studentId] = { status: 'present', note: '' };
     activeAttendanceDraft[studentId].status = status;
+
+    const row = document.getElementById(`att-row-${studentId}`);
+    if (row) {
+      row.classList.remove('att-row-present', 'att-row-absent', 'att-row-late');
+      if (status === 'absent') row.classList.add('att-row-absent');
+      else if (status === 'late') row.classList.add('att-row-late');
+      else row.classList.add('att-row-present');
+    }
+
+    const badge = document.getElementById(`att-badge-${studentId}`);
+    if (badge) {
+      if (status === 'absent') badge.innerHTML = '<span class="badge-status-absent">غائب</span>';
+      else if (status === 'late') badge.innerHTML = '<span class="badge-status-late">متأخر</span>';
+      else badge.innerHTML = '<span class="badge-status-present">حاضر</span>';
+    }
+
+    const avatar = document.getElementById(`att-avatar-${studentId}`);
+    if (avatar) {
+      if (status === 'absent') avatar.style.cssText = 'border:1px solid rgba(239,68,68,0.4); background:rgba(239,68,68,0.15); color:#FCA5A5;';
+      else if (status === 'late') avatar.style.cssText = 'border:1px solid rgba(245,158,11,0.4); background:rgba(245,158,11,0.15); color:#FCD34D;';
+      else avatar.style.cssText = 'border:1px solid rgba(16,185,129,0.4); background:rgba(16,185,129,0.12); color:#34D399;';
+    }
 
     const toggleBox = document.getElementById(`att-toggles-${studentId}`);
     if (toggleBox) {
@@ -1460,12 +1502,16 @@ document.addEventListener('DOMContentLoaded', () => {
               ${sortedAttendance.map((att, idx) => {
                 const dayName = getArabicDayName(att.date);
                 let statusBadge = '';
+                let rowBorder = 'border-right:3px solid #10B981; background:rgba(16,185,129,0.02);';
                 if (att.status === 'present') {
-                  statusBadge = '<span style="color:#10B981; font-weight:700;">✅ حاضر</span>';
+                  statusBadge = '<span class="badge-status-present">حاضر</span>';
+                  rowBorder = 'border-right:3px solid #10B981; background:rgba(16,185,129,0.03);';
                 } else if (att.status === 'late') {
-                  statusBadge = '<span style="color:#F59E0B; font-weight:700;">⏳ متأخر</span>';
+                  statusBadge = '<span class="badge-status-late">متأخر</span>';
+                  rowBorder = 'border-right:3px solid #F59E0B; background:rgba(245,158,11,0.05);';
                 } else {
-                  statusBadge = '<span style="color:#EF4444; font-weight:700;">❌ غائب</span>';
+                  statusBadge = '<span class="badge-status-absent">غائب</span>';
+                  rowBorder = 'border-right:3px solid #EF4444; background:rgba(239,68,68,0.07);';
                 }
 
                 // 1. Check if payment was made on this date
@@ -1543,7 +1589,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 return `
-                  <tr style="border-bottom:1px solid rgba(255,255,255,0.03); background:${idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)'};">
+                  <tr style="border-bottom:1px solid rgba(255,255,255,0.03); ${rowBorder}">
                     <td style="padding:6px 8px; color:var(--color-text-dim); font-family:monospace;">${sortedAttendance.length - idx}</td>
                     <td style="padding:6px 8px; font-weight:700; color:#F1F5F9;">
                       ${dayName ? dayName + ' ' : ''}${att.date}
