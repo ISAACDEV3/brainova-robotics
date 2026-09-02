@@ -825,7 +825,9 @@ document.addEventListener('DOMContentLoaded', () => {
       return {
         hasPreviousSession: false,
         lastSessionDate: null,
+        lastDayName: 'السبت',
         nextSessionDate: today,
+        nextDayName: 'السبت',
         daysSinceLastSession: null,
         scheduledDay: 'السبت',
         scheduledTime: '14:00 - 16:00',
@@ -859,61 +861,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const lastDateStr = rawDates.length > 0 ? rawDates[rawDates.length - 1] : null;
     let diffDays = null;
+    let nextDateStr = '';
+    let nextDayName = '';
+    let lastDayName = '';
+
     if (lastDateStr) {
+      lastDayName = getArabicDayName(lastDateStr);
       const lastDate = parseBrainovaDate(lastDateStr) || new Date();
       lastDate.setHours(12, 0, 0, 0);
       const diffMs = now.getTime() - lastDate.getTime();
       diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+      // Golden Rule: Next session is exactly 7 days after the last recorded session date!
+      const nextDate = new Date(lastDate.getTime() + (7 * 24 * 60 * 60 * 1000));
+      nextDateStr = formatIsoDate(nextDate);
+      nextDayName = getArabicDayName(nextDateStr);
+    } else {
+      // For a new group with no recorded attendance yet:
+      nextDateStr = getNextDateForDayName(scheduledDay, now, null) || todayStr;
+      nextDayName = getArabicDayName(nextDateStr) || scheduledDay;
     }
 
-    // Calculate next scheduled session date matching the group's configured day:
-    let nextDateStr = getNextDateForDayName(scheduledDay, now, lastDateStr);
-    if (!nextDateStr) {
-      // Fallback: 7 days after last session, or today
-      if (lastDateStr) {
-        const lastDate = parseBrainovaDate(lastDateStr) || new Date();
-        const nextDate = new Date(lastDate.getTime() + (7 * 24 * 60 * 60 * 1000));
-        nextDateStr = formatIsoDate(nextDate);
-      } else {
-        nextDateStr = todayStr;
-      }
-    }
-
-    const isTodaySession = (nextDateStr === todayStr);
     const hasStudiedToday = (lastDateStr === todayStr);
+    const isDueToday = (nextDateStr === todayStr) || (diffDays !== null && diffDays >= 7 && diffDays % 7 === 0);
 
     let badgeText = '';
     let badgeStyle = '';
 
     if (hasStudiedToday) {
-      badgeText = `✅ تم تسجيل حضور اليوم (${scheduledTime})`;
+      badgeText = `✅ تم تسجيل حضور اليوم (${scheduledTime}) • الحصة القادمة: ${nextDayName} ${nextDateStr} (بعد 7 أيام)`;
       badgeStyle = 'background:rgba(16,185,129,0.15); color:#10B981; border:1px solid rgba(16,185,129,0.3);';
-    } else if (isTodaySession) {
-      badgeText = `🔴 موعد الحصة اليوم (${scheduledDay} ${scheduledTime})!`;
+    } else if (isDueToday) {
+      badgeText = `🔴 موعد الحصة اليوم: ${nextDayName} ${nextDateStr} (${scheduledTime})!`;
       badgeStyle = 'background:rgba(239,68,68,0.18); color:#EF4444; border:1px solid rgba(239,68,68,0.35); font-weight:700;';
-    } else if (!lastDateStr) {
-      badgeText = `🆕 الموعد القادم: ${scheduledDay} ${nextDateStr} (${scheduledTime})`;
-      badgeStyle = 'background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid rgba(56,189,248,0.3);';
-    } else {
-      const nextD = parseBrainovaDate(nextDateStr);
-      let daysUntil = 0;
-      if (nextD) {
-        daysUntil = Math.max(0, Math.round((nextD.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
-      }
-      badgeText = `📅 الحصة القادمة: ${scheduledDay} ${nextDateStr} (بعد ${daysUntil} يوم)`;
+    } else if (diffDays !== null && diffDays > 7) {
+      badgeText = `⚠️ انقضى أسبوع (${diffDays} يوماً) — موعد الحصة: ${nextDayName} ${nextDateStr}`;
+      badgeStyle = 'background:rgba(245,158,11,0.18); color:#F59E0B; border:1px solid rgba(245,158,11,0.35); font-weight:700;';
+    } else if (diffDays !== null && diffDays > 0) {
+      const remainingDays = 7 - diffDays;
+      badgeText = `⏳ الحصة القادمة: ${nextDayName} ${nextDateStr} (بعد ${remainingDays} ${remainingDays === 1 ? 'يوم' : 'أيام'})`;
       badgeStyle = 'background:rgba(56,189,248,0.12); color:#38BDF8; border:1px solid rgba(56,189,248,0.3);';
+    } else {
+      badgeText = `🆕 الموعد القادم: ${nextDayName} ${nextDateStr} (${scheduledTime})`;
+      badgeStyle = 'background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid rgba(56,189,248,0.3);';
     }
 
-    const suggestedDate = isTodaySession ? todayStr : nextDateStr;
+    // Suggested date for recording attendance:
+    const suggestedDate = (diffDays !== null && diffDays >= 7) ? (isDueToday ? todayStr : nextDateStr) : nextDateStr;
 
     return {
       hasPreviousSession: !!lastDateStr,
       lastSessionDate: lastDateStr,
+      lastDayName: lastDayName || scheduledDay,
       nextSessionDate: nextDateStr,
+      nextDayName: nextDayName || scheduledDay,
       scheduledDay,
       scheduledTime,
       daysSinceLastSession: diffDays,
-      isTodaySession,
+      isDueToday,
       hasStudiedToday,
       badgeText,
       badgeStyle,
@@ -3509,15 +3514,15 @@ document.addEventListener('DOMContentLoaded', () => {
             return `
               <div style="background:rgba(255,255,255,0.02); border:1px solid var(--color-border); border-radius:var(--radius-sm); padding:8px 10px; margin-bottom:10px; font-size:0.78rem;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                  <span style="color:var(--color-text-muted);">📅 موعد الحصة الجديدة:</span>
-                  <strong style="color:#38BDF8; font-family:monospace; font-size:0.84rem;">${cycle.nextSessionDate || '—'}</strong>
+                  <span style="color:var(--color-text-muted);">📅 موعد الحصة القادمة:</span>
+                  <strong style="color:#38BDF8; font-weight:700; font-size:0.84rem;">${cycle.nextDayName} ${cycle.nextSessionDate || '—'}</strong>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
                   <span style="color:var(--color-text-muted);">🕒 آخر حصة مسجلة:</span>
-                  <span style="color:${cycle.hasPreviousSession ? '#10B981' : '#94A3B8'}; font-weight:600;">${cycle.hasPreviousSession ? cycle.lastSessionDate : 'لا توجد حصص سابقة'}</span>
+                  <span style="color:${cycle.hasPreviousSession ? '#10B981' : '#94A3B8'}; font-weight:600;">${cycle.hasPreviousSession ? `${cycle.lastDayName} ${cycle.lastSessionDate}` : 'لا توجد حصص سابقة'}</span>
                 </div>
                 <div>
-                  <span class="status-pill" style="${cycle.badgeStyle}; font-size:0.72rem; padding:2px 8px; border-radius:6px; display:inline-block;">${cycle.badgeText}</span>
+                  <span class="status-pill" style="${cycle.badgeStyle}; font-size:0.72rem; padding:3px 8px; border-radius:6px; display:inline-block;">${cycle.badgeText}</span>
                 </div>
               </div>
             `;
@@ -3733,11 +3738,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update cycle display in modal
     const cycleHeader = document.getElementById('quickAttCycleHeader');
     if (cycleHeader) {
-      cycleHeader.innerHTML = `${cycle.hasPreviousSession ? 'آخر حصة: <span style="color:#10B981;">' + cycle.lastSessionDate + '</span> • ' : ''}<span style="color:#38BDF8;">موعد الحصة القادمة (+7 أيام): ${cycle.nextSessionDate}</span>`;
+      cycleHeader.innerHTML = `${cycle.hasPreviousSession ? 'آخر حصة: <span style="color:#10B981;">' + cycle.lastDayName + ' ' + cycle.lastSessionDate + '</span> • ' : ''}<span style="color:#38BDF8;">موعد الحصة القادمة: ${cycle.nextDayName} ${cycle.nextSessionDate} (+7 أيام)</span>`;
+    }
+    const scheduleLabel = document.getElementById('quickAttScheduleLabel');
+    if (scheduleLabel) {
+      scheduleLabel.textContent = `${cycle.scheduledDay} • ${cycle.scheduledTime}`;
+    }
+    const nextDateLabel = document.getElementById('quickAttNextDateLabel');
+    if (nextDateLabel) {
+      nextDateLabel.textContent = `${cycle.nextDayName} ${cycle.nextSessionDate}`;
     }
     const prevDateLabel = document.getElementById('quickAttPrevDateLabel');
     if (prevDateLabel) {
-      prevDateLabel.textContent = cycle.hasPreviousSession ? cycle.lastSessionDate : 'لا توجد';
+      prevDateLabel.textContent = cycle.hasPreviousSession ? `${cycle.lastDayName} ${cycle.lastSessionDate}` : 'لا توجد';
     }
     const prevWeekBtn = document.getElementById('quickAttPrevWeekBtn');
     if (prevWeekBtn) {
