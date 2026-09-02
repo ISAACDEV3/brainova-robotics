@@ -6,6 +6,7 @@ const fs    = require('fs');
 const os    = require('os');
 const Store = require('electron-store');
 const QRCode = require('qrcode');
+const whatsappBot = require('./whatsapp-bot');
 
 // ── PERSISTENT STORE ─────────────────────────────────────────────────────────
 const store = new Store({ name: 'brainova-data' });
@@ -253,6 +254,21 @@ function createMain(splash) {
       mainWindow.center();
       performAutoBackup();
       setupAutoUpdater();
+
+      // Initialize WhatsApp Automation Bot
+      try {
+        const waAuthDir = path.join(app.getPath('userData'), 'whatsapp_auth');
+        whatsappBot.init(waAuthDir, (channel, data) => {
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send(channel, data);
+          }
+        });
+        if (fs.existsSync(waAuthDir) && fs.readdirSync(waAuthDir).length > 0) {
+          whatsappBot.start().catch(err => console.error('[WhatsApp Bot Auto-Start Error]:', err));
+        }
+      } catch (waErr) {
+        console.error('[WhatsApp Bot Init Error]:', waErr);
+      }
     }, 2200);
   });
 
@@ -732,4 +748,21 @@ ipcMain.on('logout', () => {
     mainWindow.close();
   }
   createLoginWindow(null);
+});
+
+// ── IPC: WHATSAPP BOT AUTOMATION ──────────────────────────────────────────
+ipcMain.handle('whatsapp-get-status', async () => {
+  return whatsappBot.getStatus();
+});
+
+ipcMain.handle('whatsapp-start', async () => {
+  return await whatsappBot.start();
+});
+
+ipcMain.handle('whatsapp-logout', async () => {
+  return await whatsappBot.logout();
+});
+
+ipcMain.handle('whatsapp-send-message', async (_, { phone, text }) => {
+  return await whatsappBot.sendMessage(phone, text);
 });

@@ -46,6 +46,7 @@
 
         <div class="nav-section-title">النظام</div>
         <ul>
+          <li><a href="#" data-view="whatsapp" id="navWhatsApp"><span class="icon" style="font-size:1.1rem;">🤖</span> بوت واتساب الآلي <span id="waSidebarStatusDot" style="width:8px; height:8px; border-radius:50%; background:#EF4444; margin-right:auto; display:inline-block;" title="حالة الاتصال"></span></a></li>
           <li><a href="#" data-view="settings" data-i18n="dash_settings"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span> الإعدادات</a></li>
         </ul>
       </nav>
@@ -779,6 +780,116 @@
               </div>
 
             </div>
+          </div>
+        </section>
+
+        <!-- 11. WHATSAPP AUTOMATION BOT VIEW -->
+        <section id="view-whatsapp" class="dashboard-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title" style="display:flex; align-items:center; gap:10px;">
+                <span>🤖</span> بوت واتساب الآلي الذكي (Zero-Click Automation)
+              </h1>
+              <p class="page-subtitle">إرسال تنبيهات التأخر وتذكيرات تجديد الاشتراكات الشهرية تلقائياً وبشكل صامت بدون أي تدخل يدوي.</p>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span id="waHeaderStatusBadge" class="status-pill" style="background:rgba(239,68,68,0.15); color:#EF4444; border:1px solid rgba(239,68,68,0.3); font-weight:800; font-size:0.82rem;">
+                🔴 غير متصل بالواتساب
+              </span>
+              <button type="button" class="btn btn--outline btn--small" onclick="refreshWhatsAppStatus()">🔄 تحديث الحالة</button>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+            
+            <!-- Column 1: Connection & QR Code -->
+            <div class="card" style="display:flex; flex-direction:column; gap:16px;">
+              <div class="card__header" style="padding-bottom:0;">
+                <h3 class="card__title" style="display:flex; align-items:center; gap:8px;">
+                  <span>📲</span> ربط رقم واتساب الأكاديمية
+                </h3>
+              </div>
+
+              <!-- When Disconnected / Needs QR -->
+              <div id="waQrBox" style="text-align:center; padding:20px; background:rgba(255,255,255,0.02); border:1px dashed var(--color-border); border-radius:12px;">
+                <div id="waQrContainer" style="margin:0 auto 16px auto; width:220px; height:220px; background:#fff; padding:10px; border-radius:12px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 20px rgba(37,211,102,0.15);">
+                  <span id="waQrPlaceholder" style="color:#0f172a; font-size:0.85rem; font-weight:700;">جاري تجهيز رمز QR...</span>
+                  <img id="waQrImage" src="" alt="WhatsApp QR Code" style="display:none; width:100%; height:100%; border-radius:6px;">
+                </div>
+                <div style="font-size:0.85rem; color:#f1f5f9; font-weight:700; margin-bottom:6px;">امسح الرمز بهاتفك لربط البوت:</div>
+                <div style="font-size:0.78rem; color:#94a3b8; line-height:1.6; text-align:right; max-width:320px; margin:0 auto;">
+                  1. افتح تطبيق <strong>WhatsApp</strong> في هاتفك<br>
+                  2. اضغط على <strong>القائمة (⋮)</strong> أو <strong>الإعدادات</strong><br>
+                  3. اختر <strong>الأجهزة المرتبطة (Linked Devices)</strong><br>
+                  4. اضغط <strong>ربط جهاز</strong> ووجّه الكاميرا نحو الرمز أعلاه
+                </div>
+                <button type="button" class="btn btn--primary btn--small" style="margin-top:14px; background:#25D366;" onclick="startWhatsAppClient()">
+                  🚀 تشغيل وتوليد رمز جديد
+                </button>
+              </div>
+
+              <!-- When Connected -->
+              <div id="waConnectedBox" style="display:none; padding:20px; background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.3); border-radius:12px; text-align:center;">
+                <div style="font-size:3rem; margin-bottom:8px;">✅</div>
+                <h3 style="color:#10B981; font-size:1.1rem; margin-bottom:4px;">البوت متصل بنجاح وجاهز!</h3>
+                <p id="waConnectedPhoneDisplay" style="font-family:monospace; font-size:1.1rem; color:#f8fafc; font-weight:800; margin-bottom:6px;">+213XXXXXXXXX</p>
+                <p style="font-size:0.8rem; color:#94a3b8; margin-bottom:16px;">البوت يعمل في الخلفية بشكل صامت دون الحاجة لفتح أي نوافذ.</p>
+                <button type="button" class="btn btn--outline btn--small" style="color:#EF4444; border-color:rgba(239,68,68,0.3);" onclick="logoutWhatsApp()">
+                  🔴 قطع الاتصال وتسجيل الخروج
+                </button>
+              </div>
+            </div>
+
+            <!-- Column 2: Automation Rules & Templates -->
+            <div style="display:flex; flex-direction:column; gap:20px;">
+              
+              <!-- Rule 1: Attendance Alerts -->
+              <div class="card">
+                <div class="card__header" style="display:flex; justify-content:space-between; align-items:center;">
+                  <h3 class="card__title" style="font-size:0.95rem;">⏳ تنبيهات التأخر والغياب التلقائية (Zero-Click)</h3>
+                  <input type="checkbox" id="waAutoAttendanceToggle" checked style="width:20px; height:20px; cursor:pointer;" onchange="saveWhatsAppSettings()">
+                </div>
+                <p style="font-size:0.78rem; color:#94a3b8; margin-bottom:10px;">
+                  عند وضع علامة (متأخر ⏳ أو غائب ❌) للتلميذ وحفظ الحضور، يرسل البوت تنبيهاً فورياً وتلقائياً لولي الأمر دون أي نقرة إضافية.
+                </p>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label style="font-size:0.75rem; color:#94a3b8;">قالب الرسالة (استخدم المتغيرات: {student}, {group}, {time}, {date}):</label>
+                  <textarea id="waLateTemplateInput" rows="3" class="form-input" style="font-size:0.8rem; resize:vertical;" onchange="saveWhatsAppSettings()"></textarea>
+                </div>
+              </div>
+
+              <!-- Rule 2: Monthly Payment Reminders -->
+              <div class="card">
+                <div class="card__header" style="display:flex; justify-content:space-between; align-items:center;">
+                  <h3 class="card__title" style="font-size:0.95rem;">💳 تذكيرات التسديد والاشتراك الشهري التلقائية</h3>
+                  <input type="checkbox" id="waAutoPaymentToggle" checked style="width:20px; height:20px; cursor:pointer;" onchange="saveWhatsAppSettings()">
+                </div>
+                <p style="font-size:0.78rem; color:#94a3b8; margin-bottom:10px;">
+                  إرسال تذكيرات مهذبة ومجدولة تلقائياً للأولياء الذين مر شهر على آخر تسديد لهم ومستحق عليهم تجديد الاشتراك.
+                </p>
+                <div class="form-group" style="margin-bottom:10px;">
+                  <label style="font-size:0.75rem; color:#94a3b8;">قالب تذكير التسديد (استخدم المتغيرات: {student}, {last_payment}, {days_ago}):</label>
+                  <textarea id="waOverdueTemplateInput" rows="3" class="form-input" style="font-size:0.8rem; resize:vertical;" onchange="saveWhatsAppSettings()"></textarea>
+                </div>
+                <div style="display:flex; justify-content:flex-end;">
+                  <button type="button" class="btn btn--primary btn--small" style="background:#0284C7; display:flex; align-items:center; gap:6px;" onclick="triggerBatchPaymentReminders()">
+                    <span>🚀 فحص وإرسال تذكيرات للمتأخرين الآن آلياً</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Test Box -->
+              <div class="card" style="background:rgba(255,255,255,0.015);">
+                <h3 class="card__title" style="font-size:0.85rem; margin-bottom:8px;">🧪 تجربة إرسال رسالة فورية عبر البوت</h3>
+                <div style="display:grid; grid-template-columns: 140px 1fr auto; gap:8px;">
+                  <input type="text" id="waTestPhone" class="form-input" placeholder="0550XXXXXX" style="font-size:0.8rem; font-family:monospace;">
+                  <input type="text" id="waTestMessage" class="form-input" placeholder="اكتب نص التجربة هنا..." style="font-size:0.8rem;">
+                  <button type="button" class="btn btn--primary btn--small" onclick="sendTestWhatsAppMessage()">إرسال</button>
+                </div>
+              </div>
+
+            </div>
+
           </div>
         </section>
 

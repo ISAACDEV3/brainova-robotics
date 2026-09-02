@@ -326,6 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (currentView === 'rooms') renderRooms();
     else if (currentView === 'courses') renderCourses();
     else if (currentView === 'schedule') renderSchedule();
+    else if (currentView === 'whatsapp') renderWhatsAppView();
     
     const currentLang = document.documentElement.lang;
     if (currentLang !== 'ar') updateDashboardLanguage(currentLang);
@@ -986,6 +987,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (stu.sessionsRemaining > 0) {
           stu.sessionsRemaining = Math.max(0, stu.sessionsRemaining - 1);
         }
+      }
+
+      // Zero-click WhatsApp Bot Trigger for late / absent
+      if (stu && (data.status === 'late' || data.status === 'absent')) {
+        triggerAutoAttendanceWhatsApp(stu, data.status, selectedTime, selectedDate);
       }
     }
 
@@ -1736,6 +1742,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     saveData('brainova_attendance', allAttendance);
     saveData('brainova_students', students);
+
+    // Zero-click WhatsApp Bot Trigger for late / absent
+    if (sessionStatus === 'late' || sessionStatus === 'absent') {
+      triggerAutoAttendanceWhatsApp(stu, sessionStatus, sessionTime, sessionDate);
+    }
 
     closeAddStudentSessionModal();
     const timeFeedback = paidAtValue ? ` • التسديد: ${paidAtValue}` : '';
@@ -3446,9 +3457,301 @@ document.addEventListener('DOMContentLoaded', () => {
       const view = link.getAttribute('data-view');
       if (view === 'settings') {
         setTimeout(loadSettingsInfo, 100);
+      } else if (view === 'whatsapp') {
+        setTimeout(renderWhatsAppView, 50);
       }
     });
   });
+
+  // ==========================================
+  // 10. ZERO-CLICK WHATSAPP AUTOMATION BOT
+  // ==========================================
+  const DEFAULT_WA_SETTINGS = {
+    autoAttendance: true,
+    autoPayment: true,
+    lateTemplate: 'السلام عليكم سيدي ولي أمر التلميذ(ة) {student}،\nنعلمكم بتأخره عن موعد حصة الروبوتيك اليوم المقررة على الساعة {time} بأكاديمية Brainova.\nنرجو الاطمئنان عليه.',
+    absentTemplate: 'السلام عليكم سيدي ولي أمر التلميذ(ة) {student}،\nسجلنا غيابه اليوم عن حصة الروبوتيك المقررة على الساعة {time} بأكاديمية Brainova.\nنتمنى له السلامة والتوفيق.',
+    overdueTemplate: 'تحية طيبة سيدي ولي أمر التلميذ(ة) {student}،\nنود تذكيركم بانتهاء اشتراك الشهر في تدريب الروبوتيك بأكاديمية Brainova (آخر تسديد: {last_payment}).\nيرجى تسوية مستحقات الشهر القادم لضمان استمرارية الحصص.\nشكراً لثقتكم بأكاديمية Brainova.'
+  };
+
+  function getWhatsAppSettings() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('brainova_wa_settings') || 'null');
+      return { ...DEFAULT_WA_SETTINGS, ...(saved || {}) };
+    } catch (e) {
+      return DEFAULT_WA_SETTINGS;
+    }
+  }
+  window.getWhatsAppSettings = getWhatsAppSettings;
+
+  function saveWhatsAppSettings() {
+    const autoAtt = document.getElementById('waAutoAttendanceToggle')?.checked ?? true;
+    const autoPay = document.getElementById('waAutoPaymentToggle')?.checked ?? true;
+    const lateTpl = document.getElementById('waLateTemplateInput')?.value || DEFAULT_WA_SETTINGS.lateTemplate;
+    const overdueTpl = document.getElementById('waOverdueTemplateInput')?.value || DEFAULT_WA_SETTINGS.overdueTemplate;
+
+    const newSettings = {
+      ...getWhatsAppSettings(),
+      autoAttendance: autoAtt,
+      autoPayment: autoPay,
+      lateTemplate: lateTpl,
+      overdueTemplate: overdueTpl
+    };
+
+    localStorage.setItem('brainova_wa_settings', JSON.stringify(newSettings));
+    showToast('✅ تم حفظ إعدادات وقوالب بوت الواتساب بنجاح!', 'success');
+  }
+  window.saveWhatsAppSettings = saveWhatsAppSettings;
+
+  // Render WhatsApp View
+  async function renderWhatsAppView() {
+    const settings = getWhatsAppSettings();
+
+    const lateEl = document.getElementById('waLateTemplateInput');
+    if (lateEl && !lateEl.value) lateEl.value = settings.lateTemplate;
+
+    const overdueEl = document.getElementById('waOverdueTemplateInput');
+    if (overdueEl && !overdueEl.value) overdueEl.value = settings.overdueTemplate;
+
+    const attToggle = document.getElementById('waAutoAttendanceToggle');
+    if (attToggle) attToggle.checked = settings.autoAttendance !== false;
+
+    const payToggle = document.getElementById('waAutoPaymentToggle');
+    if (payToggle) payToggle.checked = settings.autoPayment !== false;
+
+    await refreshWhatsAppStatus();
+  }
+  window.renderWhatsAppView = renderWhatsAppView;
+
+  // Refresh status from main process
+  async function refreshWhatsAppStatus() {
+    if (!window.electronAPI || !window.electronAPI.whatsapp) {
+      updateWhatsAppUI({ status: 'disconnected' });
+      return;
+    }
+    try {
+      const status = await window.electronAPI.whatsapp.getStatus();
+      updateWhatsAppUI(status);
+    } catch (e) {
+      updateWhatsAppUI({ status: 'disconnected' });
+    }
+  }
+  window.refreshWhatsAppStatus = refreshWhatsAppStatus;
+
+  function updateWhatsAppUI(statusObj) {
+    const isConnected = statusObj?.status === 'connected' || statusObj?.connected;
+    const headerBadge = document.getElementById('waHeaderStatusBadge');
+    const sidebarDot = document.getElementById('waSidebarStatusDot');
+    const qrBox = document.getElementById('waQrBox');
+    const connectedBox = document.getElementById('waConnectedBox');
+    const phoneDisplay = document.getElementById('waConnectedPhoneDisplay');
+    const qrImg = document.getElementById('waQrImage');
+    const qrPlaceholder = document.getElementById('waQrPlaceholder');
+
+    if (sidebarDot) {
+      sidebarDot.style.background = isConnected ? '#10B981' : '#EF4444';
+      sidebarDot.style.boxShadow = isConnected ? '0 0 6px #10B981' : 'none';
+    }
+
+    if (headerBadge) {
+      if (isConnected) {
+        headerBadge.style.background = 'rgba(16,185,129,0.15)';
+        headerBadge.style.color = '#10B981';
+        headerBadge.style.borderColor = 'rgba(16,185,129,0.3)';
+        headerBadge.textContent = `🟢 متصل بالواتساب (+${statusObj.phone || ''})`;
+      } else if (statusObj?.status === 'waiting_qr') {
+        headerBadge.style.background = 'rgba(245,158,11,0.15)';
+        headerBadge.style.color = '#F59E0B';
+        headerBadge.style.borderColor = 'rgba(245,158,11,0.3)';
+        headerBadge.textContent = '🟡 في انتظار مسح رمز QR';
+      } else {
+        headerBadge.style.background = 'rgba(239,68,68,0.15)';
+        headerBadge.style.color = '#EF4444';
+        headerBadge.style.borderColor = 'rgba(239,68,68,0.3)';
+        headerBadge.textContent = '🔴 غير متصل بالواتساب';
+      }
+    }
+
+    if (isConnected) {
+      if (qrBox) qrBox.style.display = 'none';
+      if (connectedBox) connectedBox.style.display = 'block';
+      if (phoneDisplay) phoneDisplay.textContent = `+${statusObj.phone || ''} (${statusObj.name || 'Brainova'})`;
+    } else {
+      if (connectedBox) connectedBox.style.display = 'none';
+      if (qrBox) qrBox.style.display = 'block';
+
+      if (statusObj?.qr) {
+        if (qrImg) {
+          qrImg.src = statusObj.qr;
+          qrImg.style.display = 'block';
+        }
+        if (qrPlaceholder) qrPlaceholder.style.display = 'none';
+      }
+    }
+  }
+
+  // Start WhatsApp Client
+  async function startWhatsAppClient() {
+    if (!window.electronAPI || !window.electronAPI.whatsapp) {
+      showToast('ميزة البوت متاحة فقط داخل تطبيق الديسكتوب', 'error');
+      return;
+    }
+    const qrPlaceholder = document.getElementById('waQrPlaceholder');
+    const qrImg = document.getElementById('waQrImage');
+    if (qrPlaceholder) {
+      qrPlaceholder.textContent = 'جاري توليد رمز QR، انتظر ثوانٍ...';
+      qrPlaceholder.style.display = 'block';
+    }
+    if (qrImg) qrImg.style.display = 'none';
+
+    showToast('جاري تشغيل بوت الواتساب وتوليد الرمز...', 'info');
+    await window.electronAPI.whatsapp.start();
+  }
+  window.startWhatsAppClient = startWhatsAppClient;
+
+  // Logout WhatsApp
+  async function logoutWhatsApp() {
+    if (!confirm('هل أنت متأكد من قطع اتصال بوت الواتساب؟')) return;
+    if (!window.electronAPI || !window.electronAPI.whatsapp) return;
+    await window.electronAPI.whatsapp.logout();
+    showToast('تم قطع الاتصال بالواتساب بنجاح', 'info');
+    refreshWhatsAppStatus();
+  }
+  window.logoutWhatsApp = logoutWhatsApp;
+
+  // Send Test WhatsApp Message
+  async function sendTestWhatsAppMessage() {
+    const phone = document.getElementById('waTestPhone')?.value.trim();
+    const message = document.getElementById('waTestMessage')?.value.trim();
+    if (!phone || !message) {
+      showToast('يرجى إدخال رقم الهاتف ونص الرسالة للتجربة!', 'error');
+      return;
+    }
+    if (!window.electronAPI || !window.electronAPI.whatsapp) {
+      showToast('ميزة البوت متاحة داخل تطبيق الديسكتوب', 'error');
+      return;
+    }
+
+    showToast('جاري إرسال الرسالة التجريبية...', 'info');
+    const res = await window.electronAPI.whatsapp.sendMessage(phone, message);
+    if (res && res.success) {
+      showToast(`✅ تم إرسال الرسالة التجريبية بنجاح إلى (${phone})!`, 'success');
+    } else {
+      showToast(`فشل الإرسال: ${res?.error || 'خطأ غير معروف'}`, 'error');
+    }
+  }
+  window.sendTestWhatsAppMessage = sendTestWhatsAppMessage;
+
+  // --- TRIGGER 1: AUTO ATTENDANCE (ZERO-CLICK) ---
+  async function triggerAutoAttendanceWhatsApp(student, status, time, date) {
+    if (!window.electronAPI || !window.electronAPI.whatsapp) return;
+    const settings = getWhatsAppSettings();
+    if (!settings.autoAttendance) return;
+    if (!student || !student.parentPhone) return;
+
+    try {
+      const waStatus = await window.electronAPI.whatsapp.getStatus();
+      if (!waStatus || !waStatus.connected) return;
+
+      const template = status === 'late' ? settings.lateTemplate : settings.absentTemplate;
+      const text = template
+        .replace(/{student}/g, student.name || 'التلميذ')
+        .replace(/{group}/g, student.group || 'الفوج')
+        .replace(/{time}/g, time || '—')
+        .replace(/{date}/g, date || 'اليوم');
+
+      const res = await window.electronAPI.whatsapp.sendMessage(student.parentPhone, text);
+      if (res && res.success) {
+        showToast(`🤖 أرسل البوت تنبيهاً تلقائياً لولي أمر (${student.name}) عبر واتساب`, 'success');
+      }
+    } catch (e) {
+      console.error('[WhatsApp Auto Attendance Error]:', e);
+    }
+  }
+  window.triggerAutoAttendanceWhatsApp = triggerAutoAttendanceWhatsApp;
+
+  // --- TRIGGER 2: BATCH & AUTOMATIC PAYMENT REMINDERS (ZERO-CLICK) ---
+  async function triggerBatchPaymentReminders(isSilentAuto = false) {
+    if (!window.electronAPI || !window.electronAPI.whatsapp) {
+      if (!isSilentAuto) showToast('ميزة البوت متاحة فقط داخل تطبيق الديسكتوب', 'error');
+      return;
+    }
+
+    const waStatus = await window.electronAPI.whatsapp.getStatus();
+    if (!waStatus || !waStatus.connected) {
+      if (!isSilentAuto) showToast('بوت الواتساب غير متصل! يرجى ربط الرقم أولاً من قسم البوت.', 'error');
+      return;
+    }
+
+    const settings = getWhatsAppSettings();
+    const students = getData('brainova_students');
+    const allPayments = getData('brainova_payments');
+
+    // Find overdue students
+    const overdueStudents = students.filter(s => {
+      const timeline = getStudentPaymentTimeline(s.id, s, allPayments);
+      return timeline.status === 'overdue' && s.parentPhone;
+    });
+
+    if (overdueStudents.length === 0) {
+      if (!isSilentAuto) showToast('لا يوجد طلاب متأخرون عن التسديد حالياً! كل الاشتراكات مسواة 👍', 'success');
+      return;
+    }
+
+    if (!isSilentAuto) {
+      showToast(`جاري إرسال تذكيرات التسديد لـ (${overdueStudents.length}) من الأولياء آلياً...`, 'info');
+    }
+
+    let sentCount = 0;
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    for (const s of overdueStudents) {
+      // Avoid sending reminder more than once every 4 days
+      if (s.lastWaReminderDate === todayStr) continue;
+
+      const timeline = getStudentPaymentTimeline(s.id, s, allPayments);
+      const text = settings.overdueTemplate
+        .replace(/{student}/g, s.name)
+        .replace(/{last_payment}/g, timeline.lastDateStr)
+        .replace(/{days_ago}/g, String(timeline.daysElapsed));
+
+      const res = await window.electronAPI.whatsapp.sendMessage(s.parentPhone, text);
+      if (res && res.success) {
+        sentCount++;
+        s.lastWaReminderDate = todayStr;
+      }
+      // Small safety delay between messages
+      await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+
+    if (sentCount > 0) {
+      saveData('brainova_students', students);
+      showToast(`✅ أرسل البوت (${sentCount}) تذكير تسديد عبر واتساب للأولياء بنجاح!`, 'success');
+    } else if (!isSilentAuto) {
+      showToast('تم إرسال تذكيرات لهؤلاء الأولياء اليوم مسبقاً لمنع التكرار.', 'info');
+    }
+  }
+  window.triggerBatchPaymentReminders = triggerBatchPaymentReminders;
+
+  // Setup IPC listeners on DOM ready
+  if (window.electronAPI && window.electronAPI.whatsapp) {
+    window.electronAPI.whatsapp.onQr((qr) => {
+      updateWhatsAppUI({ status: 'waiting_qr', qr });
+    });
+    window.electronAPI.whatsapp.onStatus((status) => {
+      updateWhatsAppUI(status);
+    });
+    // Check status on load
+    setTimeout(refreshWhatsAppStatus, 1500);
+
+    // Auto-check overdue payments once a day (after 12 seconds of startup)
+    setTimeout(() => {
+      const settings = getWhatsAppSettings();
+      if (settings.autoPayment) {
+        triggerBatchPaymentReminders(true);
+      }
+    }, 12000);
+  }
 
   // Initial render (fallback if loadFromPersistentStore already ran)
   renderAll();
