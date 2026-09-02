@@ -67,10 +67,10 @@
           <div class="topbar-breadcrumb">
             <span>الرئيسية</span> <span style="opacity:0.3;">/</span> <strong id="topbarViewTitle">نظرة عامة</strong>
           </div>
-          <div class="search-bar" style="margin-right: 14px;">
+          <div class="search-bar" style="margin-right: 14px; cursor: pointer;" onclick="openCommandPalette()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <input type="text" id="globalSearch" placeholder="بحث سريع في النظام (Ctrl+K)...">
-            <span class="search-shortcut">⌘K</span>
+            <input type="text" id="globalSearch" placeholder="بحث سريع في النظام (Ctrl+K)..." readonly style="cursor: pointer;">
+            <span class="search-shortcut">Ctrl+K</span>
           </div>
         </div>
 
@@ -1748,7 +1748,7 @@
 
       <div class="modal__actions" style="display:flex; gap:8px;">
         <button type="button" class="btn btn--outline" onclick="closeStudentIdCardModal()">إلغاء</button>
-        <button type="button" class="btn btn--primary" onclick="triggerAppPrint()">طباعة البطاقة المدرسية (كارت بلاستيك)</button>
+        <button type="button" class="btn btn--primary" id="printSingleBadgeBtn" onclick="confirmPrintCurrentStudentBadge()">طباعة بطاقة الطالب (CR80)</button>
       </div>
     </div>
   </div>
@@ -1983,6 +1983,51 @@
           <button type="submit" class="btn btn--primary">💾 حفظ الحصة في السجل</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ===== BATCH GROUP ID BADGES MODAL (A4 PRINT) ===== -->
+  <div class="modal-overlay" id="batchBadgesModal">
+    <div class="modal" style="max-width: 540px;">
+      <div class="modal__header">
+        <div>
+          <h2 class="modal__title">طباعة بطاقات الفوج (A4 Batch)</h2>
+          <p style="font-size:0.8rem; color:var(--color-text-muted); margin-top:2px;">تجهيز بطاقات طلاب الفوج في ورقة A4 واحدة جاهزة للطباعة والتغليف</p>
+        </div>
+        <button class="modal__close" onclick="closeBatchBadgesModal()">×</button>
+      </div>
+      <div style="padding: 10px 0;">
+        <div class="form-group">
+          <label>اختر الفوج</label>
+          <select id="batchBadgesGroupSelect" class="form-input" onchange="updateBatchBadgesPreview()"></select>
+        </div>
+        <div id="batchBadgesPreviewInfo" style="padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--color-border); border-radius: 8px; font-size: 0.85rem; color: #CBD5E1; margin-top: 10px;">
+          <!-- Count of students -->
+        </div>
+      </div>
+      <div class="modal__actions">
+        <button type="button" class="btn btn--outline" onclick="closeBatchBadgesModal()">إلغاء</button>
+        <button type="button" class="btn btn--primary" onclick="confirmPrintGroupBadges()">طباعة بطاقات الفوج (A4)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== GLOBAL COMMAND PALETTE (CTRL + K) ===== -->
+  <div class="cmd-palette-overlay" id="cmdPaletteOverlay" style="display:none;" onclick="closeCommandPalette(event)">
+    <div class="cmd-palette-dialog" onclick="event.stopPropagation()">
+      <div class="cmd-palette-search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2" style="width:18px;height:18px;flex-shrink:0;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="cmdPaletteInput" class="cmd-palette-input" placeholder="ابحث عن طالب، ولي أمر، فوج، أو إجراء سريع..." autocomplete="off" oninput="onCmdPaletteInput(this.value)" onkeydown="onCmdPaletteKeydown(event)">
+        <kbd class="cmd-kbd-badge" onclick="closeCommandPalette()">ESC</kbd>
+      </div>
+      <div class="cmd-palette-results" id="cmdPaletteResults">
+        <!-- Filled dynamically by JS -->
+      </div>
+      <div class="cmd-palette-footer">
+        <span><kbd class="cmd-kbd-sm">↑</kbd> <kbd class="cmd-kbd-sm">↓</kbd> للتنقل</span>
+        <span><kbd class="cmd-kbd-sm">↵</kbd> للاختيار والتنفيذ</span>
+        <span><kbd class="cmd-kbd-sm">ESC</kbd> للإغلاق</span>
+      </div>
     </div>
   </div>
 

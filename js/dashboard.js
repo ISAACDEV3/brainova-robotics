@@ -431,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
       `).join('');
     }
 
-    // ── Last 6 Months Revenue Chart
+    // ── Last 6 Months Executive SVG Area Chart
     const chartContainer = document.getElementById('overviewRevenueChart');
     if (chartContainer) {
       const monthNames = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
@@ -448,20 +448,64 @@ document.addEventListener('DOMContentLoaded', () => {
         }).reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
         last6.push({ label: monthNames[m], value: rev, isCurrent: i === 0 });
       }
-      const maxVal = Math.max(...last6.map(x => x.value), 1);
+
+      const total6 = last6.reduce((acc, x) => acc + x.value, 0);
+      const avgMonthly = Math.round(total6 / 6);
+      const maxVal = Math.max(...last6.map(x => x.value), 5000);
+
+      const w = 500;
+      const h = 130;
+      const padX = 32;
+      const padTop = 16;
+      const padBottom = 26;
+      const plotH = h - padTop - padBottom;
+      const plotW = w - (padX * 2);
+      const stepX = plotW / (last6.length - 1 || 1);
+
+      const points = last6.map((m, idx) => {
+        const x = padX + (idx * stepX);
+        const y = padTop + plotH - ((m.value / maxVal) * plotH);
+        return { x, y, ...m };
+      });
+
+      const lineD = points.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+      const areaD = `${lineD} L ${points[points.length - 1].x.toFixed(1)} ${padTop + plotH} L ${points[0].x.toFixed(1)} ${padTop + plotH} Z`;
+
       chartContainer.innerHTML = `
-        <div style="display:flex; align-items:flex-end; gap:10px; height:100px; padding:0 4px;">
-          ${last6.map(m => {
-            const pct = Math.round((m.value / maxVal) * 100);
-            const barH = Math.max(pct, 4);
-            return `
-              <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px;">
-                <span style="font-size:0.68rem; color:var(--color-text-dim); font-family:monospace; white-space:nowrap;">${m.value > 0 ? m.value.toLocaleString() : '—'}</span>
-                <div style="width:100%; height:${barH}px; background:${m.isCurrent ? '#10B981' : 'rgba(56,189,248,0.35)'}; border-radius:4px 4px 0 0; transition:height 0.4s ease; min-height:4px;"></div>
-                <span style="font-size:0.7rem; color:${m.isCurrent ? '#10B981' : 'var(--color-text-dim)'}; font-weight:${m.isCurrent ? '700' : '400'};">${m.label}</span>
-              </div>
-            `;
-          }).join('')}
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding:0 6px;">
+          <div style="font-size:0.75rem; color:#94A3B8;">
+            إجمالي 6 أشهر: <strong style="color:#38BDF8; font-family:monospace;">${total6.toLocaleString()} دج</strong>
+          </div>
+          <div style="font-size:0.72rem; color:#94A3B8;">
+            المعدل الشهري: <strong style="color:#10B981; font-family:monospace;">${avgMonthly.toLocaleString()} دج</strong>
+          </div>
+        </div>
+        <div style="position:relative; width:100%;">
+          <svg class="analytics-chart-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="chartAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#0284C7" stop-opacity="0.28"/>
+                <stop offset="100%" stop-color="#0284C7" stop-opacity="0.0"/>
+              </linearGradient>
+            </defs>
+            <!-- Gridlines -->
+            <line x1="${padX}" y1="${padTop}" x2="${w - padX}" y2="${padTop}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3 3"/>
+            <line x1="${padX}" y1="${padTop + (plotH / 2)}" x2="${w - padX}" y2="${padTop + (plotH / 2)}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3 3"/>
+            <line x1="${padX}" y1="${padTop + plotH}" x2="${w - padX}" y2="${padTop + plotH}" stroke="rgba(255,255,255,0.1)"/>
+
+            <!-- Area & Line -->
+            <path d="${areaD}" fill="url(#chartAreaGrad)" />
+            <path d="${lineD}" fill="none" stroke="#38BDF8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+            <!-- Nodes & Labels -->
+            ${points.map(p => `
+              <circle class="analytics-chart-dot" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="${p.isCurrent ? '#10B981' : '#0F172A'}" stroke="${p.isCurrent ? '#10B981' : '#38BDF8'}" stroke-width="2">
+                <title>${p.label}: ${p.value.toLocaleString()} دج</title>
+              </circle>
+              <text x="${p.x.toFixed(1)}" y="${p.y < 35 ? p.y + 16 : p.y - 8}" font-size="9" font-weight="700" fill="${p.isCurrent ? '#10B981' : '#E2E8F0'}" text-anchor="middle" font-family="monospace">${p.value > 0 ? (p.value >= 1000 ? Math.round(p.value/1000) + 'k' : p.value) : '0'}</text>
+              <text x="${p.x.toFixed(1)}" y="${h - 6}" font-size="10" fill="${p.isCurrent ? '#38BDF8' : '#94A3B8'}" font-weight="${p.isCurrent ? '700' : '500'}" text-anchor="middle" font-family="inherit">${p.label}</text>
+            `).join('')}
+          </svg>
         </div>
       `;
     }
@@ -800,8 +844,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="display:inline-flex; gap:4px; flex-wrap:nowrap;">
               <button class="btn btn--outline" style="padding: 4px 6px; font-size: 0.75rem;" title="الملف الشامل" onclick="openStudentProfile('${stu.id}')"> الملف</button>
               <button class="btn btn--outline" style="padding: 4px 6px; font-size: 0.75rem; color:#38BDF8; border-color:rgba(56,189,248,0.4);" title="كتابة ملاحظة للولي" onclick="openStudentNoteModal('${stu.id}')"> ملاحظة</button>
-              <button class="btn btn--small" style="padding: 4px 6px; font-size: 0.75rem; background:#0284C7; color:#fff;" title="بطاقة الطالب الذكية" onclick="openStudentIdCard('${stu.id}')">🪪 بطاقة</button>
-              <button class="btn btn--small" style="padding: 4px 6px; font-size: 0.75rem; background:#25D366; color:#fff;" title="إشعار واتساب للولي" onclick="openWhatsAppDispatchModal('${stu.id}')"> واتساب</button>
+              <button class="btn btn--outline btn--small" style="padding: 4px 6px; font-size: 0.75rem; border-color:rgba(56,189,248,0.35); color:#38BDF8;" title="بطاقة الطالب الذكية (CR80)" onclick="openStudentIdCard('${stu.id}')">بطاقة</button>
+              <button class="btn btn--small" style="padding: 4px 6px; font-size: 0.75rem; background:#25D366; color:#fff;" title="إشعار واتساب للولي" onclick="openWhatsAppDispatchModal('${stu.id}')">واتساب</button>
               <button class="btn btn--primary" style="padding: 4px 6px; font-size: 0.75rem;" title="تسجيل دفعة" onclick="openRecordPaymentModal('${stu.id}')">🧾 وصل</button>
               <button class="btn-icon" style="width:26px; height:26px; border:none; color:#ef4444;" title="حذف" onclick="deleteStudent('${stu.id}')">حذف</button>
             </div>
@@ -1941,14 +1985,102 @@ document.addEventListener('DOMContentLoaded', () => {
     renderActiveView();
   };
 
-  // --- STUDENT ID BADGE CARD GENERATOR ---
-    window.openStudentIdCard = function(studentId) {
+  // --- STUDENT ID BADGE CARD GENERATOR (CR80 & A4 BATCH) ---
+  let currentIdCardStudentId = null;
+
+  window.generateBarcodeSvg = function(code) {
+    const bars = [];
+    const str = String(code || 'BRAINOVA').toUpperCase();
+    let x = 6;
+    for (let i = 0; i < str.length; i++) {
+      const charCode = str.charCodeAt(i);
+      const pattern = [(charCode % 3) + 1, ((charCode >> 2) % 3) + 1, ((charCode >> 4) % 2) + 1, 1];
+      pattern.forEach((w, idx) => {
+        if (idx % 2 === 0) {
+          bars.push(`<rect x="${x}" y="0" width="${w * 1.5}" height="28" fill="#FFFFFF"/>`);
+        }
+        x += (w * 1.5) + 1.2;
+      });
+      x += 2;
+    }
+    return `<svg width="100%" height="28" viewBox="0 0 ${Math.max(x + 6, 120)} 28" xmlns="http://www.w3.org/2000/svg">${bars.join('')}</svg>`;
+  };
+
+  window.getStudentBadgeHtml = async function(stu) {
+    let qrDataUrl = '';
+    const scanCode = `BRAINOVA:ID=${stu.id}`;
+    if (window.electronAPI && window.electronAPI.generateQr) {
+      try {
+        qrDataUrl = await window.electronAPI.generateQr(scanCode);
+      } catch (e) {
+        qrDataUrl = '';
+      }
+    }
+    if (!qrDataUrl) {
+      qrDataUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=2&data=${encodeURIComponent(scanCode)}`;
+    }
+    const barcodeSvg = generateBarcodeSvg(stu.id);
+
+    return `
+      <div class="cr80-print-card" style="width:85.6mm; height:54mm; background:linear-gradient(135deg, #0A1324 0%, #0F1D38 100%); color:#FFFFFF; border:1px solid #1E293B; border-radius:3.5mm; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; padding:3.5mm 4.5mm; box-sizing:border-box; position:relative; -webkit-print-color-adjust:exact; print-color-adjust:exact;">
+        <!-- Top Ribbon -->
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(56,189,248,0.25); padding-bottom:2mm;">
+          <div style="display:flex; align-items:center; gap:2mm;">
+            <div style="width:5.5mm; height:5.5mm; background:#0284C7; border-radius:1mm; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:9pt; color:#fff;">B</div>
+            <div>
+              <div style="font-size:7.5pt; font-weight:800; color:#F8FAFC; letter-spacing:0.3px;">BRAINOVA ROBOTICS & AI</div>
+              <div style="font-size:5.5pt; color:#38BDF8; font-weight:600;">بطاقة التلميذ المعتمدة 2026/2027</div>
+            </div>
+          </div>
+          <span style="font-size:5.5pt; color:#10B981; border:1px solid rgba(16,185,129,0.4); background:rgba(16,185,129,0.1); padding:0.5mm 1.5mm; border-radius:1mm; font-weight:700;">طالب نشط</span>
+        </div>
+
+        <!-- Middle Body -->
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:2.5mm; margin:1.5mm 0;">
+          <!-- Photo / Initials & Details -->
+          <div style="display:flex; align-items:center; gap:2.5mm; flex:1; min-width:0;">
+            <div style="width:14mm; height:16mm; background:rgba(56,189,248,0.12); border:1px solid #0284C7; border-radius:1.5mm; display:flex; align-items:center; justify-content:center; font-size:16pt; font-weight:800; color:#38BDF8; flex-shrink:0;">
+              ${stu.name ? stu.name.trim().charAt(0) : 'ط'}
+            </div>
+            <div style="min-width:0; flex:1;">
+              <div style="font-size:8.5pt; font-weight:800; color:#FFFFFF; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${stu.name}</div>
+              <div style="font-size:6pt; color:#38BDF8; font-weight:700; margin-top:0.5mm;">${stu.level || 'المستوى الأول: الروبوتيك'}</div>
+              <div style="font-size:5.5pt; color:#CBD5E1; margin-top:0.5mm;">الفوج: <strong style="color:#FFF;">${stu.group || 'الفوج أ'}</strong></div>
+              <div style="font-size:5.5pt; color:#94A3B8; margin-top:0.5mm;">الولي: ${stu.parentPhone || '—'}</div>
+            </div>
+          </div>
+
+          <!-- QR Code for Attendance Scanner -->
+          <div style="display:flex; flex-direction:column; align-items:center; flex-shrink:0;">
+            <div style="width:15mm; height:15mm; background:#FFFFFF; padding:0.8mm; border-radius:1.2mm; display:flex; align-items:center; justify-content:center;">
+              <img src="${qrDataUrl}" style="width:100%; height:100%; display:block;" alt="QR">
+            </div>
+            <span style="font-size:5pt; font-family:monospace; color:#38BDF8; font-weight:700; margin-top:0.5mm;">${stu.id}</span>
+          </div>
+        </div>
+
+        <!-- Bottom Footer with Barcode -->
+        <div style="border-top:1px solid rgba(255,255,255,0.08); padding-top:1.5mm; display:flex; justify-content:space-between; align-items:flex-end;">
+          <div style="font-size:5pt; color:#64748B;">
+            <div>أكاديمية براينوفا — أم البواقي</div>
+            <div style="color:#94A3B8; font-family:monospace; direction:ltr;">0791 19 46 33</div>
+          </div>
+          <div style="width:34mm; opacity:0.85;">
+            ${barcodeSvg}
+          </div>
+        </div>
+      </div>
+    `;
+  };
+
+  window.openStudentIdCard = async function(studentId) {
     const stu = getData('brainova_students').find(s => s.id === studentId);
     if (!stu) {
       showToast('لم يتم العثور على بيانات الطالب!', 'error');
       return;
     }
 
+    currentIdCardStudentId = studentId;
     const initial = stu.name.trim().charAt(0);
     const avatarEl = document.getElementById('idCardAvatarInitial');
     if (avatarEl) avatarEl.textContent = initial;
@@ -1957,10 +2089,20 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('idCardGroup').textContent = stu.group || 'الفوج أ';
     document.getElementById('idCardStudentId').textContent = `${stu.id}`;
 
-    const portalUrl = `${window.location.origin}${window.location.pathname.replace('dashboard.html', 'parent.html')}?id=${stu.id}&u=${encodeURIComponent(stu.username || '')}&p=${encodeURIComponent(stu.password || '')}`;
+    const scanCode = `BRAINOVA:ID=${stu.id}`;
     const qrImg = document.getElementById('idCardQrCode');
     if (qrImg) {
-      qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=2&data=${encodeURIComponent(portalUrl)}`;
+      if (window.electronAPI && window.electronAPI.generateQr) {
+        try {
+          const localQr = await window.electronAPI.generateQr(scanCode);
+          if (localQr) qrImg.src = localQr;
+          else qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=2&data=${encodeURIComponent(scanCode)}`;
+        } catch (e) {
+          qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=2&data=${encodeURIComponent(scanCode)}`;
+        }
+      } else {
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=2&data=${encodeURIComponent(scanCode)}`;
+      }
     }
 
     document.getElementById('studentIdCardModal').classList.add('active');
@@ -1968,7 +2110,392 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.closeStudentIdCardModal = function() {
     document.getElementById('studentIdCardModal').classList.remove('active');
+    currentIdCardStudentId = null;
   };
+
+  window.confirmPrintCurrentStudentBadge = function() {
+    if (currentIdCardStudentId) {
+      printStudentBadge(currentIdCardStudentId);
+    } else {
+      showToast('لم يتم تحديد طالب!', 'error');
+    }
+  };
+
+  window.printStudentBadge = async function(studentId) {
+    const stu = getData('brainova_students').find(s => s.id === studentId);
+    if (!stu) { showToast('بيانات التلميذ غير موجودة!', 'error'); return; }
+
+    const badgeHtml = await getStudentBadgeHtml(stu);
+    const fullHtml = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>بطاقة تلميذ - ${stu.name}</title>
+  <style>
+    @page { size: 85.6mm 54mm; margin: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', system-ui, sans-serif; }
+    body { width: 85.6mm; height: 54mm; margin: 0; padding: 0; background: #0A1324; -webkit-print-color-adjust: exact; print-color-adjust: exact; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  </style>
+</head>
+<body>
+  ${badgeHtml}
+</body>
+</html>`;
+
+    if (window.electronAPI && window.electronAPI.printDocument) {
+      window.electronAPI.printDocument({ html: fullHtml, title: `بطاقة_التلميذ_${stu.name}` });
+      showToast(`تم إرسال بطاقة التلميذ (${stu.name}) للطباعة! 🪪`, 'success');
+    } else {
+      const printWin = window.open('', '_blank');
+      if (printWin) {
+        printWin.document.write(fullHtml);
+        printWin.document.close();
+        printWin.focus();
+        setTimeout(() => { printWin.print(); }, 500);
+      }
+    }
+  };
+
+  // --- BATCH GROUP ID BADGES (A4 SHEET) ---
+  window.openBatchBadgesModal = function(defaultGroup) {
+    const groups = getData('brainova_groups');
+    const select = document.getElementById('batchBadgesGroupSelect');
+    if (!select) return;
+
+    select.innerHTML = groups.map(g => `<option value="${g.name}">${g.name} (${g.level || ''})</option>`).join('');
+    if (defaultGroup) {
+      select.value = decodeURIComponent(defaultGroup);
+    }
+
+    updateBatchBadgesPreview();
+    document.getElementById('batchBadgesModal').classList.add('active');
+  };
+
+  window.closeBatchBadgesModal = function() {
+    const modal = document.getElementById('batchBadgesModal');
+    if (modal) modal.classList.remove('active');
+  };
+
+  window.updateBatchBadgesPreview = function() {
+    const select = document.getElementById('batchBadgesGroupSelect');
+    const infoEl = document.getElementById('batchBadgesPreviewInfo');
+    if (!select || !infoEl) return;
+
+    const groupName = select.value;
+    const students = getData('brainova_students').filter(s => s.group === groupName || (s.group && s.group.includes(groupName)));
+    const pagesCount = Math.ceil(students.length / 8) || 1;
+
+    infoEl.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span>الطلاب المسجلون بالفوج: <strong style="color:#38BDF8; font-size:1rem;">${students.length}</strong></span>
+        <span>عدد صفحات A4: <strong style="color:#10B981;">${pagesCount} صفحة</strong> (8 بطاقات بالصفحة)</span>
+      </div>
+      <div style="font-size:0.75rem; color:#94A3B8; margin-top:6px;">
+        مجهزة بمسافات وهوامش قياسية وخطوط قص دقيقة لسهولة التقطيع والتغليف الحراري (Lamination).
+      </div>
+    `;
+  };
+
+  window.confirmPrintGroupBadges = function() {
+    const select = document.getElementById('batchBadgesGroupSelect');
+    if (!select || !select.value) {
+      showToast('يرجى اختيار فوج أولاً!', 'error');
+      return;
+    }
+    printGroupBadges(select.value);
+    closeBatchBadgesModal();
+  };
+
+  window.printGroupBadges = async function(groupName) {
+    const students = getData('brainova_students').filter(s => s.group === groupName || (s.group && s.group.includes(groupName)));
+    if (students.length === 0) {
+      showToast('لا يوجد طلاب مسجلين في هذا الفوج لطباعة بطاقاتهم!', 'error');
+      return;
+    }
+
+    showToast(`جارٍ تجهيز ${students.length} بطاقة لفوج (${groupName})...`, 'info');
+
+    const badgesHtmlArray = [];
+    for (const stu of students) {
+      const cardHtml = await getStudentBadgeHtml(stu);
+      badgesHtmlArray.push(`
+        <div style="page-break-inside:avoid; border:1px dashed #64748B; border-radius:3.5mm; padding:1px; background:#070D19;">
+          ${cardHtml}
+        </div>
+      `);
+    }
+
+    const fullHtml = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>بطاقات طلاب فوج - ${groupName}</title>
+  <style>
+    @page { size: A4 portrait; margin: 10mm 8mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', system-ui, sans-serif; }
+    body { width: 100%; background: #FFFFFF; color: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .sheet-header { text-align: center; margin-bottom: 6mm; border-bottom: 1px solid #E2E8F0; padding-bottom: 2mm; }
+    .sheet-header h2 { font-size: 13pt; color: #0F172A; }
+    .sheet-header p { font-size: 8pt; color: #64748B; margin-top: 1mm; }
+    .cards-grid { display: grid; grid-template-columns: 85.6mm 85.6mm; gap: 6mm 6mm; justify-content: center; }
+  </style>
+</head>
+<body>
+  <div class="sheet-header">
+    <h2>أكاديمية براينوفا للروبوتيك والذكاء الاصطناعي — بطاقات طلاب ${groupName}</h2>
+    <p>إجمالي البطاقات: ${students.length} بطاقة • قص على الخطوط المتقطعة للتغليف الحراري (Lamination)</p>
+  </div>
+  <div class="cards-grid">
+    ${badgesHtmlArray.join('')}
+  </div>
+</body>
+</html>`;
+
+    if (window.electronAPI && window.electronAPI.printDocument) {
+      window.electronAPI.printDocument({ html: fullHtml, title: `بطاقات_فوج_${groupName}` });
+      showToast(`تم إرسال ورقة بطاقات (${groupName}) للطباعة بنجاح!`, 'success');
+    } else {
+      const printWin = window.open('', '_blank');
+      if (printWin) {
+        printWin.document.write(fullHtml);
+        printWin.document.close();
+        printWin.focus();
+        setTimeout(() => { printWin.print(); }, 500);
+      }
+    }
+  };
+
+  // ==========================================================================
+  // COMMAND PALETTE (CTRL + K) ENGINE
+  // ==========================================================================
+  let cmdPaletteActiveIndex = 0;
+  let cmdPaletteCurrentItems = [];
+
+  window.openCommandPalette = function() {
+    const overlay = document.getElementById('cmdPaletteOverlay');
+    const input = document.getElementById('cmdPaletteInput');
+    if (!overlay || !input) return;
+
+    overlay.style.display = 'flex';
+    input.value = '';
+    cmdPaletteActiveIndex = 0;
+    renderCommandPaletteResults('');
+    setTimeout(() => input.focus(), 50);
+  };
+
+  window.closeCommandPalette = function(event) {
+    const overlay = document.getElementById('cmdPaletteOverlay');
+    if (!overlay) return;
+    overlay.style.display = 'none';
+  };
+
+  window.onCmdPaletteInput = function(val) {
+    cmdPaletteActiveIndex = 0;
+    renderCommandPaletteResults(val.trim());
+  };
+
+  window.onCmdPaletteKeydown = function(e) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeCommandPalette();
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (cmdPaletteCurrentItems.length > 0) {
+        cmdPaletteActiveIndex = (cmdPaletteActiveIndex + 1) % cmdPaletteCurrentItems.length;
+        updateCmdPaletteActiveHighlight();
+      }
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (cmdPaletteCurrentItems.length > 0) {
+        cmdPaletteActiveIndex = (cmdPaletteActiveIndex - 1 + cmdPaletteCurrentItems.length) % cmdPaletteCurrentItems.length;
+        updateCmdPaletteActiveHighlight();
+      }
+      return;
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (cmdPaletteCurrentItems[cmdPaletteActiveIndex]) {
+        executeCommandPaletteAction(cmdPaletteCurrentItems[cmdPaletteActiveIndex]);
+      }
+      return;
+    }
+  };
+
+  function updateCmdPaletteActiveHighlight() {
+    const container = document.getElementById('cmdPaletteResults');
+    if (!container) return;
+    const items = container.querySelectorAll('.cmd-item');
+    items.forEach((item, idx) => {
+      if (idx === cmdPaletteActiveIndex) {
+        item.classList.add('active');
+        item.scrollIntoView({ block: 'nearest' });
+      } else {
+        item.classList.remove('active');
+      }
+    });
+  }
+
+  function renderCommandPaletteResults(query) {
+    const container = document.getElementById('cmdPaletteResults');
+    if (!container) return;
+
+    const q = (query || '').toLowerCase().trim();
+    const students = getData('brainova_students');
+    const groups = getData('brainova_groups');
+
+    const staticActions = [
+      { id: 'act_add_student', label: 'تسجيل تلميذ جديد', sub: 'فتح نافذة إضافة طالب جديد', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>', type: 'action', run: () => openAddStudentModal() },
+      { id: 'act_attendance', label: 'تفقد الحضور والجلسات', sub: 'الانتقال إلى جدول تسجيل الحضور اليومي', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>', type: 'nav', target: 'attendance' },
+      { id: 'act_qr_scan', label: 'ماسح الحضور الذكي بالكاميرا', sub: 'مسح بطاقات الطلاب بالكاميرا تلقائياً', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>', type: 'action', run: () => openQrScannerModal() },
+      { id: 'act_batch_badges', label: 'طباعة بطاقات الفوج (A4)', sub: 'توليد ورقة A4 مجمعة لبطاقات طلاب الفوج', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>', type: 'action', run: () => openBatchBadgesModal() },
+      { id: 'act_backup_export', label: 'تصدير نسخة احتياطية فورية', sub: 'حفظ ملف قاعدة البيانات بالكامل', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>', type: 'action', run: () => doBackupExport() },
+      { id: 'act_whatsapp_hub', label: 'الوصي الآلي لواتساب (Guardian)', sub: 'إدارة الروبوت والمحادثات المباشرة', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>', type: 'nav', target: 'whatsapp' },
+      { id: 'act_schedule', label: 'جدول الحصص والقاعات', sub: 'عرض الحصص والمختبرات', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>', type: 'nav', target: 'schedule' }
+    ];
+
+    let matchedActions = [];
+    let matchedStudents = [];
+    let matchedGroups = [];
+
+    if (!q) {
+      matchedActions = staticActions;
+      matchedStudents = students.slice(0, 4);
+      matchedGroups = groups.slice(0, 3);
+    } else {
+      matchedActions = staticActions.filter(a => a.label.toLowerCase().includes(q) || a.sub.toLowerCase().includes(q));
+      matchedStudents = students.filter(s =>
+        s.name.toLowerCase().includes(q) ||
+        (s.parentPhone && s.parentPhone.includes(q)) ||
+        (s.id && s.id.toLowerCase().includes(q)) ||
+        (s.parentName && s.parentName.toLowerCase().includes(q))
+      ).slice(0, 6);
+      matchedGroups = groups.filter(g =>
+        g.name.toLowerCase().includes(q) ||
+        (g.level && g.level.toLowerCase().includes(q))
+      ).slice(0, 4);
+    }
+
+    cmdPaletteCurrentItems = [];
+    let html = '';
+
+    if (matchedActions.length > 0) {
+      html += `<div class="cmd-category-header">إجراءات سريعة</div>`;
+      matchedActions.forEach(a => {
+        const itemIndex = cmdPaletteCurrentItems.length;
+        cmdPaletteCurrentItems.push(a);
+        html += `
+          <div class="cmd-item ${itemIndex === cmdPaletteActiveIndex ? 'active' : ''}" onclick="executeCommandPaletteActionByIndex(${itemIndex})">
+            <div class="cmd-item-left">
+              <div class="cmd-item-icon">${a.icon}</div>
+              <div>
+                <div style="font-weight:700;">${a.label}</div>
+                <div style="font-size:0.72rem; color:#64748B;">${a.sub}</div>
+              </div>
+            </div>
+            <span class="cmd-item-badge">أمر</span>
+          </div>
+        `;
+      });
+    }
+
+    if (matchedStudents.length > 0) {
+      html += `<div class="cmd-category-header" style="margin-top:6px;">الطلاب</div>`;
+      matchedStudents.forEach(stu => {
+        const itemObj = {
+          id: `stu_${stu.id}`,
+          label: stu.name,
+          type: 'student',
+          run: () => openStudentProfile(stu.id)
+        };
+        const itemIndex = cmdPaletteCurrentItems.length;
+        cmdPaletteCurrentItems.push(itemObj);
+        html += `
+          <div class="cmd-item ${itemIndex === cmdPaletteActiveIndex ? 'active' : ''}" onclick="executeCommandPaletteActionByIndex(${itemIndex})">
+            <div class="cmd-item-left">
+              <div class="cmd-item-icon" style="color:#10B981;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </div>
+              <div>
+                <div style="font-weight:700;">${stu.name}</div>
+                <div style="font-size:0.72rem; color:#64748B;">${stu.group || 'بدون فوج'} • ${stu.parentPhone || 'بدون هاتف'}</div>
+              </div>
+            </div>
+            <span class="cmd-item-badge">${stu.id}</span>
+          </div>
+        `;
+      });
+    }
+
+    if (matchedGroups.length > 0) {
+      html += `<div class="cmd-category-header" style="margin-top:6px;">الأفواج</div>`;
+      matchedGroups.forEach(grp => {
+        const itemObj = {
+          id: `grp_${grp.id}`,
+          label: grp.name,
+          type: 'group',
+          run: () => openQuickGroupAttendanceModal(encodeURIComponent(grp.name))
+        };
+        const itemIndex = cmdPaletteCurrentItems.length;
+        cmdPaletteCurrentItems.push(itemObj);
+        html += `
+          <div class="cmd-item ${itemIndex === cmdPaletteActiveIndex ? 'active' : ''}" onclick="executeCommandPaletteActionByIndex(${itemIndex})">
+            <div class="cmd-item-left">
+              <div class="cmd-item-icon" style="color:#F59E0B;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <div>
+                <div style="font-weight:700;">${grp.name}</div>
+                <div style="font-size:0.72rem; color:#64748B;">${grp.level || ''} • ${grp.ageCategory || ''}</div>
+              </div>
+            </div>
+            <span class="cmd-item-badge">فوج</span>
+          </div>
+        `;
+      });
+    }
+
+    if (cmdPaletteCurrentItems.length === 0) {
+      html = `<div style="text-align:center; padding:32px 16px; color:#64748B; font-size:0.86rem;">لم يتم العثور على أي نتائج مطابقة لـ "${query}"</div>`;
+    }
+
+    container.innerHTML = html;
+  }
+
+  window.executeCommandPaletteActionByIndex = function(index) {
+    if (cmdPaletteCurrentItems[index]) {
+      executeCommandPaletteAction(cmdPaletteCurrentItems[index]);
+    }
+  };
+
+  function executeCommandPaletteAction(item) {
+    closeCommandPalette();
+    if (!item) return;
+
+    if (item.type === 'nav') {
+      const navBtn = document.querySelector(`[data-view="${item.target}"]`);
+      if (navBtn) navBtn.click();
+    } else if (typeof item.run === 'function') {
+      item.run();
+    }
+  }
+
+  // Global keybindings
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      openCommandPalette();
+    }
+    if (e.key === 'Escape') {
+      const overlay = document.getElementById('cmdPaletteOverlay');
+      if (overlay && overlay.style.display !== 'none') {
+        closeCommandPalette();
+      }
+    }
+  });
 
     // --- REAL-TIME CAMERA ATTENDANCE SCANNER ENGINE ---
   let qrMediaStream = null;
@@ -2487,6 +3014,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="display:inline-flex; gap:6px; flex-wrap:wrap;">
               <button type="button" class="btn btn--primary btn--small" style="font-size:0.75rem; padding:5px 10px;" onclick="openQuickGroupAttendanceModal('${encodeURIComponent(g.name)}')">تسجيل الحضور</button>
               <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px;" onclick="printGroupMonthlyAttendanceSheet('${encodeURIComponent(g.name)}')">طباعة القائمة</button>
+              <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px;" onclick="openBatchBadgesModal('${encodeURIComponent(g.name)}')">بطاقات الفوج</button>
               <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px;" onclick="openGroupStudentsModal('${encodeURIComponent(g.name)}')">الطلاب (${studentCount})</button>
             </div>
           </div>
@@ -4090,36 +4618,145 @@ document.addEventListener('DOMContentLoaded', () => {
   setInterval(checkRealtimeUpdates, 2000);
 
   // ── SETTINGS: Backup / Restore / Logout / Portal
+  // ── ENHANCED DATABASE BACKUP & RESTORE ENGINE ────────────────────────────
   window.doBackupExport = async function() {
-    if (!window.electronAPI) { showToast('يتطلب تشغيل التطبيق', 'error'); return; }
-    const result = await window.electronAPI.backup.export();
-    const statusEl = document.getElementById('backupStatus');
-    if (result.ok) {
-      if (statusEl) statusEl.textContent = '✅ تم حفظ النسخة الاحتياطية بنجاح!';
-      showToast('تم التصدير بنجاح!', 'success');
+    const backupPayload = {
+      application: "Brainova Robotics Management OS",
+      version: "2026.2",
+      exportedAt: new Date().toISOString(),
+      environment: window.electronAPI ? "desktop" : "browser",
+      meta: {
+        totalStudents: getData('brainova_students').length,
+        totalGroups: getData('brainova_groups').length,
+        totalAttendanceRecords: getData('brainova_attendance').length,
+        totalPayments: getData('brainova_payments').length
+      },
+      data: {
+        brainova_students: getData('brainova_students'),
+        brainova_groups: getData('brainova_groups'),
+        brainova_attendance: getData('brainova_attendance'),
+        brainova_payments: getData('brainova_payments'),
+        brainova_schedule: getData('brainova_schedule'),
+        brainova_educators: getData('brainova_educators'),
+        brainova_courses: getData('brainova_courses'),
+        brainova_rooms: getData('brainova_rooms'),
+        brainova_registrations: getData('brainova_registrations'),
+        brainova_users: getData('brainova_users')
+      }
+    };
+
+    if (window.electronAPI && window.electronAPI.backup && window.electronAPI.backup.export) {
+      const result = await window.electronAPI.backup.export();
+      const statusEl = document.getElementById('backupStatus');
+      if (result.ok) {
+        if (statusEl) statusEl.textContent = `✅ تم حفظ النسخة بنجاح (${backupPayload.meta.totalStudents} طالب، ${backupPayload.meta.totalGroups} فوج)`;
+        showToast('تم تصدير النسخة الاحتياطية بنجاح!', 'success');
+      } else {
+        showToast('تم إلغاء التصدير', 'info');
+      }
     } else {
-      if (statusEl) statusEl.textContent = '';
-      showToast('تم إلغاء العملية', 'info');
+      // Direct file download fallback
+      const jsonStr = JSON.stringify(backupPayload, null, 2);
+      const dateStr = new Date().toISOString().split('T')[0];
+      const fileName = `Brainova_Backup_${dateStr}.brainovabackup`;
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      const statusEl = document.getElementById('backupStatus');
+      if (statusEl) statusEl.textContent = `✅ تم تنزيل النسخة (${backupPayload.meta.totalStudents} طالب، ${backupPayload.meta.totalGroups} فوج)`;
+      showToast('تم تنزيل النسخة الاحتياطية بنجاح!', 'success');
     }
   };
 
   window.doBackupImport = async function() {
-    if (!window.electronAPI) { showToast('يتطلب تشغيل التطبيق', 'error'); return; }
-    const result = await window.electronAPI.backup.import();
-    const statusEl = document.getElementById('backupStatus');
-    if (result.ok) {
-      // Reload data from store after import
-      Object.keys(MemoryCache).forEach(k => delete MemoryCache[k]);
-      await loadFromPersistentStore();
-      initializeData();
-      renderAll();
-      if (statusEl) statusEl.textContent = '✅ تم استعادة البيانات بنجاح!';
-      showToast('تمت الاستعادة! جارٍ إعادة تحميل البيانات...', 'success');
-    } else {
-      if (statusEl) statusEl.textContent = result.error ? '❌ ' + result.error : '';
-      showToast('تم إلغاء العملية', 'info');
-    }
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,.brainovabackup';
+
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const raw = JSON.parse(event.target.result);
+          const data = raw.data || raw;
+
+          if (!data || typeof data !== 'object') {
+            throw new Error('الملف لا يحتوي على هيكل بيانات صالح');
+          }
+
+          const stuCount = (data.brainova_students || []).length;
+          const grpCount = (data.brainova_groups || []).length;
+          const attCount = (data.brainova_attendance || []).length;
+          const payCount = (data.brainova_payments || []).length;
+
+          const confirmed = confirm(
+            `تأكيد استعادة قاعدة البيانات:\n\n` +
+            `• عدد الطلاب: ${stuCount}\n` +
+            `• عدد الأفواج: ${grpCount}\n` +
+            `• سجلات الحضور: ${attCount}\n` +
+            `• المدفوعات: ${payCount}\n\n` +
+            `تحذير: هذه العملية ستقوم باستبدال البيانات الحالية بالكامل. هل أنت متأكد من المتابعة؟`
+          );
+
+          if (!confirmed) {
+            showToast('تم إلغاء الاستعادة', 'info');
+            return;
+          }
+
+          // Write each key to persistent store
+          const keys = ['brainova_students', 'brainova_groups', 'brainova_attendance', 'brainova_payments', 'brainova_schedule', 'brainova_educators', 'brainova_courses', 'brainova_rooms', 'brainova_registrations', 'brainova_users'];
+          keys.forEach(k => {
+            if (data[k]) {
+              saveData(k, data[k]);
+            }
+          });
+
+          // Invalidate memory cache & reload
+          Object.keys(MemoryCache).forEach(k => delete MemoryCache[k]);
+          await loadFromPersistentStore();
+          initializeData();
+          renderAll();
+
+          const statusEl = document.getElementById('backupStatus');
+          if (statusEl) statusEl.textContent = `✅ تمت استعادة البيانات بنجاح (${stuCount} طالب، ${grpCount} فوج)`;
+          showToast('تمت استعادة قاعدة البيانات بنجاح وتحديث كافة الأقسام!', 'success');
+
+        } catch (err) {
+          showToast(`خطأ في قراءة ملف النسخة الاحتياطية: ${err.message}`, 'error');
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    input.click();
   };
+
+  function autoSaveLocalBackupSnapshot() {
+    try {
+      const snapshot = {
+        timestamp: new Date().toISOString(),
+        studentsCount: (getData('brainova_students') || []).length,
+        attendanceCount: (getData('brainova_attendance') || []).length,
+        paymentsCount: (getData('brainova_payments') || []).length
+      };
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('brainova_last_snapshot_meta', JSON.stringify(snapshot));
+      }
+    } catch (e) {
+      // Ignored
+    }
+  }
+  window.autoSaveLocalBackupSnapshot = autoSaveLocalBackupSnapshot;
+  setInterval(autoSaveLocalBackupSnapshot, 15 * 60 * 1000);
 
   window.doLogout = function() {
     if (window.electronAPI && window.electronAPI.logout) {

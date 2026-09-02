@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   print:          () => ipcRenderer.send('print-window'),
   printReceipt:   (html) => ipcRenderer.send('print-receipt', html),
   printDocument:  (payload) => ipcRenderer.send('print-document', payload),
+  generateQr:     (text) => ipcRenderer.invoke('generate-qr', text),
 
   // ── Auth
   getCurrentUser: () => ipcRenderer.invoke('get-current-user'),

@@ -749,6 +749,16 @@ ipcMain.handle('get-portal-info', async () => {
   }
 });
 
+// ── IPC: GENERATE QR CODE FOR BADGES / TICKETS ──────────────────────────────
+ipcMain.handle('generate-qr', async (_, text) => {
+  try {
+    const qr = await QRCode.toDataURL(String(text), { width: 250, margin: 1, color: { dark: '#0A1324', light: '#FFFFFF' } });
+    return qr;
+  } catch {
+    return null;
+  }
+});
+
 // ── IPC: USER MANAGEMENT ──────────────────────────────────────────────────────
 ipcMain.handle('get-users', () => {
   return store.get('brainova_users', []);
