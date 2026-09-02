@@ -501,6 +501,14 @@
                   <option value="حصة مخصصة">حصة مخصصة / تعويضية</option>
                 </select>
               </div>
+              <div>
+                <label style="font-size:0.72rem; color:var(--color-text-dim); font-weight:700; display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">نوع الحصة</label>
+                <select id="attSessionTypeSelect" onchange="renderAttendance()" class="form-input" style="width: 155px; height: 36px; font-weight:700;">
+                  <option value="regular" selected>عادية 📅</option>
+                  <option value="makeup">تعويضية 🔄</option>
+                  <option value="extra">استثنائية ⭐</option>
+                </select>
+              </div>
             </div>
 
             <!-- Live Session Metrics -->
@@ -1359,14 +1367,30 @@
         </div>
 
         <!-- Session Timing and Controls Box -->
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:12px; background:rgba(255,255,255,0.02); border:1px solid var(--color-border); border-radius:var(--radius-sm); padding:12px 14px; margin-bottom:14px;">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:12px; background:rgba(255,255,255,0.02); border:1px solid var(--color-border); border-radius:var(--radius-sm); padding:12px 14px; margin-bottom:14px;">
           <div>
             <label style="font-size:0.75rem; color:var(--color-text-muted); font-weight:600; display:block; margin-bottom:4px;">تاريخ الحصة</label>
             <input type="date" id="quickAttDate" class="form-input" style="font-family:monospace; height:34px;" onchange="renderQuickAttendanceStudents()">
           </div>
           <div>
+            <label style="font-size:0.75rem; color:var(--color-text-muted); font-weight:600; display:block; margin-bottom:4px;">نوع الحصة</label>
+            <select id="quickAttSessionType" class="form-input" style="height:34px; font-weight:700;" onchange="onQuickAttSessionTypeChange()">
+              <option value="regular" selected>حصة أسبوعية عادية 📅</option>
+              <option value="makeup">حصة تعويضية 🔄</option>
+              <option value="extra">حصة استثنائية / إضافية ⭐</option>
+            </select>
+          </div>
+          <div>
             <label style="font-size:0.75rem; color:var(--color-text-muted); font-weight:600; display:block; margin-bottom:4px;">توقيت الحصة</label>
-            <input type="text" id="quickAttTime" class="form-input" style="font-family:monospace; height:34px;" placeholder="14:00 - 16:00" onchange="renderQuickAttendanceStudents()">
+            <input type="text" id="quickAttTime" list="quickTimePresets" class="form-input" style="font-family:monospace; height:34px;" placeholder="14:00 - 16:00" onchange="renderQuickAttendanceStudents()">
+            <datalist id="quickTimePresets">
+              <option value="09:00 - 11:00">
+              <option value="11:00 - 13:00">
+              <option value="14:00 - 16:00">
+              <option value="16:00 - 18:00">
+              <option value="17:00 - 19:00">
+              <option value="18:00 - 20:00">
+            </datalist>
           </div>
           <div>
             <label style="font-size:0.75rem; color:var(--color-text-muted); font-weight:600; display:block; margin-bottom:4px;">تحديد جماعي</label>

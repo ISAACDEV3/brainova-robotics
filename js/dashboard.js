@@ -865,6 +865,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let nextDayName = '';
     let lastDayName = '';
 
+    let isLastMakeup = false;
+    let lastSessionTime = scheduledTime;
+
     if (lastDateStr) {
       lastDayName = getArabicDayName(lastDateStr);
       const lastDate = parseBrainovaDate(lastDateStr) || new Date();
@@ -872,9 +875,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const diffMs = now.getTime() - lastDate.getTime();
       diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-      // Golden Rule: Next session is exactly 7 days after the last recorded session date!
-      const nextDate = new Date(lastDate.getTime() + (7 * 24 * 60 * 60 * 1000));
-      nextDateStr = formatIsoDate(nextDate);
+      const lastAttRecords = groupAtt.filter(a => a.date === lastDateStr);
+      isLastMakeup = lastAttRecords.some(a => a.sessionType === 'makeup' || (a.note && a.note.includes('تعويض')));
+      if (lastAttRecords[0]?.sessionTime) {
+        lastSessionTime = lastAttRecords[0].sessionTime;
+      }
+
+      // If last session was a temporary makeup session, regular schedule can resume or advance +7 days
+      const nextRegularDateStr = getNextDateForDayName(scheduledDay, now, lastDateStr);
+      const nextPlusSevenDate = new Date(lastDate.getTime() + (7 * 24 * 60 * 60 * 1000));
+      const nextPlusSevenDateStr = formatIsoDate(nextPlusSevenDate);
+
+      if (isLastMakeup && nextRegularDateStr && nextRegularDateStr !== lastDateStr) {
+        nextDateStr = nextRegularDateStr;
+      } else {
+        nextDateStr = nextPlusSevenDateStr;
+      }
       nextDayName = getArabicDayName(nextDateStr);
     } else {
       // For a new group with no recorded attendance yet:
@@ -889,8 +905,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let badgeStyle = '';
 
     if (hasStudiedToday) {
-      badgeText = `✅ تم تسجيل حضور اليوم (${scheduledTime}) • الحصة القادمة: ${nextDayName} ${nextDateStr} (بعد 7 أيام)`;
-      badgeStyle = 'background:rgba(16,185,129,0.15); color:#10B981; border:1px solid rgba(16,185,129,0.3);';
+      if (isLastMakeup) {
+        badgeText = `🔄 تم تسجيل حصة تعويضية اليوم (${lastSessionTime}) بنجاح • الموعد القادم: ${nextDayName} ${nextDateStr}`;
+        badgeStyle = 'background:rgba(168,85,247,0.15); color:#C084FC; border:1px solid rgba(168,85,247,0.35); font-weight:700;';
+      } else {
+        badgeText = `✅ تم تسجيل حضور اليوم (${scheduledTime}) • الحصة القادمة: ${nextDayName} ${nextDateStr} (بعد 7 أيام)`;
+        badgeStyle = 'background:rgba(16,185,129,0.15); color:#10B981; border:1px solid rgba(16,185,129,0.3);';
+      }
     } else if (isDueToday) {
       badgeText = `🔴 موعد الحصة اليوم: ${nextDayName} ${nextDateStr} (${scheduledTime})!`;
       badgeStyle = 'background:rgba(239,68,68,0.18); color:#EF4444; border:1px solid rgba(239,68,68,0.35); font-weight:700;';
@@ -899,7 +920,8 @@ document.addEventListener('DOMContentLoaded', () => {
       badgeStyle = 'background:rgba(245,158,11,0.18); color:#F59E0B; border:1px solid rgba(245,158,11,0.35); font-weight:700;';
     } else if (diffDays !== null && diffDays > 0) {
       const remainingDays = 7 - diffDays;
-      badgeText = `⏳ الحصة القادمة: ${nextDayName} ${nextDateStr} (بعد ${remainingDays} ${remainingDays === 1 ? 'يوم' : 'أيام'})`;
+      const makeupNotice = isLastMakeup ? ' (تعويضية 🔄)' : '';
+      badgeText = `⏳ الحصة القادمة: ${nextDayName} ${nextDateStr} (بعد ${remainingDays} ${remainingDays === 1 ? 'يوم' : 'أيام'})${makeupNotice}`;
       badgeStyle = 'background:rgba(56,189,248,0.12); color:#38BDF8; border:1px solid rgba(56,189,248,0.3);';
     } else {
       badgeText = `🆕 الموعد القادم: ${nextDayName} ${nextDateStr} (${scheduledTime})`;
@@ -913,6 +935,8 @@ document.addEventListener('DOMContentLoaded', () => {
       hasPreviousSession: !!lastDateStr,
       lastSessionDate: lastDateStr,
       lastDayName: lastDayName || scheduledDay,
+      lastSessionTime,
+      isLastMakeup,
       nextSessionDate: nextDateStr,
       nextDayName: nextDayName || scheduledDay,
       scheduledDay,
@@ -1279,6 +1303,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const groupStudents = allStudents.filter(s => isStudentInGroup(s, selectedGroup));
     const existingRecords = allAttendance.filter(a => a.date === selectedDate && isStudentInGroup({ group: a.groupName }, selectedGroup) && (!a.sessionTime || a.sessionTime === selectedTime));
 
+    const typeSelect = document.getElementById('attSessionTypeSelect');
+    if (typeSelect && existingRecords.length > 0 && existingRecords[0].sessionType) {
+      typeSelect.value = existingRecords[0].sessionType;
+    }
+
     activeAttendanceDraft = {};
     groupStudents.forEach(stu => {
       const existing = existingRecords.find(r => r.studentId === stu.id);
@@ -1478,9 +1507,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const groupSelect = document.getElementById('attGroupSelect');
     const dateInput = document.getElementById('attDateSelect');
     const timeSelect = document.getElementById('attSessionTimeSelect');
+    const typeSelect = document.getElementById('attSessionTypeSelect');
     const selectedGroup = groupSelect.value;
     const selectedDate = dateInput.value;
     const selectedTime = timeSelect ? timeSelect.value : '09:00 - 11:00';
+    const selectedType = typeSelect ? typeSelect.value : 'regular';
 
     let allAttendance = getData('brainova_attendance') || [];
     const existingAttForSession = allAttendance.filter(a => 
@@ -1506,10 +1537,11 @@ document.addEventListener('DOMContentLoaded', () => {
         date: selectedDate,
         groupName: selectedGroup,
         sessionTime: selectedTime,
+        sessionType: selectedType,
         studentId,
         studentName: stu ? stu.name : 'Unknown',
         status: data.status,
-        note: data.note || ''
+        note: data.note || (selectedType === 'makeup' ? 'حصة تعويضية' : '')
       });
       savedCount++;
 
@@ -1531,13 +1563,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Zero-click WhatsApp Bot Trigger for late / absent
       if (stu && (data.status === 'late' || data.status === 'absent')) {
-        triggerAutoAttendanceWhatsApp(stu, data.status, selectedTime, selectedDate);
+        triggerAutoAttendanceWhatsApp(stu, data.status, selectedTime, selectedDate, selectedType);
       }
     }
 
     saveData('brainova_attendance', allAttendance);
     saveData('brainova_students', students);
-    showToast(`✅ تم حفظ وتثبيت سجل حضور وغياب (${savedCount}) تلميذ لفوج (${selectedGroup}) بتاريخ (${selectedDate}) بنجاح!`, 'success');
+    const typeMsg = selectedType === 'makeup' ? ' (حصة تعويضية 🔄)' : (selectedType === 'extra' ? ' (حصة استثنائية ⭐)' : '');
+    showToast(`✅ تم حفظ وتثبيت سجل حضور وغياب (${savedCount}) تلميذ لفوج (${selectedGroup}) بتاريخ (${selectedDate})${typeMsg} بنجاح!`, 'success');
   };
 
   // --- PAYMENTS & RECEIPTS SYSTEM ---
@@ -3519,7 +3552,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
                   <span style="color:var(--color-text-muted);">🕒 آخر حصة مسجلة:</span>
-                  <span style="color:${cycle.hasPreviousSession ? '#10B981' : '#94A3B8'}; font-weight:600;">${cycle.hasPreviousSession ? `${cycle.lastDayName} ${cycle.lastSessionDate}` : 'لا توجد حصص سابقة'}</span>
+                  <span style="color:${cycle.hasPreviousSession ? '#10B981' : '#94A3B8'}; font-weight:600;">
+                    ${cycle.hasPreviousSession ? `${cycle.lastDayName} ${cycle.lastSessionDate}` : 'لا توجد حصص سابقة'}
+                    ${cycle.isLastMakeup ? '<span style="background:rgba(168,85,247,0.18); color:#C084FC; font-size:0.68rem; padding:1px 6px; border-radius:4px; font-weight:700; margin-right:4px;">تعويضية 🔄</span>' : ''}
+                  </span>
                 </div>
                 <div>
                   <span class="status-pill" style="${cycle.badgeStyle}; font-size:0.72rem; padding:3px 8px; border-radius:6px; display:inline-block;">${cycle.badgeText}</span>
@@ -3757,12 +3793,31 @@ document.addEventListener('DOMContentLoaded', () => {
       prevWeekBtn.style.display = cycle.hasPreviousSession ? 'inline-flex' : 'none';
     }
 
+    const typeSelect = document.getElementById('quickAttSessionType');
+    if (typeSelect) typeSelect.value = 'regular';
+
     renderQuickAttendanceStudents();
 
     const modal = document.getElementById('quickGroupAttendanceModal');
     if (modal) modal.classList.add('active');
   }
   window.openQuickGroupAttendanceModal = openQuickGroupAttendanceModal;
+
+  window.onQuickAttSessionTypeChange = function() {
+    const type = document.getElementById('quickAttSessionType')?.value || 'regular';
+    const noticeEl = document.getElementById('quickAttArchiveNotice');
+    const selectedDate = document.getElementById('quickAttDate')?.value || '';
+    const selectedTime = document.getElementById('quickAttTime')?.value || '';
+    if (noticeEl) {
+      if (type === 'makeup') {
+        noticeEl.innerHTML = `<span style="color:#C084FC; font-weight:700;">🔄 وضع الحصة التعويضية (${selectedDate} • ${selectedTime}) — يمكنك إدخال أي وقت وتاريخ للتعويض بحرية تامة دون أي قيود.</span>`;
+      } else if (type === 'extra') {
+        noticeEl.innerHTML = `<span style="color:#F59E0B; font-weight:700;">⭐ حصة استثنائية / إضافية (${selectedDate} • ${selectedTime}) — ورشة خاصة أو نشاط تدريبي إضافي.</span>`;
+      } else {
+        renderQuickAttendanceStudents();
+      }
+    }
+  };
 
   window.quickAttJumpToPrevSession = function() {
     const groupName = window.__quickAttGroupName;
@@ -3999,6 +4054,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const selectedDate = document.getElementById('quickAttDate')?.value || new Date().toISOString().slice(0, 10);
     const selectedTime = document.getElementById('quickAttTime')?.value || '14:00 - 16:00';
+    const selectedType = document.getElementById('quickAttSessionType')?.value || 'regular';
 
     let allAttendance = getData('brainova_attendance') || [];
     const existingAttForSession = allAttendance.filter(a => 
@@ -4025,10 +4081,11 @@ document.addEventListener('DOMContentLoaded', () => {
         date: selectedDate,
         groupName: groupName,
         sessionTime: selectedTime,
+        sessionType: selectedType,
         studentId: studentId,
         studentName: stu ? stu.name : 'Unknown',
         status: data.status,
-        note: data.note || ''
+        note: data.note || (selectedType === 'makeup' ? 'حصة تعويضية' : '')
       });
       savedCount++;
 
@@ -4051,15 +4108,16 @@ document.addEventListener('DOMContentLoaded', () => {
       // Zero-click WhatsApp alert if late or absent
       if (stu && (data.status === 'late' || data.status === 'absent')) {
         lateOrAbsentCount++;
-        triggerAutoAttendanceWhatsApp(stu, data.status, selectedTime, selectedDate);
+        triggerAutoAttendanceWhatsApp(stu, data.status, selectedTime, selectedDate, selectedType);
       }
     }
 
     saveData('brainova_attendance', allAttendance);
     saveData('brainova_students', students);
 
+    const typeMsg = selectedType === 'makeup' ? ' (حصة تعويضية 🔄)' : (selectedType === 'extra' ? ' (حصة استثنائية ⭐)' : '');
     closeQuickGroupAttendanceModal();
-    showToast(`✅ تم حفظ وتثبيت حضور وغياب (${savedCount}) تلميذ لفوج (${groupName}) بتاريخ (${selectedDate}) بنجاح!`, 'success');
+    showToast(`✅ تم حفظ حضور وغياب (${savedCount}) تلميذ لفوج (${groupName}) بتاريخ (${selectedDate} - ${selectedTime})${typeMsg} بنجاح!`, 'success');
     renderActiveView();
   }
   window.saveQuickGroupAttendance = saveQuickGroupAttendance;
@@ -6947,7 +7005,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.triggerBatchAttendanceAlerts = triggerBatchAttendanceAlerts;
 
   // --- TRIGGER 1: AUTO ATTENDANCE (ZERO-CLICK) ---
-  async function triggerAutoAttendanceWhatsApp(student, status, time, date) {
+  async function triggerAutoAttendanceWhatsApp(student, status, time, date, sessionType = 'regular') {
     if (!window.electronAPI || !window.electronAPI.whatsapp) return;
     const settings = getWhatsAppSettings();
     if (!settings.autoAttendance) return;
@@ -6959,10 +7017,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const parentName = student.parentName && student.parentName.trim() ? student.parentName.trim() : `ولي أمر ${student.name}`;
       const template = status === 'late' ? settings.lateTemplate : settings.absentTemplate;
+      const typeNotice = sessionType === 'makeup' ? ' (حصة تعويضية 🔄)' : (sessionType === 'extra' ? ' (حصة استثنائية ⭐)' : '');
       const text = template
         .replace(/{student}/g, student.name || 'التلميذ')
         .replace(/{parent}/g, parentName)
-        .replace(/{group}/g, student.group || 'الفوج')
+        .replace(/{group}/g, (student.group || 'الفوج') + typeNotice)
         .replace(/{time}/g, time || '—')
         .replace(/{date}/g, date || 'اليوم');
 
