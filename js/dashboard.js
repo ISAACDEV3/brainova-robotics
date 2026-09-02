@@ -945,7 +945,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="display:inline-flex; gap:4px; flex-wrap:nowrap;">
               <button class="btn btn--outline" style="padding: 4px 6px; font-size: 0.75rem;" title="الملف الشامل" onclick="openStudentProfile('${stu.id}')"> الملف</button>
               <button class="btn btn--outline btn--small" style="padding: 4px 6px; font-size: 0.75rem; border-color:rgba(16,185,129,0.35); color:#10B981;" title="التقرير البيداغوجي والتقييم الشهري" onclick="openPedagogicalReportModal('${stu.id}')">تقييم</button>
-              <button class="btn btn--outline" style="padding: 4px 6px; font-size: 0.75rem; color:#38BDF8; border-color:rgba(56,189,248,0.4);" title="كتابة ملاحظة للولي" onclick="openStudentNoteModal('${stu.id}')"> ملاحظة</button>
               <button class="btn btn--outline btn--small" style="padding: 4px 6px; font-size: 0.75rem; border-color:rgba(56,189,248,0.35); color:#38BDF8;" title="بطاقة الطالب الذكية (CR80)" onclick="openStudentIdCard('${stu.id}')">بطاقة</button>
               <button class="btn btn--small" style="padding: 4px 6px; font-size: 0.75rem; background:#25D366; color:#fff;" title="إشعار واتساب للولي" onclick="openWhatsAppDispatchModal('${stu.id}')">واتساب</button>
               <button class="btn btn--primary" style="padding: 4px 6px; font-size: 0.75rem;" title="تسجيل دفعة" onclick="openRecordPaymentModal('${stu.id}')">🧾 وصل</button>
@@ -2067,7 +2066,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     saveData('brainova_students', students);
-    showToast('✅ تم حفظ الملاحظة ونشرها في بوابة الولي بنجاح!', 'success');
+    showToast('✅ تم حفظ الملاحظة التربوية بنجاح', 'success');
     renderActiveView();
   };
 

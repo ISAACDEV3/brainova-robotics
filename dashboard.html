@@ -1980,38 +1980,6 @@
     </div>
   </div>
 
-  <!-- ===== QUICK STUDENT NOTE TO PARENT MODAL ===== -->
-  <div class="modal-overlay" id="quickNoteModal">
-    <div class="modal" style="max-width: 520px;">
-      <div class="modal__header">
-        <h2 class="modal__title">📝 توجيه وملاحظة لولي الأمر</h2>
-        <button class="modal__close" onclick="closeQuickNoteModal()">×</button>
-      </div>
-      <div style="padding: 10px 0;">
-        <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 10px; background: var(--color-bg-darker); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--color-border);">
-          <div style="font-size: 1.5rem;">🤖</div>
-          <div>
-            <div id="quickNoteStudentName" style="font-weight: 700; color: #fff; font-size: 1rem;">—</div>
-            <div id="quickNoteStudentMeta" style="font-size: 0.8rem; color: var(--color-primary);">—</div>
-          </div>
-        </div>
-        <div class="form-group" style="margin-bottom: 12px;">
-          <label style="display: block; font-size: 0.85rem; margin-bottom: 6px; color: var(--color-text); font-weight: 600;">نص الملاحظة والتوجيه التربوي (يظهر فوراً في بوابة الولي):</label>
-          <textarea id="quickNoteText" rows="4" class="form-input" placeholder="اكتب ملاحظتك للأب أو الأم حول مستوى الطفل، سلوكه، مشاركته، أو ما يجب تعزيزه في المنزل..." style="width: 100%; height: auto; padding: 10px; resize: vertical; line-height: 1.6; font-size: 0.9rem;"></textarea>
-        </div>
-        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;">
-          <span style="font-size: 0.75rem; color: var(--color-text-muted); width: 100%;">نماذج سريعة:</span>
-          <button type="button" class="btn btn--outline btn--small" style="font-size: 0.72rem; padding: 3px 8px;" onclick="document.getElementById('quickNoteText').value = 'أداء رائع وتفاعل ممتاز اليوم في تركيب وبرمجة المشروع. واصل هذا التألق! 🌟'">🌟 أداء متميز</button>
-          <button type="button" class="btn btn--outline btn--small" style="font-size: 0.72rem; padding: 3px 8px;" onclick="document.getElementById('quickNoteText').value = 'مستوى جيد جداً، يرجى تشجيع الطفل على مراجعة خوارزمية التكرار والشروط في البيت. 💻'">💻 تشجيع المراجعة</button>
-          <button type="button" class="btn btn--outline btn--small" style="font-size: 0.72rem; padding: 3px 8px;" onclick="document.getElementById('quickNoteText').value = 'نلفت عنايتكم الكريمة إلى أن اشتراك الطالب يقترب من الانتهاء، يرجى تجديد الاشتراك لضمان استمراره في الفوج. 🔔'">🔔 تنبيه التجديد</button>
-        </div>
-      </div>
-      <div class="modal__actions">
-        <button type="button" class="btn btn--outline" onclick="closeQuickNoteModal()">إلغاء</button>
-        <button type="button" class="btn btn--primary" id="saveQuickNoteBtn" onclick="submitQuickNote()">💾 حفظ ونشر في بوابة الولي</button>
-      </div>
-    </div>
-  </div>
 
   <!-- ===== REGISTRATION REQUEST DETAILS MODAL ===== -->
   <div class="modal-overlay" id="regDetailsModal">
