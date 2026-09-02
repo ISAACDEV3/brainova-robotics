@@ -2458,6 +2458,46 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
+    const rooms = getData('brainova_rooms') || [];
+    let matchedRooms = [];
+    if (!q) {
+      matchedRooms = rooms.slice(0, 3);
+    } else {
+      matchedRooms = rooms.filter(r =>
+        (r.name && r.name.toLowerCase().includes(q)) ||
+        (r.type && r.type.toLowerCase().includes(q)) ||
+        (r.educatorName && r.educatorName.toLowerCase().includes(q))
+      ).slice(0, 3);
+    }
+
+    if (matchedRooms.length > 0) {
+      html += `<div class="cmd-category-header" style="margin-top:6px;">القاعات والمخابر</div>`;
+      matchedRooms.forEach(rm => {
+        const itemObj = {
+          id: `room_${rm.id}`,
+          label: rm.name,
+          type: 'room',
+          run: () => openRoomDetailsModal(rm.id)
+        };
+        const itemIndex = cmdPaletteCurrentItems.length;
+        cmdPaletteCurrentItems.push(itemObj);
+        html += `
+          <div class="cmd-item ${itemIndex === cmdPaletteActiveIndex ? 'active' : ''}" onclick="executeCommandPaletteActionByIndex(${itemIndex})">
+            <div class="cmd-item-left">
+              <div class="cmd-item-icon" style="color:#38BDF8;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M3 7v14"/><path d="M21 7v14"/><path d="M7 21V11a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v10"/><path d="M12 14v1"/></svg>
+              </div>
+              <div>
+                <div style="font-weight:700;">${rm.name}</div>
+                <div style="font-size:0.72rem; color:#64748B;">${rm.type || 'قاعة تدريب'} • استعراض الأستاذ والطلاب</div>
+              </div>
+            </div>
+            <span class="cmd-item-badge">قاعة</span>
+          </div>
+        `;
+      });
+    }
+
     if (cmdPaletteCurrentItems.length === 0) {
       html = `<div style="text-align:center; padding:32px 16px; color:#64748B; font-size:0.86rem;">لم يتم العثور على أي نتائج مطابقة لـ "${query}"</div>`;
     }
@@ -3903,49 +3943,582 @@ document.addEventListener('DOMContentLoaded', () => {
   window.printGroupMonthlyAttendanceSheet = printGroupMonthlyAttendanceSheet;
 
   // --- ROOMS & LABS SYSTEM ---
-      function renderRooms() {
+  // --- ROOMS & LABS SYSTEM (ROOM DETAILS, EDUCATORS & STUDENTS ROSTER) ---
+  let currentActiveRoomId = null;
+  let currentActiveRoomStudents = [];
+
+  function getRoomDetails(r) {
+    const allGroups = getData('brainova_groups') || [];
+    const allStudents = getData('brainova_students') || [];
+    const allSchedule = getData('brainova_schedule') || [];
+    const allEducators = getData('brainova_educators') || [];
+
+    // Match groups assigned to this room
+    const roomGroups = allGroups.filter(g => 
+      (g.room && g.room.trim().toLowerCase() === r.name.trim().toLowerCase()) ||
+      (r.currentGroup && r.currentGroup.trim().toLowerCase() === g.name.trim().toLowerCase()) ||
+      allSchedule.some(s => s.room && s.room.trim().toLowerCase() === r.name.trim().toLowerCase() && (s.groupId === g.id || s.groupName === g.name))
+    );
+
+    // Match educator teaching in this room
+    let educatorName = r.educatorName || '';
+    if (!educatorName && roomGroups.length > 0) {
+      const gWithEdu = roomGroups.find(g => g.educatorName);
+      if (gWithEdu) educatorName = gWithEdu.educatorName;
+    }
+    if (!educatorName) {
+      const schedWithEdu = allSchedule.find(s => s.room && s.room.trim().toLowerCase() === r.name.trim().toLowerCase() && s.educatorName);
+      if (schedWithEdu) educatorName = schedWithEdu.educatorName;
+    }
+    if (!educatorName && allEducators.length === 1) {
+      educatorName = allEducators[0].name;
+    }
+
+    const eduObj = allEducators.find(e => e.name && e.name.trim().toLowerCase() === (educatorName || '').trim().toLowerCase()) || {};
+
+    // Match students in this room
+    const groupNamesSet = new Set(roomGroups.map(g => g.name.trim().toLowerCase()));
+    if (r.currentGroup) groupNamesSet.add(r.currentGroup.trim().toLowerCase());
+
+    const roomStudents = allStudents.filter(stu => {
+      if (!stu.group) return false;
+      return groupNamesSet.has(stu.group.trim().toLowerCase()) || (stu.room && stu.room.trim().toLowerCase() === r.name.trim().toLowerCase());
+    });
+
+    // Match scheduled sessions in this room
+    const roomSessions = allSchedule.filter(s => s.room && s.room.trim().toLowerCase() === r.name.trim().toLowerCase());
+
+    return {
+      room: r,
+      roomGroups,
+      roomStudents,
+      roomSessions,
+      educatorName: educatorName || '',
+      educatorSpecialty: eduObj.specialty || '',
+      educatorPhone: eduObj.phone || '',
+      occupancyPercent: Math.min(100, Math.round((roomStudents.length / (r.capacity || 1)) * 100))
+    };
+  }
+
+  function renderRooms() {
     const grid = document.getElementById('roomsGrid');
     if (!grid) return;
 
     const rooms = getData('brainova_rooms') || [];
+    const allStudents = getData('brainova_students') || [];
+
+    // Render Room Stats Grid
+    const statsGrid = document.getElementById('roomStatsGrid');
+    if (statsGrid) {
+      const totalRooms = rooms.length;
+      const availableRooms = rooms.filter(r => r.status === 'available').length;
+      const occupiedRooms = rooms.filter(r => r.status === 'occupied').length;
+      
+      let totalAssignedStudents = 0;
+      rooms.forEach(r => {
+        const det = getRoomDetails(r);
+        totalAssignedStudents += det.roomStudents.length;
+      });
+
+      statsGrid.innerHTML = `
+        <div class="stat-card" style="padding: 16px;">
+          <div class="stat-card__label" style="font-size:0.8rem; color:#94A3B8;">إجمالي القاعات والمخابر</div>
+          <div class="stat-card__value" style="font-size:1.6rem; color:#F8FAFC; margin-top:4px;">${totalRooms}</div>
+          <div style="font-size:0.75rem; color:#38BDF8; margin-top:4px;">مجهزة بأحدث التقنيات</div>
+        </div>
+        <div class="stat-card" style="padding: 16px;">
+          <div class="stat-card__label" style="font-size:0.8rem; color:#94A3B8;">القاعات الجاهزة والمتاحة</div>
+          <div class="stat-card__value" style="font-size:1.6rem; color:#10B981; margin-top:4px;">${availableRooms}</div>
+          <div style="font-size:0.75rem; color:#10B981; margin-top:4px;">جاهزة لاستقبال الحصص</div>
+        </div>
+        <div class="stat-card" style="padding: 16px;">
+          <div class="stat-card__label" style="font-size:0.8rem; color:#94A3B8;">القاعات المشغولة حالياً</div>
+          <div class="stat-card__value" style="font-size:1.6rem; color:#F59E0B; margin-top:4px;">${occupiedRooms}</div>
+          <div style="font-size:0.75rem; color:#F59E0B; margin-top:4px;">حصص تدريبية جارية</div>
+        </div>
+      `;
+    }
+
+    if (rooms.length === 0) {
+      grid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align:center; padding: 40px; background: rgba(15,23,42,0.4); border-radius:12px; border:1px dashed var(--color-border);">
+          <div style="font-size:1rem; font-weight:700; color:#F8FAFC; margin-bottom:6px;">لا توجد قاعات مسجلة حالياً</div>
+          <p style="font-size:0.82rem; color:#94A3B8; margin-bottom:16px;">انقر على زر "إضافة قاعة" لإنشاء قاعة وتحديد الأستاذ المشرف عليها والأفواج.</p>
+          <button class="btn btn--primary btn--small" onclick="openAddRoomModal()">+ إضافة قاعة جديدة</button>
+        </div>
+      `;
+      return;
+    }
+
     grid.innerHTML = rooms.map(r => {
+      const details = getRoomDetails(r);
       const isOcc = r.status === 'occupied';
       const isMaint = r.status === 'maintenance';
-      const statusClass = isOcc ? 'status-pill--rejected' : (isMaint ? 'status-pill--pending' : 'status-pill--active');
+      const statusClass = isOcc ? 'status-pill--pending' : (isMaint ? 'status-pill--rejected' : 'status-pill--active');
       const statusLabel = isOcc ? 'مشغولة بحصة' : (isMaint ? 'قيد الصيانة' : 'متاحة وجاهزة');
 
+      const groupNames = details.roomGroups.map(g => g.name).join('، ') || r.currentGroup || 'لم يحدد فوج بعد';
+      const studentsCount = details.roomStudents.length;
+
       return `
-        <div class="stat-card" style="padding: 16px;">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
-            <div>
-              <h3 style="font-size: 1.05rem; font-weight:800; color:#fff; margin-bottom:2px;">${r.name}</h3>
-              <span style="font-size: 0.75rem; color:var(--color-text-muted);">${r.type}</span>
+        <div class="stat-card" style="padding: 18px; display:flex; flex-direction:column; justify-content:space-between; border: 1px solid rgba(56, 189, 248, 0.2); background: linear-gradient(145deg, rgba(11, 19, 43, 0.85) 0%, rgba(7, 13, 25, 0.95) 100%); border-radius: 12px;">
+          <div>
+            <!-- Top Header -->
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+              <div>
+                <h3 style="font-size: 1.1rem; font-weight:800; color:#fff; margin-bottom:3px;">${r.name}</h3>
+                <span style="font-size: 0.76rem; color:#94A3B8;">${r.type || 'قاعة تدريب'}</span>
+              </div>
+              <span class="status-pill ${statusClass}"><span class="pill-dot"></span> ${statusLabel}</span>
             </div>
-            <span class="status-pill ${statusClass}"><span class="pill-dot"></span> ${statusLabel}</span>
+
+            <!-- Assigned Educator Block -->
+            <div style="background:rgba(15, 23, 42, 0.7); border:1px solid rgba(56, 189, 248, 0.2); border-radius:8px; padding:10px 12px; margin-bottom:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                <span style="font-size:0.7rem; color:#38BDF8; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">الأستاذ المدرس للقاعة</span>
+                ${details.educatorSpecialty ? `<span style="font-size:0.7rem; color:#94A3B8;">${details.educatorSpecialty}</span>` : ''}
+              </div>
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <div style="width:30px; height:30px; border-radius:6px; background:rgba(56,189,248,0.15); color:#38BDF8; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.85rem;">
+                    ${details.educatorName ? details.educatorName.charAt(0) : '—'}
+                  </div>
+                  <div>
+                    <div style="font-weight:700; color:#F8FAFC; font-size:0.88rem;">${details.educatorName || 'لم يعين أستاذ بعد'}</div>
+                    ${details.educatorPhone ? `<div style="font-size:0.72rem; color:#64748B;" dir="ltr">${details.educatorPhone}</div>` : ''}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Students & Group Capacity Block -->
+            <div style="background:rgba(15, 23, 42, 0.4); border:1px solid rgba(255, 255, 255, 0.05); border-radius:8px; padding:10px 12px; margin-bottom:14px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="font-size:0.78rem; color:#CBD5E1;">الأفواج المقررة:</span>
+                <span style="font-size:0.78rem; font-weight:700; color:#38BDF8; max-width:60%; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${groupNames}">
+                  ${groupNames}
+                </span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="font-size:0.78rem; color:#CBD5E1;">الطلاب الموجودين بالقاعة:</span>
+                <span style="font-size:0.82rem; font-weight:800; color:${studentsCount > 0 ? '#10B981' : '#94A3B8'};">
+                  ${studentsCount} طالب / ${r.capacity} مقعد
+                </span>
+              </div>
+              <!-- Mini Occupancy Bar -->
+              <div style="width:100%; height:5px; background:rgba(255,255,255,0.08); border-radius:999px; overflow:hidden;">
+                <div style="width:${details.occupancyPercent}%; height:100%; background:${details.occupancyPercent >= 100 ? '#EF4444' : '#10B981'}; border-radius:999px; transition:width 0.3s ease;"></div>
+              </div>
+              <div style="font-size:0.72rem; color:#64748B; margin-top:7px; line-height:1.4;">
+                التجهيزات: ${r.equipment || 'لا توجد تجهيزات مسجلة'}
+              </div>
+            </div>
           </div>
-          <div style="font-size:0.8rem; color:var(--color-text-muted); margin-bottom:6px;">
-            <span> السعة: <strong style="color:#fff;">${r.capacity} مقعد</strong></span>
-          </div>
-          <div style="font-size:0.75rem; color:var(--color-text-dim); margin-bottom:12px; line-height:1.4;">
-            <span> التجهيزات: ${r.equipment}</span>
-          </div>
-          <div style="display:flex; justify-content:space-between; align-items:center; border-top: 1px solid var(--color-border); padding-top: 8px;">
-            <button class="btn btn--outline btn--small" onclick="toggleRoomStatus('${r.id}')">تبديل الحالة</button>
-            <button class="btn-icon" style="color:var(--color-danger); border:none;" onclick="deleteRoom('${r.id}')" title="حذف">حذف</button>
+
+          <!-- Actions Bar -->
+          <div style="display:flex; justify-content:space-between; align-items:center; border-top: 1px solid rgba(255,255,255,0.07); padding-top: 10px; gap:6px;">
+            <button class="btn btn--primary btn--small" style="flex:1; justify-content:center; font-size:0.78rem; background:linear-gradient(135deg, #0284C7, #0369A1);" onclick="openRoomDetailsModal('${r.id}')">
+              استعراض الطلاب (${studentsCount})
+            </button>
+            <button class="btn btn--outline btn--small" style="font-size:0.76rem;" onclick="openEditRoomModal('${r.id}')" title="تعديل بيانات القاعة">
+              تعديل
+            </button>
+            <button class="btn btn--outline btn--small" style="font-size:0.76rem;" onclick="toggleRoomStatus('${r.id}')" title="تبديل حالة القاعة">
+              الحالة
+            </button>
+            <button class="btn-icon" style="color:var(--color-danger); border:none; width:28px; height:28px;" onclick="deleteRoom('${r.id}')" title="حذف القاعة">
+              حذف
+            </button>
           </div>
         </div>
       `;
     }).join('');
   }
 
-  // Room Modals CRUD
+  // --- ROOM DETAILS & STUDENTS ROSTER MODAL ---
+  window.openRoomDetailsModal = function(roomId) {
+    const rooms = getData('brainova_rooms') || [];
+    const r = rooms.find(rm => rm.id === roomId);
+    if (!r) return;
+
+    currentActiveRoomId = roomId;
+    const details = getRoomDetails(r);
+    currentActiveRoomStudents = details.roomStudents;
+
+    // Set Title
+    document.getElementById('roomDetailsTitle').textContent = `تفاصيل ${r.name}`;
+    document.getElementById('roomDetailsSubtitle').textContent = `${r.type || 'قاعة تدريب'} • السعة: ${r.capacity} مقعد • إجمالي الطلاب: ${details.roomStudents.length}`;
+
+    // Render Header Card
+    const headerCard = document.getElementById('roomDetailsHeaderCard');
+    if (headerCard) {
+      const scheduleHtml = details.roomSessions.length > 0
+        ? details.roomSessions.map(s => `
+            <span style="display:inline-flex; align-items:center; gap:4px; font-size:0.75rem; background:rgba(56,189,248,0.12); color:#38BDF8; padding:3px 8px; border-radius:6px; font-weight:600;">
+              📅 ${s.day || ''} (${s.startTime} - ${s.endTime}) • ${s.groupName || ''}
+            </span>
+          `).join(' ')
+        : '<span style="font-size:0.75rem; color:#64748B;">لا توجد حصص مجدولة حالياً لهذه القاعة</span>';
+
+      headerCard.innerHTML = `
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <!-- Educator Card -->
+          <div style="background:rgba(15,23,42,0.75); border:1px solid rgba(56,189,248,0.22); border-radius:10px; padding:14px;">
+            <div style="font-size:0.72rem; color:#38BDF8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">
+              الأستاذ المدرس للقاعة
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+              <div style="width:38px; height:38px; border-radius:8px; background:rgba(56,189,248,0.18); border:1px solid rgba(56,189,248,0.3); color:#38BDF8; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1rem;">
+                ${details.educatorName ? details.educatorName.charAt(0) : '—'}
+              </div>
+              <div>
+                <div style="font-size:1rem; font-weight:800; color:#F8FAFC;">${details.educatorName || 'لم يتم تعيين أستاذ بعد'}</div>
+                <div style="font-size:0.78rem; color:#94A3B8;">${details.educatorSpecialty || 'مؤطر روبوتيك وذكاء اصطناعي'}</div>
+              </div>
+            </div>
+            ${details.educatorPhone ? `<div style="font-size:0.78rem; color:#64748B;">📞 الهاتف: <span dir="ltr" style="color:#CBD5E1;">${details.educatorPhone}</span></div>` : ''}
+          </div>
+
+          <!-- Room Specs Card -->
+          <div style="background:rgba(15,23,42,0.75); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:0.72rem; color:#94A3B8; font-weight:800; text-transform:uppercase; letter-spacing:0.5px;">بيانات الاستيعاب والتجهيزات</span>
+              <span class="status-pill ${r.status === 'available' ? 'status-pill--active' : (r.status === 'occupied' ? 'status-pill--pending' : 'status-pill--rejected')}" style="font-size:0.7rem; padding:2px 8px;">
+                ${r.status === 'available' ? 'متاحة' : (r.status === 'occupied' ? 'مشغولة' : 'صيانة')}
+              </span>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.8rem;">
+              <span style="color:#94A3B8;">طاقة الاستيعاب:</span>
+              <span style="font-weight:700; color:#fff;">${details.roomStudents.length} / ${r.capacity} مقعد (${details.occupancyPercent}%)</span>
+            </div>
+            <div style="font-size:0.78rem; color:#94A3B8; line-height:1.4;">
+              <span>التجهيزات:</span>
+              <span style="color:#E2E8F0;">${r.equipment || 'حواسيب وأجهزة روبوت'}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Schedule Slots Row -->
+        <div style="margin-top:10px; background:rgba(15,23,42,0.5); border:1px solid rgba(255,255,255,0.05); border-radius:8px; padding:10px 14px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+          <span style="font-size:0.78rem; font-weight:700; color:#CBD5E1;">الحصص المجدولة في القاعة:</span>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            ${scheduleHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    // Reset Search
+    const searchInput = document.getElementById('roomStudentsSearchInput');
+    if (searchInput) searchInput.value = '';
+
+    renderRoomStudentsTable(details.roomStudents);
+    document.getElementById('roomDetailsModal').classList.add('active');
+  };
+
+  window.closeRoomDetailsModal = function() {
+    const modal = document.getElementById('roomDetailsModal');
+    if (modal) modal.classList.remove('active');
+  };
+
+  function renderRoomStudentsTable(studentsList) {
+    const tbody = document.getElementById('roomStudentsTableBody');
+    const heading = document.getElementById('roomStudentsHeading');
+    if (heading) {
+      heading.textContent = `قائمة الطلاب في القاعة (${studentsList.length} طالب)`;
+    }
+
+    if (!tbody) return;
+
+    if (studentsList.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" style="text-align:center; padding:32px 14px; color:#94A3B8;">
+            <div style="font-size:0.95rem; font-weight:700; color:#F8FAFC; margin-bottom:6px;">لا يوجد طلاب مقيدون في هذه القاعة حالياً</div>
+            <div style="font-size:0.78rem; color:#64748B;">يمكنك إسناد فوج لهذه القاعة من قسم الأفواج أو تعيين القاعة عند إنشاء فوج جديد.</div>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = studentsList.map((stu, index) => {
+      const avatarInitial = (stu.name || 'ط').trim().charAt(0);
+      const remainingColor = stu.sessionsRemaining > 1 ? '#10B981' : (stu.sessionsRemaining === 1 ? '#F59E0B' : '#EF4444');
+
+      return `
+        <tr>
+          <td style="text-align:center; font-family:monospace; color:#64748B; font-weight:700;">${index + 1}</td>
+          <td>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div style="width:30px; height:30px; border-radius:6px; background:rgba(56,189,248,0.12); color:#38BDF8; font-weight:700; display:flex; align-items:center; justify-content:center; font-size:0.8rem;">
+                ${avatarInitial}
+              </div>
+              <div>
+                <div style="font-weight:700; color:#F8FAFC;">${stu.name}</div>
+                <div style="font-family:monospace; font-size:0.72rem; color:#64748B;">${stu.id}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div style="font-weight:700; color:#38BDF8;">${stu.group || '—'}</div>
+            <div style="font-size:0.75rem; color:#94A3B8;">${stu.level || ''}</div>
+          </td>
+          <td>
+            <div>${stu.parentName || '—'}</div>
+            ${stu.parentPhone ? `<a href="tel:${stu.parentPhone}" dir="ltr" style="color:#0284C7; font-size:0.8rem;">${stu.parentPhone}</a>` : '—'}
+          </td>
+          <td>
+            <span style="font-weight:800; color:${remainingColor}; background:rgba(255,255,255,0.04); padding:3px 8px; border-radius:6px; font-size:0.78rem; display:inline-block;">
+              ${stu.sessionsRemaining !== undefined ? `${stu.sessionsRemaining} حصص` : '—'}
+            </span>
+          </td>
+          <td style="text-align:center;">
+            <div style="display:inline-flex; gap:4px;">
+              <button class="btn btn--outline btn--small" style="padding:3px 7px; font-size:0.75rem;" title="الملف الشامل" onclick="closeRoomDetailsModal(); openStudentProfile('${stu.id}')">الملف</button>
+              <button class="btn btn--outline btn--small" style="padding:3px 7px; font-size:0.75rem; border-color:rgba(56,189,248,0.35); color:#38BDF8;" title="بطاقة التلميذ" onclick="closeRoomDetailsModal(); openStudentIdCard('${stu.id}')">بطاقة</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  window.filterRoomStudentsList = function() {
+    const q = (document.getElementById('roomStudentsSearchInput')?.value || '').trim().toLowerCase();
+    if (!q) {
+      renderRoomStudentsTable(currentActiveRoomStudents);
+      return;
+    }
+
+    const filtered = currentActiveRoomStudents.filter(stu => {
+      const n = (stu.name || '').toLowerCase();
+      const id = (stu.id || '').toLowerCase();
+      const p = (stu.parentPhone || '').toLowerCase();
+      const g = (stu.group || '').toLowerCase();
+      return n.includes(q) || id.includes(q) || p.includes(q) || g.includes(q);
+    });
+
+    renderRoomStudentsTable(filtered);
+  };
+
+  // --- EDIT ROOM MODAL ---
+  window.openEditRoomModal = function(roomId) {
+    const rooms = getData('brainova_rooms') || [];
+    const r = rooms.find(rm => rm.id === roomId);
+    if (!r) return;
+
+    document.getElementById('editRoomId').value = r.id;
+    document.getElementById('editRoomName').value = r.name || '';
+    document.getElementById('editRoomType').value = r.type || 'قاعة تدريب تفاعلية';
+    document.getElementById('editRoomCapacity').value = r.capacity || 14;
+    document.getElementById('editRoomEquipment').value = r.equipment || '';
+    document.getElementById('editRoomStatus').value = r.status || 'available';
+
+    // Populate Educators Dropdown
+    const educators = getData('brainova_educators') || [];
+    const eduSelect = document.getElementById('editRoomEducator');
+    if (eduSelect) {
+      eduSelect.innerHTML = `<option value="">-- اختياري (تحديد أستاذ) --</option>` +
+        educators.map(e => `<option value="${e.name}" ${r.educatorName === e.name ? 'selected' : ''}>${e.name} (${e.specialty || ''})</option>`).join('');
+    }
+
+    // Populate Groups Dropdown
+    const groups = getData('brainova_groups') || [];
+    const grpSelect = document.getElementById('editRoomGroup');
+    if (grpSelect) {
+      grpSelect.innerHTML = `<option value="">-- اختياري (تحديد فوج) --</option>` +
+        groups.map(g => `<option value="${g.name}" ${r.currentGroup === g.name ? 'selected' : ''}>${g.name}</option>`).join('');
+    }
+
+    document.getElementById('editRoomModal').classList.add('active');
+  };
+
+  window.closeEditRoomModal = function() {
+    const modal = document.getElementById('editRoomModal');
+    if (modal) modal.classList.remove('active');
+  };
+
+  window.editCurrentRoomFromModal = function() {
+    if (!currentActiveRoomId) return;
+    closeRoomDetailsModal();
+    openEditRoomModal(currentActiveRoomId);
+  };
+
+  window.submitEditRoom = function(e) {
+    e.preventDefault();
+    const id = document.getElementById('editRoomId').value;
+    const rooms = getData('brainova_rooms') || [];
+    const r = rooms.find(rm => rm.id === id);
+    if (!r) return;
+
+    r.name = document.getElementById('editRoomName').value.trim();
+    r.type = document.getElementById('editRoomType').value;
+    r.capacity = Number(document.getElementById('editRoomCapacity').value) || 14;
+    r.equipment = document.getElementById('editRoomEquipment').value.trim();
+    r.status = document.getElementById('editRoomStatus').value;
+    r.educatorName = document.getElementById('editRoomEducator').value;
+    r.currentGroup = document.getElementById('editRoomGroup').value;
+
+    saveData('brainova_rooms', rooms);
+    closeEditRoomModal();
+    showToast('تم تحديث بيانات القاعة بنجاح!', 'success');
+    renderActiveView();
+  };
+
+  // --- PRINT ROOM STUDENTS ROSTER (A4) ---
+  window.printCurrentRoomStudentRoster = function() {
+    if (!currentActiveRoomId) return;
+    const rooms = getData('brainova_rooms') || [];
+    const r = rooms.find(rm => rm.id === currentActiveRoomId);
+    if (!r) return;
+
+    const details = getRoomDetails(r);
+    const dateStr = new Date().toLocaleDateString('ar-DZ', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const rowsHtml = details.roomStudents.length > 0
+      ? details.roomStudents.map((stu, i) => `
+          <tr>
+            <td style="text-align:center; font-weight:bold;">${i + 1}</td>
+            <td style="font-weight:bold;">${stu.name}</td>
+            <td style="text-align:center; font-family:monospace;">${stu.id}</td>
+            <td style="text-align:center;">${stu.group || '—'}</td>
+            <td style="text-align:center;" dir="ltr">${stu.parentPhone || '—'}</td>
+            <td style="text-align:center; font-weight:bold;">${stu.sessionsRemaining !== undefined ? stu.sessionsRemaining : '—'}</td>
+            <td style="min-width:120px;"></td>
+          </tr>
+        `).join('')
+      : `<tr><td colspan="7" style="text-align:center; padding:20px;">لا يوجد طلاب مقيدون في هذه القاعة</td></tr>`;
+
+    // Extra empty blank rows for annotations
+    let extraRows = '';
+    for (let j = details.roomStudents.length + 1; j <= Math.max(details.roomStudents.length + 3, 10); j++) {
+      extraRows += `
+        <tr style="color:#94a3b8;">
+          <td style="text-align:center;">${j}</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+      `;
+    }
+
+    const printHtml = `
+      <!DOCTYPE html>
+      <html lang="ar" dir="rtl">
+      <head>
+        <meta charset="UTF-8">
+        <title>كشف طلاب وتفقد القاعة - ${r.name}</title>
+        <style>
+          @page { size: A4 portrait; margin: 12mm 15mm; }
+          * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+          body { background: #fff; color: #0F172A; padding: 15px; font-size: 11pt; line-height: 1.4; }
+          .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0284C7; padding-bottom: 12px; margin-bottom: 15px; }
+          .academy-title { font-size: 18pt; font-weight: 800; color: #0369A1; }
+          .academy-sub { font-size: 9pt; color: #475569; margin-top: 2px; }
+          .sheet-title { text-align: center; font-size: 15pt; font-weight: 800; margin: 10px 0; color: #0F172A; }
+          .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #F1F5F9; border: 1px solid #CBD5E1; border-radius: 6px; padding: 10px 14px; margin-bottom: 15px; font-size: 9.5pt; }
+          .meta-item { display: flex; gap: 6px; }
+          .meta-label { font-weight: bold; color: #334155; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 9.5pt; }
+          th, td { border: 1px solid #94A3B8; padding: 6px 8px; }
+          th { background: #E2E8F0; color: #0F172A; font-weight: 700; text-align: center; }
+          .signatures { display: flex; justify-content: space-between; margin-top: 30px; page-break-inside: avoid; }
+          .sig-box { width: 45%; border: 1px dashed #94A3B8; border-radius: 6px; padding: 12px; text-align: center; height: 90px; }
+          .sig-title { font-weight: bold; font-size: 10pt; color: #334155; margin-bottom: 40px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <div class="academy-title">Brainova Robotics Academy</div>
+            <div class="academy-sub">أكاديمية الروبوتيك والذكاء الاصطناعي للأطفال والناشئين • أم البواقي</div>
+          </div>
+          <div style="text-align:left; font-size:9pt; color:#475569;">
+            <div>تاريخ الاستخراج: ${dateStr}</div>
+            <div>السنة الدراسية: 2026 / 2027</div>
+          </div>
+        </div>
+
+        <div class="sheet-title">كشف تفقد وحضور القاعة: ${r.name}</div>
+
+        <div class="meta-grid">
+          <div class="meta-item"><span class="meta-label">الأستاذ المشرف:</span> <span>${details.educatorName || 'غير محدد'}</span></div>
+          <div class="meta-item"><span class="meta-label">تخصص المؤطر:</span> <span>${details.educatorSpecialty || 'روبوتيك وذكاء اصطناعي'}</span></div>
+          <div class="meta-item"><span class="meta-label">طاقة الاستيعاب:</span> <span>${details.roomStudents.length} مسجل / ${r.capacity} مقعد</span></div>
+          <div class="meta-item"><span class="meta-label">نوع وتجهيزات القاعة:</span> <span>${r.type} (${r.equipment || 'حواسيب وأجهزة'})</span></div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width:30px;">#</th>
+              <th>اسم ولقب الطالب</th>
+              <th style="width:75px;">المعرف</th>
+              <th style="width:110px;">الفوج</th>
+              <th style="width:90px;">هاتف الولي</th>
+              <th style="width:70px;">الحصص</th>
+              <th style="width:140px;">ملاحظات وتوقيع المؤطر</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+            ${extraRows}
+          </tbody>
+        </table>
+
+        <div class="signatures">
+          <div class="sig-box">
+            <div class="sig-title">توقيع وملاحظات الأستاذ المشرف على القاعة</div>
+          </div>
+          <div class="sig-box">
+            <div class="sig-title">ختم وتأشيرة إدارة الأكاديمية</div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    if (window.electronAPI && window.electronAPI.printDocument) {
+      window.electronAPI.printDocument({
+        html: printHtml,
+        title: `كشف طلاب القاعة - ${r.name}`
+      });
+      showToast('جارٍ إرسال كشف القاعة للطباعة...', 'info');
+    } else {
+      const win = window.open('', '_blank');
+      win.document.write(printHtml);
+      win.document.close();
+      win.focus();
+      setTimeout(() => { win.print(); }, 500);
+    }
+  };
+
+  // --- ROOM MODALS CRUD ---
   window.openAddRoomModal = function() {
-    document.getElementById('addRoomForm').reset();
+    const form = document.getElementById('addRoomForm');
+    if (form) form.reset();
+
+    // Populate Educators
+    const educators = getData('brainova_educators') || [];
+    const eduSelect = document.getElementById('newRoomEducator');
+    if (eduSelect) {
+      eduSelect.innerHTML = `<option value="">-- اختياري (تحديد أستاذ) --</option>` +
+        educators.map(e => `<option value="${e.name}">${e.name} (${e.specialty || ''})</option>`).join('');
+    }
+
+    // Populate Groups
+    const groups = getData('brainova_groups') || [];
+    const grpSelect = document.getElementById('newRoomGroup');
+    if (grpSelect) {
+      grpSelect.innerHTML = `<option value="">-- اختياري (تحديد فوج) --</option>` +
+        groups.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
+    }
+
     document.getElementById('addRoomModal').classList.add('active');
   };
 
   window.closeAddRoomModal = function() {
-    document.getElementById('addRoomModal').classList.remove('active');
+    const modal = document.getElementById('addRoomModal');
+    if (modal) modal.classList.remove('active');
   };
 
   window.submitAddRoom = function(e) {
@@ -3955,8 +4528,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const capacity = Number(document.getElementById('newRoomCapacity').value) || 12;
     const equipment = document.getElementById('newRoomEquipment').value.trim();
     const status = document.getElementById('newRoomStatus').value;
+    const educatorName = document.getElementById('newRoomEducator')?.value || '';
+    const currentGroup = document.getElementById('newRoomGroup')?.value || '';
 
-    const rooms = getData('brainova_rooms');
+    const rooms = getData('brainova_rooms') || [];
     rooms.push({
       id: 'ROOM-' + Date.now(),
       name,
@@ -3964,7 +4539,8 @@ document.addEventListener('DOMContentLoaded', () => {
       capacity,
       equipment,
       status,
-      currentGroup: ''
+      educatorName,
+      currentGroup
     });
 
     saveData('brainova_rooms', rooms);
@@ -3974,7 +4550,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.toggleRoomStatus = function(id) {
-    const rooms = getData('brainova_rooms');
+    const rooms = getData('brainova_rooms') || [];
     const room = rooms.find(r => r.id === id);
     if (!room) return;
 
@@ -3986,8 +4562,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.deleteRoom = function(id) {
     if (confirm('هل أنت متأكد من حذف هذه القاعة؟')) {
-      const rooms = getData('brainova_rooms').filter(r => r.id !== id);
-      saveData('brainova_rooms', rooms);
+      const rooms = getData('brainova_rooms') || [];
+      const updated = rooms.filter(r => r.id !== id);
+      saveData('brainova_rooms', updated);
       showToast('تم حذف القاعة بنجاح!', 'success');
       renderActiveView();
     }

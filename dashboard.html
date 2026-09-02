@@ -1417,6 +1417,20 @@
             <input type="number" id="newRoomCapacity" required min="1" max="50" value="14" class="form-input">
           </div>
         </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>الأستاذ المشرف على القاعة</label>
+            <select id="newRoomEducator" class="form-input">
+              <option value="">-- اختياري (تحديد أستاذ) --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>الفوج الأساسي للقاعة</label>
+            <select id="newRoomGroup" class="form-input">
+              <option value="">-- اختياري (تحديد فوج) --</option>
+            </select>
+          </div>
+        </div>
         <div class="form-group">
           <label>التجهيزات المتوفرة</label>
           <input type="text" id="newRoomEquipment" required class="form-input" placeholder="مثال: 12 حاسوب، حقائب أردوينو، طابعة 3D، شاشة ذكية">
@@ -1434,6 +1448,146 @@
           <button type="submit" class="btn btn--primary">+ حفظ القاعة</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ===== EDIT ROOM MODAL ===== -->
+  <div class="modal-overlay" id="editRoomModal">
+    <div class="modal">
+      <div class="modal__header">
+        <h2 class="modal__title">تعديل بيانات القاعة</h2>
+        <button class="modal__close" onclick="closeEditRoomModal()">×</button>
+      </div>
+      <form id="editRoomForm" onsubmit="submitEditRoom(event)">
+        <input type="hidden" id="editRoomId">
+        <div class="form-group">
+          <label>اسم القاعة</label>
+          <input type="text" id="editRoomName" required class="form-input">
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>نوع القاعة</label>
+            <select id="editRoomType" class="form-input">
+              <option value="قاعة روبوتيك وإلكترونيات">قاعة روبوتيك وإلكترونيات</option>
+              <option value="قاعة حواسيب وبرمجة">قاعة حواسيب وبرمجة</option>
+              <option value="قاعة ابتكار و3D">قاعة ابتكار و3D</option>
+              <option value="قاعة ورشات تفاعلية">قاعة ورشات تفاعلية</option>
+              <option value="قاعة تدريب تفاعلية">قاعة تدريب تفاعلية</option>
+              <option value="مخبر حواسيب">مخبر حواسيب</option>
+              <option value="مخبر ابتكار وتصنيع">مخبر ابتكار وتصنيع</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>طاقة الاستيعاب (المقاعد)</label>
+            <input type="number" id="editRoomCapacity" required min="1" max="100" class="form-input">
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>الأستاذ المشرف على القاعة</label>
+            <select id="editRoomEducator" class="form-input">
+              <option value="">-- اختياري (تحديد أستاذ) --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>الفوج الأساسي للقاعة</label>
+            <select id="editRoomGroup" class="form-input">
+              <option value="">-- اختياري (تحديد فوج) --</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>التجهيزات المتوفرة</label>
+          <input type="text" id="editRoomEquipment" class="form-input">
+        </div>
+        <div class="form-group">
+          <label>الحالة التشغيلية</label>
+          <select id="editRoomStatus" class="form-input">
+            <option value="available">متاحة وجاهزة</option>
+            <option value="occupied">مشغولة بحصة</option>
+            <option value="maintenance">قيد الصيانة</option>
+          </select>
+        </div>
+        <div class="modal__actions">
+          <button type="button" class="btn btn--outline" onclick="closeEditRoomModal()">إلغاء</button>
+          <button type="submit" class="btn btn--primary">حفظ التعديلات</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== ROOM DETAILS & STUDENTS ROSTER MODAL ===== -->
+  <div class="modal-overlay" id="roomDetailsModal">
+    <div class="modal" style="max-width: 860px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal__header" style="flex-shrink: 0;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="width:38px; height:38px; border-radius:10px; background:rgba(56, 189, 248, 0.15); border:1px solid rgba(56, 189, 248, 0.3); display:flex; align-items:center; justify-content:center; color:#38BDF8;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;"><path d="M3 21h18"/><path d="M3 7v14"/><path d="M21 7v14"/><path d="M7 21V11a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v10"/><path d="M12 14v1"/></svg>
+          </div>
+          <div>
+            <h2 class="modal__title" id="roomDetailsTitle" style="margin:0; font-size:1.15rem;">تفاصيل القاعة والطلاب</h2>
+            <span style="font-size:0.75rem; color:#94A3B8;" id="roomDetailsSubtitle">استعراض الأستاذ المشرف والطلاب المقيدين في هذه القاعة</span>
+          </div>
+        </div>
+        <button class="modal__close" onclick="closeRoomDetailsModal()">×</button>
+      </div>
+
+      <div class="modal__body" style="padding: 18px 22px; overflow-y: auto; flex: 1;">
+        <!-- Top Info Header (Educator & Room Specs) -->
+        <div id="roomDetailsHeaderCard" style="margin-bottom: 18px;">
+          <!-- Injected dynamically by JS -->
+        </div>
+
+        <!-- Students Heading & Controls -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; gap: 10px; flex-wrap: wrap;">
+          <div>
+            <h3 style="margin:0; font-size: 0.98rem; font-weight: 700; color: #F8FAFC;" id="roomStudentsHeading">
+              قائمة الطلاب في القاعة
+            </h3>
+            <span style="font-size: 0.75rem; color: #94A3B8;" id="roomStudentsSubtext">الطلاب المسجلون في أفواج هذه القاعة</span>
+          </div>
+          <div style="display:flex; gap: 8px; align-items: center;">
+            <input type="text" id="roomStudentsSearchInput" class="form-input" placeholder="بحث بالاسم أو الهاتف..." style="height: 32px; font-size: 0.8rem; width: 190px;" oninput="filterRoomStudentsList()">
+            <button class="btn btn--outline btn--small" onclick="printCurrentRoomStudentRoster()" style="border-color: rgba(56, 189, 248, 0.35); color: #38BDF8; font-size: 0.78rem;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+              طباعة كشف القاعة
+            </button>
+          </div>
+        </div>
+
+        <!-- Students Table -->
+        <div class="table-container" style="margin-bottom: 0; background: rgba(8, 15, 29, 0.6); border: 1px solid rgba(255, 255, 255, 0.07);">
+          <div class="table-responsive">
+            <table class="data-table" style="font-size: 0.85rem;">
+              <thead>
+                <tr>
+                  <th style="width: 45px; text-align: center;">#</th>
+                  <th>الطالب</th>
+                  <th>الفوج والمستوى</th>
+                  <th>ولي الأمر والهاتف</th>
+                  <th>الحصص المتبقية</th>
+                  <th style="text-align: center; width: 140px;">إجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="roomStudentsTableBody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal__actions" style="padding: 12px 22px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+        <button type="button" class="btn btn--outline" onclick="closeRoomDetailsModal()">إلغاء وإغلاق</button>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn btn--outline" id="btnEditCurrentRoom" onclick="editCurrentRoomFromModal()">
+            تعديل بيانات القاعة
+          </button>
+          <button type="button" class="btn btn--primary" onclick="printCurrentRoomStudentRoster()">
+            طباعة كشف الحضور الورقي للقاعة (A4)
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
