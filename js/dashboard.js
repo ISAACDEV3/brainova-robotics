@@ -2697,39 +2697,56 @@ document.addEventListener('DOMContentLoaded', () => {
       const isLate = status === 'late';
       const isAbsent = status === 'absent';
 
+      let rowBg = 'background:rgba(16,185,129,0.04); border-right:4px solid #10B981; border-bottom:1px solid var(--color-border);';
+      let avatarBorder = 'border:1px solid rgba(16,185,129,0.4); background:rgba(16,185,129,0.12); color:#34D399;';
+      let statusBadge = '<span style="background:rgba(16,185,129,0.15); color:#10B981; border:1px solid rgba(16,185,129,0.3); font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:10px;">حاضر</span>';
+
+      if (isAbsent) {
+        rowBg = 'background:rgba(239,68,68,0.08); border-right:4px solid #EF4444; border-bottom:1px solid rgba(239,68,68,0.2);';
+        avatarBorder = 'border:1px solid rgba(239,68,68,0.4); background:rgba(239,68,68,0.15); color:#FCA5A5;';
+        statusBadge = '<span style="background:rgba(239,68,68,0.18); color:#EF4444; border:1px solid rgba(239,68,68,0.35); font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:10px;">غائب</span>';
+      } else if (isLate) {
+        rowBg = 'background:rgba(245,158,11,0.06); border-right:4px solid #F59E0B; border-bottom:1px solid rgba(245,158,11,0.2);';
+        avatarBorder = 'border:1px solid rgba(245,158,11,0.4); background:rgba(245,158,11,0.15); color:#FCD34D;';
+        statusBadge = '<span style="background:rgba(245,158,11,0.18); color:#F59E0B; border:1px solid rgba(245,158,11,0.35); font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:10px;">متأخر</span>';
+      }
+
       return `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:rgba(255,255,255,0.015); border-bottom:1px solid var(--color-border); gap:12px; flex-wrap:wrap;">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; ${rowBg} gap:12px; flex-wrap:wrap; transition:all 0.15s ease;">
           <div style="display:flex; align-items:center; gap:10px; min-width:180px;">
-            <div style="width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,0.06); color:var(--color-text); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.85rem; border:1px solid var(--color-border);">
+            <div style="width:32px; height:32px; border-radius:50%; ${avatarBorder} display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.85rem;">
               ${stu.name.trim().charAt(0)}
             </div>
             <div>
-              <div style="font-weight:700; color:var(--color-text); font-size:0.88rem;">${stu.name}</div>
-              <div style="font-size:0.75rem; color:var(--color-text-muted);">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="font-weight:700; color:var(--color-text); font-size:0.88rem;">${stu.name}</div>
+                ${statusBadge}
+              </div>
+              <div style="font-size:0.75rem; color:var(--color-text-muted); margin-top:2px;">
                 <span>${stu.parentPhone || '—'}</span> • <span>(${sessions} حصص متبقية)</span>
               </div>
             </div>
           </div>
 
-          <!-- Status Segmented Control -->
-          <div style="display:flex; align-items:center; background:rgba(0,0,0,0.25); padding:2px; border-radius:6px; border:1px solid var(--color-border); gap:2px;">
+          <!-- Status Segmented Control with Distinct Colors -->
+          <div style="display:flex; align-items:center; background:rgba(0,0,0,0.35); padding:3px; border-radius:8px; border:1px solid var(--color-border); gap:3px;">
             <button type="button" 
-              style="padding:4px 10px; font-size:0.75rem; font-weight:600; border-radius:4px; border:none; cursor:pointer; transition:all 0.15s ease;
-              ${isPresent ? 'background:var(--color-success); color:#fff;' : 'background:transparent; color:var(--color-text-muted);'}"
+              style="padding:5px 12px; font-size:0.75rem; font-weight:700; border-radius:6px; border:none; cursor:pointer; transition:all 0.15s ease;
+              ${isPresent ? 'background:#10B981; color:#fff; box-shadow:0 1px 4px rgba(16,185,129,0.4);' : 'background:transparent; color:var(--color-text-muted);'}"
               onclick="setQuickStudentStatus('${stu.id}', 'present')">
               حاضر
             </button>
 
             <button type="button" 
-              style="padding:4px 10px; font-size:0.75rem; font-weight:600; border-radius:4px; border:none; cursor:pointer; transition:all 0.15s ease;
-              ${isLate ? 'background:var(--color-warning); color:#000;' : 'background:transparent; color:var(--color-text-muted);'}"
+              style="padding:5px 12px; font-size:0.75rem; font-weight:700; border-radius:6px; border:none; cursor:pointer; transition:all 0.15s ease;
+              ${isLate ? 'background:#F59E0B; color:#0F172A; box-shadow:0 1px 4px rgba(245,158,11,0.4);' : 'background:transparent; color:var(--color-text-muted);'}"
               onclick="setQuickStudentStatus('${stu.id}', 'late')">
               متأخر
             </button>
 
             <button type="button" 
-              style="padding:4px 10px; font-size:0.75rem; font-weight:600; border-radius:4px; border:none; cursor:pointer; transition:all 0.15s ease;
-              ${isAbsent ? 'background:var(--color-danger); color:#fff;' : 'background:transparent; color:var(--color-text-muted);'}"
+              style="padding:5px 12px; font-size:0.75rem; font-weight:700; border-radius:6px; border:none; cursor:pointer; transition:all 0.15s ease;
+              ${isAbsent ? 'background:#EF4444; color:#fff; box-shadow:0 1px 4px rgba(239,68,68,0.4);' : 'background:transparent; color:var(--color-text-muted);'}"
               onclick="setQuickStudentStatus('${stu.id}', 'absent')">
               غائب
             </button>
