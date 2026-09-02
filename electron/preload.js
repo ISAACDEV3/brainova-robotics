@@ -58,6 +58,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     setAiSettings: (settings) => ipcRenderer.invoke('whatsapp-set-ai-settings', settings),
     getAiSettings: () => ipcRenderer.invoke('whatsapp-get-ai-settings'),
     getChatLogs: () => ipcRenderer.invoke('whatsapp-get-chat-logs'),
+    setProfilePicture: (imagePath) => ipcRenderer.invoke('whatsapp-set-profile-picture', imagePath),
     onQr: (callback) => ipcRenderer.on('whatsapp-qr', (_, qr) => callback(qr)),
     onStatus: (callback) => ipcRenderer.on('whatsapp-status', (_, status) => callback(status)),
     onMessageLogged: (callback) => ipcRenderer.on('whatsapp-message-logged', (_, log) => callback(log)),

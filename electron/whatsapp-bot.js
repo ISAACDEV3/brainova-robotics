@@ -511,6 +511,30 @@ ${this.customInstructions ? `تعليمات إضافية من الإدارة: ${
       return { success: false, error: err.message };
     }
   }
+  async setProfilePicture(imagePath) {
+    if (!this.sock || this.status !== 'connected') {
+      return { success: false, error: 'بوت الواتساب غير متصل حالياً! يرجى الاتصال أولاً.' };
+    }
+
+    const resolvedPath = imagePath || path.join(__dirname, '../assets/images/logo.png');
+    if (!fs.existsSync(resolvedPath)) {
+      return { success: false, error: 'ملف الشعار غير موجود: ' + resolvedPath };
+    }
+
+    try {
+      const rawId = this.sock.user && this.sock.user.id ? this.sock.user.id : '';
+      const jid = rawId.includes(':')
+        ? rawId.split(':')[0] + '@s.whatsapp.net'
+        : (rawId.includes('@') ? rawId : rawId + '@s.whatsapp.net');
+
+      await this.sock.updateProfilePicture(jid, { url: resolvedPath });
+      console.log(`[WhatsApp Bot] Profile picture updated with ${resolvedPath} for ${jid}`);
+      return { success: true };
+    } catch (err) {
+      console.error('[WhatsApp Bot Profile Picture Error]:', err);
+      return { success: false, error: err.message };
+    }
+  }
 
   async logout() {
     this.isManualLogout = true;

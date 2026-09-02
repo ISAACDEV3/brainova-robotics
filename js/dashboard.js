@@ -7011,7 +7011,25 @@ ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
   window.saveWaAiSettings = saveWaAiSettings;
   window.loadWaAiSettings = loadWaAiSettings;
   window.loadWaChatLogs = loadWaChatLogs;
-  window.renderWaAiChatLogs = renderWaAiChatLogs;
+  async function setWhatsAppBotProfilePicture() {
+    if (!window.electronAPI || !window.electronAPI.whatsapp || !window.electronAPI.whatsapp.setProfilePicture) {
+      showToast('خاصية تحديث صورة الحساب متاحة في تطبيق سطح المكتب فقط', 'info');
+      return;
+    }
+
+    try {
+      showToast('جاري رفع وتعيين لوغو Brainova كصورة لحساب الواتساب... ⏳', 'info');
+      const res = await window.electronAPI.whatsapp.setProfilePicture();
+      if (res && res.success) {
+        showToast('✅ تم تعيين لوغو Brainova بنجاح كصورة بروفايل لحساب الواتساب!', 'success');
+      } else {
+        showToast('تعذر تعيين الصورة: ' + (res?.error || 'تأكد من أن البوت متصل'), 'warning');
+      }
+    } catch (e) {
+      showToast('خطأ: ' + e.message, 'danger');
+    }
+  }
+  window.setWhatsAppBotProfilePicture = setWhatsAppBotProfilePicture;
 
   // Listen for real-time incoming messages logged
   if (window.electronAPI && window.electronAPI.whatsapp && window.electronAPI.whatsapp.onMessageLogged) {

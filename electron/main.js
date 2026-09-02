@@ -821,3 +821,7 @@ ipcMain.handle('whatsapp-get-ai-settings', async () => {
 ipcMain.handle('whatsapp-get-chat-logs', async () => {
   return whatsappBot.getChatLogs();
 });
+
+ipcMain.handle('whatsapp-set-profile-picture', async () => {
+  return whatsappBot.setProfilePicture();
+});
