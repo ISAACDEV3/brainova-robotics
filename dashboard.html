@@ -1262,9 +1262,14 @@
         </div>
 
         <!-- Action Footer -->
-        <div style="display:flex; justify-content:flex-end; align-items:center; margin-top:16px; gap:8px;">
-          <button type="button" class="btn btn--outline" onclick="closeQuickGroupAttendanceModal()">إلغاء</button>
-          <button type="button" class="btn btn--primary" onclick="saveQuickGroupAttendance()">حفظ الحصة</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; gap:8px;">
+          <button type="button" class="btn btn--outline" style="font-size:0.78rem; border-color:rgba(56,189,248,0.35); color:#38BDF8;" onclick="switchToFullAttendanceViewFromQuickModal()">
+            🖥️ فتح في السجل الكامل
+          </button>
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="btn btn--outline" onclick="closeQuickGroupAttendanceModal()">إلغاء</button>
+            <button type="button" class="btn btn--primary" onclick="saveQuickGroupAttendance()">حفظ الحصة</button>
+          </div>
         </div>
       </div>
     </div>

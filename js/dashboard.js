@@ -657,8 +657,8 @@ document.addEventListener('DOMContentLoaded', () => {
                   </div>
                   <div style="display:flex; align-items:center; gap:10px;">
                     <span style="font-size:0.75rem; color:var(--color-text-dim); font-weight:600;">${studentCount} تلاميذ</span>
-                    <button class="btn btn--outline btn--small" onclick="document.getElementById('attGroupSelect').value='${sch.groupName}'; document.querySelector('[data-view=\\'attendance\\']').click();" style="font-size:0.76rem; padding:4px 10px;">
-                      تفقد الحضور
+                    <button class="btn btn--primary btn--small" onclick="openAttendanceForSession('${encodeURIComponent(sch.groupName)}', '${sch.startTime && sch.endTime ? `${sch.startTime} - ${sch.endTime}` : ''}')" style="font-size:0.76rem; padding:4px 10px; background:#0284C7; font-weight:700;">
+                      تسجيل الحضور
                     </button>
                   </div>
                 </div>
@@ -970,6 +970,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (groupSelect.children.length === 0 && groups.length > 0) {
       groupSelect.innerHTML = groups.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
+    }
+
+    if (window.__selectedAttendanceGroup) {
+      const target = window.__selectedAttendanceGroup.trim().toLowerCase();
+      let found = false;
+      for (let opt of groupSelect.options) {
+        if (opt.value.trim().toLowerCase() === target || opt.value.toLowerCase().includes(target) || target.includes(opt.value.toLowerCase())) {
+          groupSelect.value = opt.value;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        groupSelect.add(new Option(window.__selectedAttendanceGroup, window.__selectedAttendanceGroup, true, true));
+        groupSelect.value = window.__selectedAttendanceGroup;
+      }
+      window.__selectedAttendanceGroup = '';
+    }
+
+    if (window.__selectedAttendanceTime && timeSelect) {
+      const targetTime = window.__selectedAttendanceTime.trim();
+      let foundTime = false;
+      for (let opt of timeSelect.options) {
+        if (opt.value.includes(targetTime) || targetTime.includes(opt.value)) {
+          timeSelect.value = opt.value;
+          foundTime = true;
+          break;
+        }
+      }
+      if (!foundTime) {
+        timeSelect.add(new Option(targetTime, targetTime, true, true));
+        timeSelect.value = targetTime;
+      }
+      window.__selectedAttendanceTime = '';
     }
 
     if (!dateInput.value) {
@@ -3183,33 +3217,25 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.openAttendanceForSession = function(encodedGroupName, timeSlot) {
-    const groupName = decodeURIComponent(encodedGroupName);
-    const navBtn = document.querySelector('[data-view="attendance"]');
-    if (navBtn) navBtn.click();
+    const rawGroupName = decodeURIComponent(encodedGroupName || '').trim();
+    if (!rawGroupName) return;
 
-    setTimeout(() => {
-      const groupSelect = document.getElementById('attGroupSelect');
-      if (groupSelect) groupSelect.value = groupName;
+    // 1. Resolve exact group from database
+    const allGroups = getData('brainova_groups') || [];
+    const matchedGroup = allGroups.find(g => 
+      g.name.trim().toLowerCase() === rawGroupName.toLowerCase() || 
+      g.id === rawGroupName ||
+      g.name.trim().toLowerCase().includes(rawGroupName.toLowerCase()) ||
+      rawGroupName.toLowerCase().includes(g.name.trim().toLowerCase())
+    );
+    const targetGroupName = matchedGroup ? matchedGroup.name : rawGroupName;
 
-      const timeSelect = document.getElementById('attSessionTimeSelect');
-      if (timeSelect && timeSlot) {
-        let matched = false;
-        for (let opt of timeSelect.options) {
-          if (opt.value.includes(timeSlot) || timeSlot.includes(opt.value)) {
-            timeSelect.value = opt.value;
-            matched = true;
-            break;
-          }
-        }
-        if (!matched) {
-          const newOpt = new Option(timeSlot, timeSlot, true, true);
-          timeSelect.add(newOpt);
-        }
-      }
+    // 2. Open dedicated Quick Group Attendance modal directly for this exact group & time!
+    openQuickGroupAttendanceModal(encodeURIComponent(targetGroupName), timeSlot);
 
-      renderAttendance();
-      showToast(`تم فتح سجل الحضور لحصة ${groupName} بتوقيت (${timeSlot}) 📝`, 'success');
-    }, 100);
+    // 3. Also prime Attendance View so if user visits it, it is 100% synchronized for this exact group!
+    window.__selectedAttendanceGroup = targetGroupName;
+    if (timeSlot) window.__selectedAttendanceTime = timeSlot;
   };
 
   // --- GROUP STUDENTS ROSTER MODAL LOGIC ---
@@ -3320,15 +3346,26 @@ document.addEventListener('DOMContentLoaded', () => {
   window.__quickAttGroupName = '';
   window.__quickAttDraft = {};
 
-  function openQuickGroupAttendanceModal(encodedGroupName) {
-    const groupName = decodeURIComponent(encodedGroupName || '').trim();
-    if (!groupName) return;
+  function openQuickGroupAttendanceModal(encodedGroupName, customTimeSlot) {
+    const rawGroupName = decodeURIComponent(encodedGroupName || '').trim();
+    if (!rawGroupName) return;
+
+    // Resolve exact group from database to make sure capitalization and naming match 100%
+    const groups = getData('brainova_groups') || [];
+    const matchedGroup = groups.find(x => 
+      x.name.trim().toLowerCase() === rawGroupName.toLowerCase() || 
+      x.id === rawGroupName ||
+      x.name.trim().toLowerCase().includes(rawGroupName.toLowerCase()) ||
+      rawGroupName.toLowerCase().includes(x.name.trim().toLowerCase())
+    );
+    const groupName = matchedGroup ? matchedGroup.name : rawGroupName;
+
     window.__quickAttGroupName = groupName;
     window.__quickAttDraft = {};
 
     const titleEl = document.getElementById('quickAttModalTitle');
     if (titleEl) {
-      titleEl.textContent = 'تفقد حضور وغياب: ' + groupName;
+      titleEl.textContent = 'تفقد حضور وغياب: ' + groupName + (customTimeSlot ? ` (${customTimeSlot})` : '');
     }
 
     // Set Date to Today
@@ -3338,13 +3375,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Find scheduled time for this group
-    const groups = getData('brainova_groups') || [];
-    const g = groups.find(x => x.name === groupName || x.id === groupName);
     const schedules = getData('brainova_schedule') || [];
-    const sch = schedules.find(s => s.groupId === (g ? g.id : '') || s.groupName === groupName || (s.groupName && s.groupName.includes(groupName)));
+    const sch = schedules.find(s => s.groupId === (matchedGroup ? matchedGroup.id : '') || s.groupName === groupName || (s.groupName && s.groupName.includes(groupName)));
     const timeInput = document.getElementById('quickAttTime');
     if (timeInput) {
-      const scheduledTime = sch ? `${sch.startTime} - ${sch.endTime}` : (g?.timeSlot || '14:00 - 16:00');
+      const scheduledTime = customTimeSlot || (sch ? `${sch.startTime} - ${sch.endTime}` : (matchedGroup?.timeSlot || '14:00 - 16:00'));
       timeInput.value = scheduledTime;
     }
 
@@ -3354,6 +3389,29 @@ document.addEventListener('DOMContentLoaded', () => {
     if (modal) modal.classList.add('active');
   }
   window.openQuickGroupAttendanceModal = openQuickGroupAttendanceModal;
+
+  window.switchToFullAttendanceViewFromQuickModal = function() {
+    const groupName = window.__quickAttGroupName;
+    const timeVal = document.getElementById('quickAttTime')?.value;
+    const dateVal = document.getElementById('quickAttDate')?.value;
+
+    closeQuickGroupAttendanceModal();
+
+    window.__selectedAttendanceGroup = groupName;
+    if (timeVal) window.__selectedAttendanceTime = timeVal;
+
+    const navBtn = document.querySelector('[data-view="attendance"]');
+    if (navBtn) navBtn.click();
+
+    setTimeout(() => {
+      if (dateVal) {
+        const dateInput = document.getElementById('attDateSelect');
+        if (dateInput) dateInput.value = dateVal;
+      }
+      renderAttendance();
+      showToast(`تم فتح سجل الحضور الكامل لفوج "${groupName}" 📝`, 'success');
+    }, 120);
+  };
 
   function closeQuickGroupAttendanceModal() {
     const modal = document.getElementById('quickGroupAttendanceModal');
