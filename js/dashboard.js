@@ -783,7 +783,11 @@ document.addEventListener('DOMContentLoaded', () => {
               ${stu.name}
             </a>
           </td>
-          <td><span style="color:var(--color-text-muted);">${stu.group || 'غير محدد'}</span><br><small style="color:var(--color-accent);">${stu.level || ''}</small></td>
+          <td>
+            <span style="font-weight:700; color:#F8FAFC;">${stu.group || 'غير محدد'}</span>
+            ${(stu.sessionTime || (stu.startTime ? (stu.startTime + ' - ' + (stu.endTime || '')) : '')) ? `<div style="font-size:0.75rem; color:#00E5FF; font-weight:700; margin-top:2px;">🕒 ${stu.sessionTime || (stu.startTime + ' - ' + (stu.endTime || ''))}</div>` : ''}
+            <small style="color:var(--color-accent);">${stu.level || ''}</small>
+          </td>
           <td>
             <div>${stu.parentName || '—'}</div>
             <a href="tel:${stu.parentPhone}" dir="ltr" style="color:var(--color-primary); font-size:0.85rem;">${stu.parentPhone || '—'}</a>
@@ -1339,6 +1343,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="profile-name-title">${stu.name}</div>
             <div class="profile-tags-row">
               <span class="status-pill status-pill--active"><span class="pill-dot"></span> ${stu.group || 'الفوج أ'}</span>
+              ${(stu.sessionTime || (stu.startTime ? (stu.startTime + ' - ' + (stu.endTime || '')) : '')) ? `<span class="status-pill" style="background:rgba(0,188,212,0.12); color:#00E5FF; border:1px solid rgba(0,188,212,0.3); font-weight:700;">🕒 توقيت الحصة: ${stu.sessionTime || (stu.startTime + ' - ' + (stu.endTime || ''))}</span>` : ''}
               <span class="status-pill" style="background:rgba(56,189,248,0.1); color:#38BDF8; border:1px solid rgba(56,189,248,0.25);">${stu.level || 'المستوى الأول'}</span>
               <span style="font-family:monospace; font-size:0.72rem; color:var(--color-text-dim); background:rgba(255,255,255,0.05); padding:1px 6px; border-radius:4px;">ID: ${stu.id}</span>
             </div>
@@ -2781,18 +2786,37 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
 
   // Student Modals
+  function onStudentGroupSelectChange() {
+    const groupSelect = document.getElementById('newStudentGroup');
+    const startInput = document.getElementById('newStudentStartTime');
+    const endInput = document.getElementById('newStudentEndTime');
+    if (!groupSelect || !startInput || !endInput) return;
+
+    const selectedGroup = groupSelect.value;
+    const schedule = getData('brainova_schedule') || [];
+    const matched = schedule.find(s => s.groupName === selectedGroup || (s.groupName && s.groupName.includes(selectedGroup)));
+
+    if (matched && matched.startTime && matched.endTime) {
+      startInput.value = matched.startTime;
+      endInput.value = matched.endTime;
+    }
+  }
+  window.onStudentGroupSelectChange = onStudentGroupSelectChange;
+
   window.openAddStudentModal = function() {
     const groupSelect = document.getElementById('newStudentGroup');
     if (groupSelect) {
       const groups = getData('brainova_groups');
       groupSelect.innerHTML = groups.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
+      onStudentGroupSelectChange();
     }
     document.getElementById('addStudentModal').classList.add('active');
   };
 
-  window.closeAddStudentModal = function() {
+  function closeAddStudentModal() {
     document.getElementById('addStudentModal').classList.remove('active');
-  };
+  }
+  window.closeAddStudentModal = closeAddStudentModal;
 
   window.setPaymentPreset = function(amount, sessions) {
     const amountInput = document.getElementById('payAmount');
@@ -2809,6 +2833,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const parentPhone = document.getElementById('newStudentParentPhone') ? document.getElementById('newStudentParentPhone').value.trim() : '—';
     const group = document.getElementById('newStudentGroup').value;
     const level = document.getElementById('newStudentLevel').value;
+    const startTime = document.getElementById('newStudentStartTime')?.value || '14:00';
+    const endTime = document.getElementById('newStudentEndTime')?.value || '16:00';
+    const sessionTime = `${startTime} - ${endTime}`;
+
     const planValue = document.getElementById('newStudentPlan') ? document.getElementById('newStudentPlan').value : '5000';
     const fee = Number(planValue) || 5000;
 
@@ -2817,6 +2845,9 @@ document.addEventListener('DOMContentLoaded', () => {
       name: name,
       group: group,
       level: level,
+      startTime: startTime,
+      endTime: endTime,
+      sessionTime: sessionTime,
       parentName: parentName || "—",
       parentPhone: parentPhone || "—",
       username: generateRandomCode(8),
@@ -2831,7 +2862,7 @@ document.addEventListener('DOMContentLoaded', () => {
     students.push(newStudent);
     saveData('brainova_students', students);
     closeAddStudentModal();
-    showToast('تم تسجيل التلميذ مع الفوج وتفاصيل الولي بنجاح! 🚀', 'success');
+    showToast(`✅ تم تسجيل التلميذ (${name}) بفوج (${group}) وتوقيت (${sessionTime}) بنجاح! 🚀`, 'success');
     renderActiveView();
   };
 
