@@ -1340,17 +1340,17 @@
         <div id="quickAttWeeklyNav" style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.25); border-radius:10px; padding:10px 14px; margin-bottom:14px;">
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
             <div>
-              <div style="font-size:0.75rem; color:#94A3B8;">الحصة الأسبوعية للفوج:</div>
+              <div style="font-size:0.75rem; color:#94A3B8;">توقيت الفوج: <strong id="quickAttScheduleLabel" style="color:#F8FAFC;">—</strong></div>
               <strong id="quickAttCycleHeader" style="color:#fff; font-size:0.92rem;">-</strong>
             </div>
             <div style="display:flex; gap:6px; flex-wrap:wrap;">
               <button type="button" class="btn btn--outline btn--small" id="quickAttPrevWeekBtn" onclick="quickAttJumpToPrevSession()" style="font-size:0.75rem; padding:4px 8px; border-color:rgba(255,255,255,0.2);">
-                ⏮️ الحصة السابقة (<span id="quickAttPrevDateLabel">—</span>)
+                ⏮️ آخر حصة (<span id="quickAttPrevDateLabel">—</span>)
               </button>
               <button type="button" class="btn btn--outline btn--small" id="quickAttNextWeekBtn" onclick="quickAttJumpToNextSession()" style="font-size:0.75rem; padding:4px 8px; color:#38BDF8; border-color:rgba(56,189,248,0.4); background:rgba(56,189,248,0.1); font-weight:700;">
-                🗓️ الحصة الجديدة (+7 أيام)
+                🗓️ الموعد القادم (<span id="quickAttNextDateLabel">—</span>)
               </button>
-              <button type="button" class="btn btn--outline btn--small" onclick="quickAttJumpToToday()" style="font-size:0.75rem; padding:4px 8px;">
+              <button type="button" class="btn btn--outline btn--small" onclick="quickAttJumpToToday()" style="font-size:0.75rem; padding:4px 8px; font-weight:700;">
                 📅 اليوم
               </button>
             </div>
@@ -1575,6 +1575,24 @@
             </select>
           </div>
         </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>يوم الدراسة الأسبوعي المعتمد</label>
+            <select id="newGroupDay" required class="form-input">
+              <option value="السبت" selected>السبت</option>
+              <option value="الأحد">الأحد</option>
+              <option value="الإثنين">الإثنين</option>
+              <option value="الثلاثاء">الثلاثاء</option>
+              <option value="الأربعاء">الأربعاء</option>
+              <option value="الخميس">الخميس</option>
+              <option value="الجمعة">الجمعة</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>توقيت الحصة الأسبوعية</label>
+            <input type="text" id="newGroupTimeSlot" class="form-input" placeholder="14:00 - 16:00" value="14:00 - 16:00" required>
+          </div>
+        </div>
         <div class="form-group">
           <label>الحد الأقصى للطلاب</label>
           <input type="number" id="newGroupMaxStudents" class="form-input" placeholder="12" value="12" min="1" max="50">
@@ -1582,6 +1600,81 @@
         <div class="modal__actions">
           <button type="button" class="btn btn--outline" onclick="closeAddGroupModal()">إلغاء</button>
           <button type="submit" class="btn btn--primary">+ إنشاء الفوج</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== EDIT GROUP MODAL (Day, Time, Room, Educator) ===== -->
+  <div class="modal-overlay" id="editGroupModal">
+    <div class="modal">
+      <div class="modal__header">
+        <h2 class="modal__title">تعديل بيانات وفوج التدريب</h2>
+        <button class="modal__close" onclick="closeEditGroupModal()">×</button>
+      </div>
+      <form id="editGroupForm" onsubmit="submitEditGroup(event)">
+        <input type="hidden" id="editGroupId">
+        <div class="form-group">
+          <label>اسم الفوج</label>
+          <input type="text" id="editGroupName" required class="form-input">
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>يوم الدراسة الأسبوعي المعتمد</label>
+            <select id="editGroupDay" required class="form-input">
+              <option value="السبت">السبت</option>
+              <option value="الأحد">الأحد</option>
+              <option value="الإثنين">الإثنين</option>
+              <option value="الثلاثاء">الثلاثاء</option>
+              <option value="الأربعاء">الأربعاء</option>
+              <option value="الخميس">الخميس</option>
+              <option value="الجمعة">الجمعة</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>توقيت الحصة المعتمد</label>
+            <input type="text" id="editGroupTimeSlot" class="form-input" placeholder="مثال: 14:00 - 16:00" required>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>المستوى</label>
+            <select id="editGroupLevel" required class="form-input">
+              <option value="المستوى الأول">المستوى الأول</option>
+              <option value="المستوى الثاني">المستوى الثاني</option>
+              <option value="المستوى الثالث">المستوى الثالث</option>
+              <option value="المستوى الرابع">المستوى الرابع</option>
+              <option value="المستوى الخامس">المستوى الخامس</option>
+              <option value="المستوى السادس">المستوى السادس</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>الفئة العمرية</label>
+            <select id="editGroupAgeCategory" required class="form-input">
+              <option value="6 - 8 سنوات (براعم)">6 - 8 سنوات (براعم)</option>
+              <option value="8 - 11 سنة (ناشئين)">8 - 11 سنة (ناشئين)</option>
+              <option value="11 - 15 سنة (فتيان)">11 - 15 سنة (فتيان)</option>
+              <option value="15 - 18 سنة (شباب)">15 - 18 سنة (شباب)</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>القاعة المخصصة</label>
+            <select id="editGroupRoom" class="form-input"></select>
+          </div>
+          <div class="form-group">
+            <label>الأستاذ المسؤول</label>
+            <select id="editGroupEducator" class="form-input"></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>الحد الأقصى للطلاب</label>
+          <input type="number" id="editGroupMaxStudents" class="form-input" min="1" max="50">
+        </div>
+        <div class="modal__actions">
+          <button type="button" class="btn btn--outline" onclick="closeEditGroupModal()">إلغاء</button>
+          <button type="submit" class="btn btn--primary">💾 حفظ تعديلات الفوج</button>
         </div>
       </form>
     </div>

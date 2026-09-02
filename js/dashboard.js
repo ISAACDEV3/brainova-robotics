@@ -785,7 +785,40 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   window.formatIsoDate = formatIsoDate;
 
-  // --- WEEKLY GROUP ATTENDANCE CYCLE CALCULATION ---
+  // --- DYNAMIC GROUP ATTENDANCE CYCLE & SCHEDULE CALCULATION ---
+  const daysMap = {
+    'الأحد': 0, 'الاحد': 0, 'sunday': 0,
+    'الإثنين': 1, 'الاثنين': 1, 'monday': 1,
+    'الثلاثاء': 2, 'tuesday': 2,
+    'الأربعاء': 3, 'الاربعاء': 3, 'wednesday': 3,
+    'الخميس': 4, 'thursday': 4,
+    'الجمعة': 5, 'friday': 5,
+    'السبت': 6, 'saturday': 6
+  };
+
+  function getNextDateForDayName(dayName, fromDate = new Date(), lastSessionDateStr = null) {
+    if (!dayName) return null;
+    const cleanDay = String(dayName).trim().toLowerCase();
+    const targetDay = daysMap[cleanDay];
+    if (targetDay === undefined) return null;
+
+    const current = new Date(fromDate);
+    current.setHours(12, 0, 0, 0);
+    const currentDay = current.getDay();
+
+    let daysToAdd = (targetDay - currentDay + 7) % 7;
+
+    // If today is the target day (daysToAdd === 0)
+    // Check if attendance for today was already recorded:
+    if (daysToAdd === 0 && lastSessionDateStr === formatIsoDate(current)) {
+      daysToAdd = 7;
+    }
+
+    const nextDate = new Date(current.getTime() + (daysToAdd * 24 * 60 * 60 * 1000));
+    return formatIsoDate(nextDate);
+  }
+  window.getNextDateForDayName = getNextDateForDayName;
+
   function getGroupWeeklyCycleInfo(groupName, allAttendance = null) {
     if (!groupName) {
       const today = new Date().toISOString().slice(0, 10);
@@ -794,14 +827,21 @@ document.addEventListener('DOMContentLoaded', () => {
         lastSessionDate: null,
         nextSessionDate: today,
         daysSinceLastSession: null,
-        weekElapsed: false,
-        isDueToday: false,
+        scheduledDay: 'السبت',
+        scheduledTime: '14:00 - 16:00',
         badgeText: 'جاهز للحصة الأولى',
         badgeStyle: 'background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid rgba(56,189,248,0.3);',
         suggestedDate: today,
         allDates: []
       };
     }
+
+    const allGroups = getData('brainova_groups') || [];
+    const matchedGroup = allGroups.find(x => isStudentInGroup({ group: x.name }, groupName) || x.id === groupName);
+    const schedules = getData('brainova_schedule') || [];
+    const sch = schedules.find(s => s.groupId === (matchedGroup ? matchedGroup.id : '') || isStudentInGroup({ group: s.groupName }, groupName));
+    const scheduledDay = sch ? sch.day : (matchedGroup?.day || 'السبت');
+    const scheduledTime = sch ? `${sch.startTime} - ${sch.endTime}` : (matchedGroup?.timeSlot || '14:00 - 16:00');
 
     const attList = allAttendance || getData('brainova_attendance') || [];
     const groupAtt = attList.filter(a => isStudentInGroup({ group: a.groupName }, groupName));
@@ -815,63 +855,66 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const now = new Date();
     now.setHours(12, 0, 0, 0);
+    const todayStr = formatIsoDate(now);
 
-    if (rawDates.length === 0) {
-      const todayStr = formatIsoDate(now);
-      return {
-        hasPreviousSession: false,
-        lastSessionDate: null,
-        nextSessionDate: todayStr,
-        daysSinceLastSession: null,
-        weekElapsed: false,
-        isDueToday: true,
-        badgeText: '🆕 فوج جديد — جاهز للحصة الأولى',
-        badgeStyle: 'background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid rgba(56,189,248,0.3);',
-        suggestedDate: todayStr,
-        allDates: []
-      };
+    const lastDateStr = rawDates.length > 0 ? rawDates[rawDates.length - 1] : null;
+    let diffDays = null;
+    if (lastDateStr) {
+      const lastDate = parseBrainovaDate(lastDateStr) || new Date();
+      lastDate.setHours(12, 0, 0, 0);
+      const diffMs = now.getTime() - lastDate.getTime();
+      diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     }
 
-    const lastDateStr = rawDates[rawDates.length - 1];
-    const lastDate = parseBrainovaDate(lastDateStr) || new Date();
-    lastDate.setHours(12, 0, 0, 0);
+    // Calculate next scheduled session date matching the group's configured day:
+    let nextDateStr = getNextDateForDayName(scheduledDay, now, lastDateStr);
+    if (!nextDateStr) {
+      // Fallback: 7 days after last session, or today
+      if (lastDateStr) {
+        const lastDate = parseBrainovaDate(lastDateStr) || new Date();
+        const nextDate = new Date(lastDate.getTime() + (7 * 24 * 60 * 60 * 1000));
+        nextDateStr = formatIsoDate(nextDate);
+      } else {
+        nextDateStr = todayStr;
+      }
+    }
 
-    // Exactly 7 days after the last recorded session date
-    const nextDate = new Date(lastDate.getTime() + (7 * 24 * 60 * 60 * 1000));
-    const nextDateStr = formatIsoDate(nextDate);
-
-    const diffMs = now.getTime() - lastDate.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    const weekElapsed = diffDays >= 7;
-    const isDueToday = nextDateStr === formatIsoDate(now) || (diffDays % 7 === 0 && diffDays > 0);
+    const isTodaySession = (nextDateStr === todayStr);
+    const hasStudiedToday = (lastDateStr === todayStr);
 
     let badgeText = '';
     let badgeStyle = '';
 
-    if (diffDays === 0) {
-      badgeText = '✅ تم تسجيل حضور اليوم';
+    if (hasStudiedToday) {
+      badgeText = `✅ تم تسجيل حضور اليوم (${scheduledTime})`;
       badgeStyle = 'background:rgba(16,185,129,0.15); color:#10B981; border:1px solid rgba(16,185,129,0.3);';
-    } else if (isDueToday) {
-      badgeText = '🔴 موعد حصة هذا الأسبوع اليوم!';
+    } else if (isTodaySession) {
+      badgeText = `🔴 موعد الحصة اليوم (${scheduledDay} ${scheduledTime})!`;
       badgeStyle = 'background:rgba(239,68,68,0.18); color:#EF4444; border:1px solid rgba(239,68,68,0.35); font-weight:700;';
-    } else if (weekElapsed) {
-      badgeText = `🟢 انقضى أسبوع (${diffDays} يوماً) — موعد الحصة الجديدة: ${nextDateStr}`;
-      badgeStyle = 'background:rgba(16,185,129,0.18); color:#10B981; border:1px solid rgba(16,185,129,0.35); font-weight:700;';
+    } else if (!lastDateStr) {
+      badgeText = `🆕 الموعد القادم: ${scheduledDay} ${nextDateStr} (${scheduledTime})`;
+      badgeStyle = 'background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid rgba(56,189,248,0.3);';
     } else {
-      const rem = 7 - diffDays;
-      badgeText = `⏳ متبقي ${rem} ${rem === 1 ? 'يوم' : 'أيام'} على الحصة القادمة (${nextDateStr})`;
-      badgeStyle = 'background:rgba(245,158,11,0.15); color:#F59E0B; border:1px solid rgba(245,158,11,0.3);';
+      const nextD = parseBrainovaDate(nextDateStr);
+      let daysUntil = 0;
+      if (nextD) {
+        daysUntil = Math.max(0, Math.round((nextD.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+      }
+      badgeText = `📅 الحصة القادمة: ${scheduledDay} ${nextDateStr} (بعد ${daysUntil} يوم)`;
+      badgeStyle = 'background:rgba(56,189,248,0.12); color:#38BDF8; border:1px solid rgba(56,189,248,0.3);';
     }
 
-    const suggestedDate = weekElapsed ? nextDateStr : (diffDays === 0 ? formatIsoDate(now) : nextDateStr);
+    const suggestedDate = isTodaySession ? todayStr : nextDateStr;
 
     return {
-      hasPreviousSession: true,
+      hasPreviousSession: !!lastDateStr,
       lastSessionDate: lastDateStr,
       nextSessionDate: nextDateStr,
+      scheduledDay,
+      scheduledTime,
       daysSinceLastSession: diffDays,
-      weekElapsed,
-      isDueToday,
+      isTodaySession,
+      hasStudiedToday,
       badgeText,
       badgeStyle,
       suggestedDate,
@@ -3484,6 +3527,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <span style="font-size:0.78rem; color:var(--color-text-muted);">الطلاب: <strong style="color:var(--color-text);">${studentCount} / ${g.maxStudents || 12}</strong></span>
             <div style="display:inline-flex; gap:6px; flex-wrap:wrap;">
               <button type="button" class="btn btn--primary btn--small" style="font-size:0.75rem; padding:5px 10px;" onclick="openQuickGroupAttendanceModal('${encodeURIComponent(g.name)}')">تسجيل الحضور</button>
+              <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px; color:#F59E0B; border-color:rgba(245,158,11,0.4);" onclick="openEditGroupModal('${g.id}')">✏️ تعديل الفوج</button>
               <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px;" onclick="printGroupMonthlyAttendanceSheet('${encodeURIComponent(g.name)}')">طباعة القائمة</button>
               <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px;" onclick="openBatchBadgesModal('${encodeURIComponent(g.name)}')">بطاقات الفوج</button>
               <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px;" onclick="openGroupStudentsModal('${encodeURIComponent(g.name)}')">الطلاب (${studentCount})</button>
@@ -5503,18 +5547,22 @@ document.addEventListener('DOMContentLoaded', () => {
   window.submitAddGroup = function(e) {
     e.preventDefault();
     const name = document.getElementById('newGroupName').value.trim();
+    const day = document.getElementById('newGroupDay')?.value || 'السبت';
+    const timeSlot = document.getElementById('newGroupTimeSlot')?.value.trim() || '14:00 - 16:00';
     const level = document.getElementById('newGroupLevel').value;
     const ageCategory = document.getElementById('newGroupAgeCategory').value;
     const room = document.getElementById('newGroupRoom').value;
     const educatorId = document.getElementById('newGroupEducator').value;
     const maxStudents = parseInt(document.getElementById('newGroupMaxStudents').value) || 12;
 
-    const educators = getData('brainova_educators');
+    const educators = getData('brainova_educators') || [];
     const educator = educators.find(e => e.id === educatorId);
 
     const newGroup = {
       id: 'GRP-' + Date.now(),
       name,
+      day,
+      timeSlot,
       level,
       ageCategory,
       room,
@@ -5524,12 +5572,157 @@ document.addEventListener('DOMContentLoaded', () => {
       createdAt: new Date().toLocaleDateString('ar-DZ')
     };
 
-    const groups = getData('brainova_groups');
+    const groups = getData('brainova_groups') || [];
     groups.push(newGroup);
     saveData('brainova_groups', groups);
 
+    // Also record in schedule
+    const schedules = getData('brainova_schedule') || [];
+    const [st, et] = timeSlot.includes('-') ? timeSlot.split('-').map(t => t.trim()) : [timeSlot, ''];
+    schedules.push({
+      id: 'SCH-' + Date.now(),
+      groupId: newGroup.id,
+      groupName: name,
+      day: day,
+      startTime: st || '14:00',
+      endTime: et || '16:00',
+      room: room,
+      educatorId: educatorId,
+      educator: educator ? educator.name : ''
+    });
+    saveData('brainova_schedule', schedules);
+
     closeAddGroupModal();
-    showToast('toast_saved', 'success');
+    showToast(`✅ تم إنشاء الفوج (${name}) بموعد (${day} ${timeSlot}) بنجاح!`, 'success');
+    renderActiveView();
+  };
+
+  window.openEditGroupModal = function(id) {
+    const groups = getData('brainova_groups') || [];
+    const g = groups.find(x => x.id === id || x.name === id);
+    if (!g) return;
+
+    document.getElementById('editGroupId').value = g.id;
+    document.getElementById('editGroupName').value = g.name;
+
+    const schedules = getData('brainova_schedule') || [];
+    const sch = schedules.find(s => s.groupId === g.id || isStudentInGroup({ group: s.groupName }, g.name));
+
+    const daySelect = document.getElementById('editGroupDay');
+    if (daySelect) {
+      daySelect.value = sch ? sch.day : (g.day || 'السبت');
+    }
+
+    const timeInput = document.getElementById('editGroupTimeSlot');
+    if (timeInput) {
+      timeInput.value = sch ? `${sch.startTime} - ${sch.endTime}` : (g.timeSlot || '14:00 - 16:00');
+    }
+
+    const levelSelect = document.getElementById('editGroupLevel');
+    if (levelSelect) levelSelect.value = g.level || 'المستوى الأول';
+
+    const ageSelect = document.getElementById('editGroupAgeCategory');
+    if (ageSelect) ageSelect.value = g.ageCategory || '8 - 11 سنة (ناشئين)';
+
+    const roomSelect = document.getElementById('editGroupRoom');
+    if (roomSelect) {
+      const rooms = getData('brainova_rooms') || [];
+      roomSelect.innerHTML = rooms.map(r => `<option value="${r.name}" ${r.name === g.room ? 'selected' : ''}>${r.name}</option>`).join('');
+    }
+
+    const eduSelect = document.getElementById('editGroupEducator');
+    if (eduSelect) {
+      const educators = getData('brainova_educators') || [];
+      eduSelect.innerHTML = educators.map(e => `<option value="${e.id}" ${e.id === g.educatorId ? 'selected' : ''}>${e.name}</option>`).join('');
+    }
+
+    const maxInput = document.getElementById('editGroupMaxStudents');
+    if (maxInput) maxInput.value = g.maxStudents || 12;
+
+    const modal = document.getElementById('editGroupModal');
+    if (modal) modal.classList.add('active');
+  };
+
+  window.closeEditGroupModal = function() {
+    const modal = document.getElementById('editGroupModal');
+    if (modal) modal.classList.remove('active');
+  };
+
+  window.submitEditGroup = function(e) {
+    e.preventDefault();
+    const id = document.getElementById('editGroupId').value;
+    const groups = getData('brainova_groups') || [];
+    const groupIdx = groups.findIndex(g => g.id === id);
+    if (groupIdx === -1) return;
+
+    const oldName = groups[groupIdx].name;
+    const newName = document.getElementById('editGroupName').value.trim();
+    const newDay = document.getElementById('editGroupDay').value;
+    const newTimeSlot = document.getElementById('editGroupTimeSlot').value.trim() || '14:00 - 16:00';
+    const newLevel = document.getElementById('editGroupLevel').value;
+    const newAgeCategory = document.getElementById('editGroupAgeCategory').value;
+    const newRoom = document.getElementById('editGroupRoom').value;
+    const newEducatorId = document.getElementById('editGroupEducator').value;
+    const educators = getData('brainova_educators') || [];
+    const educator = educators.find(x => x.id === newEducatorId);
+    const newMaxStudents = parseInt(document.getElementById('editGroupMaxStudents').value) || 12;
+
+    groups[groupIdx].name = newName;
+    groups[groupIdx].day = newDay;
+    groups[groupIdx].timeSlot = newTimeSlot;
+    groups[groupIdx].level = newLevel;
+    groups[groupIdx].ageCategory = newAgeCategory;
+    groups[groupIdx].room = newRoom;
+    groups[groupIdx].educatorId = newEducatorId || null;
+    groups[groupIdx].educatorName = educator ? educator.name : '';
+    groups[groupIdx].maxStudents = newMaxStudents;
+
+    saveData('brainova_groups', groups);
+
+    // Also sync with schedule
+    const schedules = getData('brainova_schedule') || [];
+    let schIdx = schedules.findIndex(s => s.groupId === id || s.groupName === oldName);
+    const [st, et] = newTimeSlot.includes('-') ? newTimeSlot.split('-').map(t => t.trim()) : [newTimeSlot, ''];
+    if (schIdx !== -1) {
+      schedules[schIdx].groupName = newName;
+      schedules[schIdx].day = newDay;
+      if (st) schedules[schIdx].startTime = st;
+      if (et) schedules[schIdx].endTime = et;
+      schedules[schIdx].room = newRoom;
+      schedules[schIdx].educatorId = newEducatorId;
+      schedules[schIdx].educator = educator ? educator.name : '';
+    } else {
+      schedules.push({
+        id: 'SCH-' + Date.now(),
+        groupId: id,
+        groupName: newName,
+        day: newDay,
+        startTime: st || '14:00',
+        endTime: et || '16:00',
+        room: newRoom,
+        educatorId: newEducatorId,
+        educator: educator ? educator.name : ''
+      });
+    }
+    saveData('brainova_schedule', schedules);
+
+    // If name changed, sync students and attendance
+    if (oldName !== newName) {
+      const students = getData('brainova_students') || [];
+      students.forEach(s => {
+        if (isStudentInGroup(s, oldName)) s.group = newName;
+      });
+      saveData('brainova_students', students);
+
+      const attendance = getData('brainova_attendance') || [];
+      attendance.forEach(a => {
+        if (isStudentInGroup({ group: a.groupName }, oldName)) a.groupName = newName;
+      });
+      saveData('brainova_attendance', attendance);
+    }
+
+    closeEditGroupModal();
+    showToast(`✅ تم تحديث يوم وتوقيت الفوج بنجاح (${newDay} - ${newTimeSlot})`, 'success');
     renderActiveView();
   };
 
