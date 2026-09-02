@@ -6341,12 +6341,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (settings.guardianMaster === false) {
       if (statusBadge) {
-        statusBadge.textContent = '🔴 المراقب معطل من الإعدادات';
+        statusBadge.textContent = 'معطل';
         statusBadge.style.color = '#EF4444';
         statusBadge.style.background = 'rgba(239,68,68,0.15)';
         statusBadge.style.borderColor = 'rgba(239,68,68,0.3)';
       }
-      if (isManual) showToast('المراقب المستقل معطل حالياً من الخيارات!', 'info');
+      if (isManual) showToast('الإرسال التلقائي معطل حالياً', 'info');
       return;
     }
 
@@ -6358,17 +6358,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!waStatus || !waStatus.connected) {
       if (statusBadge) {
-        statusBadge.textContent = '🟡 في انتظار اتصال البوت بالواتساب';
+        statusBadge.textContent = 'في انتظار الاتصال';
         statusBadge.style.color = '#F59E0B';
         statusBadge.style.background = 'rgba(245,158,11,0.15)';
         statusBadge.style.borderColor = 'rgba(245,158,11,0.3)';
       }
-      if (isManual) showToast('بوت الواتساب غير متصل حالياً! يرجى مسح رمز QR ليعمل المراقب.', 'error');
+      if (isManual) showToast('يرجى ربط الواتساب بمسح رمز QR أولاً', 'error');
       return;
     }
 
     if (statusBadge) {
-      statusBadge.textContent = '🟢 نشط ويعمل في الخلفية';
+      statusBadge.textContent = 'يعمل في الخلفية';
       statusBadge.style.color = '#10B981';
       statusBadge.style.background = 'rgba(16,185,129,0.15)';
       statusBadge.style.borderColor = 'rgba(16,185,129,0.3)';
@@ -6931,16 +6931,22 @@ ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
     const enabled = toggle ? toggle.checked : true;
     const apiKey = keyInput ? keyInput.value.trim() : '';
 
+    const badge = document.getElementById('waAiAgentBadge');
+    if (badge) {
+      badge.textContent = enabled ? 'نشط وجاهز' : 'معطل';
+      badge.className = enabled ? 'status-pill status-pill--active' : 'status-pill status-pill--danger';
+    }
+
     if (window.electronAPI && window.electronAPI.whatsapp && window.electronAPI.whatsapp.setAiSettings) {
       try {
         await window.electronAPI.whatsapp.setAiSettings({ enabled, apiKey });
-        showToast('✅ تم حفظ الإعدادات بنجاح!', 'success');
+        showToast('تم حفظ الإعدادات بنجاح', 'success');
       } catch (e) {
         showToast('خطأ في حفظ الإعدادات: ' + e.message, 'danger');
       }
     } else {
       localStorage.setItem('brainova_ai_settings', JSON.stringify({ enabled, apiKey }));
-      showToast('✅ تم حفظ الإعدادات محلياً', 'success');
+      showToast('تم حفظ الإعدادات بنجاح', 'success');
     }
   }
 
@@ -6950,7 +6956,14 @@ ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
         const s = await window.electronAPI.whatsapp.getAiSettings();
         const toggle = document.getElementById('waAiAgentToggle');
         const keyInput = document.getElementById('waAiApiKeyInput');
-        if (toggle && typeof s.enabled === 'boolean') toggle.checked = s.enabled;
+        const badge = document.getElementById('waAiAgentBadge');
+        if (toggle && typeof s.enabled === 'boolean') {
+          toggle.checked = s.enabled;
+          if (badge) {
+            badge.textContent = s.enabled ? 'نشط وجاهز' : 'معطل';
+            badge.className = s.enabled ? 'status-pill status-pill--active' : 'status-pill status-pill--danger';
+          }
+        }
         if (keyInput) keyInput.placeholder = s.hasApiKey ? 'API KEY (مسجل)' : 'API KEY';
       } catch (e) {}
     }
