@@ -2432,17 +2432,16 @@ document.addEventListener('DOMContentLoaded', () => {
           <div style="font-size:0.8rem; color:var(--color-text-muted); margin-bottom:6px;">
             <span> الأستاذ: <strong>${g.educator || 'عابد اسحاق تقي الدين'}</strong></span>
           </div>
-          <div style="font-size:0.8rem; color:#38BDF8; margin-bottom:12px; background:rgba(56,189,248,0.08); padding:5px 8px; border-radius:6px; border:1px solid rgba(56,189,248,0.2);">
-            <span>🕒 موعد الحصة المحدد: <strong style="color:#F8FAFC;">${dayStr} (${timeSlot})</strong></span>
+          <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.78rem; color:var(--color-text-muted); margin-bottom:12px; background:rgba(255,255,255,0.03); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">
+            <span>التوقيت الأسبوعي</span>
+            <span style="color:var(--color-text); font-weight:700; font-family:monospace;">${dayStr} • ${timeSlot}</span>
           </div>
           <div style="display:flex; justify-content:space-between; align-items:center; border-top: 1px solid var(--color-border); padding-top: 8px; gap:6px; flex-wrap:wrap;">
-            <span style="font-size:0.78rem; color:var(--color-text-muted);">الطلاب: <strong style="color:#fff;">${studentCount} / ${g.maxStudents || 12}</strong></span>
+            <span style="font-size:0.78rem; color:var(--color-text-muted);">الطلاب: <strong style="color:var(--color-text);">${studentCount} / ${g.maxStudents || 12}</strong></span>
             <div style="display:inline-flex; gap:6px; flex-wrap:wrap;">
-              <button type="button" class="btn btn--primary btn--small" style="background:#10B981; font-weight:800; font-size:0.75rem; display:inline-flex; align-items:center; gap:4px;" title="تسجيل وتعديل تفقد حضور وغياب الفوج مباشرة" onclick="openQuickGroupAttendanceModal('${encodeURIComponent(g.name)}')">
-                <span>📝 تفقد الحضور والغياب</span>
-              </button>
-              <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; border-color:rgba(56,189,248,0.4); color:#38BDF8;" title="طباعة ورقة الحضور الشهرية للمؤطر" onclick="printGroupMonthlyAttendanceSheet('${encodeURIComponent(g.name)}')">📄 ورقة الحضور</button>
-              <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem;" onclick="openGroupStudentsModal('${encodeURIComponent(g.name)}')">👥 الطلاب (${studentCount})</button>
+              <button type="button" class="btn btn--primary btn--small" style="font-size:0.75rem; padding:5px 10px;" onclick="openQuickGroupAttendanceModal('${encodeURIComponent(g.name)}')">تسجيل الحضور</button>
+              <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px;" onclick="printGroupMonthlyAttendanceSheet('${encodeURIComponent(g.name)}')">طباعة القائمة</button>
+              <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px;" onclick="openGroupStudentsModal('${encodeURIComponent(g.name)}')">الطلاب (${studentCount})</button>
             </div>
           </div>
         </div>
@@ -2613,7 +2612,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const titleEl = document.getElementById('quickAttModalTitle');
     if (titleEl) {
-      titleEl.innerHTML = `<span>📝</span> تفقد حضور وغياب: <span style="color:#38BDF8;">${groupName}</span>`;
+      titleEl.textContent = 'تفقد حضور وغياب: ' + groupName;
     }
 
     // Set Date to Today
@@ -2663,8 +2662,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (groupStudents.length === 0) {
       listEl.innerHTML = `
-        <div style="text-align:center; padding:30px; color:#94A3B8;">
-          <div style="font-size:1.8rem; margin-bottom:6px;">👥</div>
+        <div style="text-align:center; padding:32px; color:var(--color-text-muted);">
           <div>لا يوجد طلاب مسجلين في هذا الفوج حتى الآن.</div>
         </div>
       `;
@@ -2700,48 +2698,48 @@ document.addEventListener('DOMContentLoaded', () => {
       const isAbsent = status === 'absent';
 
       return `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:rgba(255,255,255,0.02); border-bottom:1px solid rgba(255,255,255,0.06); gap:12px; flex-wrap:wrap;">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:rgba(255,255,255,0.015); border-bottom:1px solid var(--color-border); gap:12px; flex-wrap:wrap;">
           <div style="display:flex; align-items:center; gap:10px; min-width:180px;">
-            <div style="width:32px; height:32px; border-radius:50%; background:#0284C7; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.85rem;">
+            <div style="width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,0.06); color:var(--color-text); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.85rem; border:1px solid var(--color-border);">
               ${stu.name.trim().charAt(0)}
             </div>
             <div>
-              <div style="font-weight:700; color:#F8FAFC; font-size:0.9rem;">${stu.name}</div>
-              <div style="font-size:0.75rem; color:#94A3B8;">
-                <span>${stu.parentPhone || '—'}</span> • <span style="color:#00E5FF;">(${sessions} حصص متبقية)</span>
+              <div style="font-weight:700; color:var(--color-text); font-size:0.88rem;">${stu.name}</div>
+              <div style="font-size:0.75rem; color:var(--color-text-muted);">
+                <span>${stu.parentPhone || '—'}</span> • <span>(${sessions} حصص متبقية)</span>
               </div>
             </div>
           </div>
 
-          <!-- Status Buttons Row -->
-          <div style="display:flex; align-items:center; gap:6px;">
-            <button type="button" class="btn btn--small" 
-              style="padding:5px 12px; font-size:0.78rem; font-weight:700; border-radius:6px; cursor:pointer; 
-              ${isPresent ? 'background:#10B981; color:#fff; border:1px solid #059669; box-shadow:0 0 10px rgba(16,185,129,0.4);' : 'background:rgba(255,255,255,0.05); color:#94A3B8; border:1px solid rgba(255,255,255,0.1);'}"
+          <!-- Status Segmented Control -->
+          <div style="display:flex; align-items:center; background:rgba(0,0,0,0.25); padding:2px; border-radius:6px; border:1px solid var(--color-border); gap:2px;">
+            <button type="button" 
+              style="padding:4px 10px; font-size:0.75rem; font-weight:600; border-radius:4px; border:none; cursor:pointer; transition:all 0.15s ease;
+              ${isPresent ? 'background:var(--color-success); color:#fff;' : 'background:transparent; color:var(--color-text-muted);'}"
               onclick="setQuickStudentStatus('${stu.id}', 'present')">
-              حاضر ✅
+              حاضر
             </button>
 
-            <button type="button" class="btn btn--small" 
-              style="padding:5px 12px; font-size:0.78rem; font-weight:700; border-radius:6px; cursor:pointer; 
-              ${isLate ? 'background:#F59E0B; color:#fff; border:1px solid #D97706; box-shadow:0 0 10px rgba(245,158,11,0.4);' : 'background:rgba(255,255,255,0.05); color:#94A3B8; border:1px solid rgba(255,255,255,0.1);'}"
+            <button type="button" 
+              style="padding:4px 10px; font-size:0.75rem; font-weight:600; border-radius:4px; border:none; cursor:pointer; transition:all 0.15s ease;
+              ${isLate ? 'background:var(--color-warning); color:#000;' : 'background:transparent; color:var(--color-text-muted);'}"
               onclick="setQuickStudentStatus('${stu.id}', 'late')">
-              متأخر ⏳
+              متأخر
             </button>
 
-            <button type="button" class="btn btn--small" 
-              style="padding:5px 12px; font-size:0.78rem; font-weight:700; border-radius:6px; cursor:pointer; 
-              ${isAbsent ? 'background:#EF4444; color:#fff; border:1px solid #DC2626; box-shadow:0 0 10px rgba(239,68,68,0.4);' : 'background:rgba(255,255,255,0.05); color:#94A3B8; border:1px solid rgba(255,255,255,0.1);'}"
+            <button type="button" 
+              style="padding:4px 10px; font-size:0.75rem; font-weight:600; border-radius:4px; border:none; cursor:pointer; transition:all 0.15s ease;
+              ${isAbsent ? 'background:var(--color-danger); color:#fff;' : 'background:transparent; color:var(--color-text-muted);'}"
               onclick="setQuickStudentStatus('${stu.id}', 'absent')">
-              غائب ❌
+              غائب
             </button>
           </div>
 
           <!-- Note Input -->
           <div style="flex:1; min-width:140px; max-width:200px;">
-            <input type="text" class="form-input" placeholder="ملاحظة عن الحصة..." 
+            <input type="text" class="form-input" placeholder="ملاحظة..." 
               value="${state.note || ''}" 
-              style="height:30px; font-size:0.75rem; padding:4px 8px;" 
+              style="height:28px; font-size:0.75rem; padding:3px 8px;" 
               oninput="setQuickStudentNote('${stu.id}', this.value)">
           </div>
         </div>
@@ -2772,7 +2770,7 @@ document.addEventListener('DOMContentLoaded', () => {
       window.__quickAttDraft[id].status = status;
     });
     renderQuickAttendanceStudents();
-    showToast(status === 'present' ? 'تم تحديد جميع التلاميذ كحاضرين ✅' : 'تم تحديد جميع التلاميذ كغائبين ❌', 'info');
+    showToast(status === 'present' ? 'تم تحديد جميع التلاميذ كحاضرين' : 'تم تحديد جميع التلاميذ كغائبين', 'info');
   }
   window.setAllQuickAttendance = setAllQuickAttendance;
 
@@ -2822,7 +2820,7 @@ document.addEventListener('DOMContentLoaded', () => {
     saveData('brainova_students', students);
 
     closeQuickGroupAttendanceModal();
-    showToast(`✅ تم حفظ تفقد حضور وغياب (${savedCount}) تلميذ لفوج (${groupName}) بتوقيت (${selectedTime}) بنجاح!`, 'success');
+    showToast(`تم حفظ تفقد حضور وغياب (${savedCount}) تلميذ لفوج (${groupName}) بنجاح`, 'success');
     renderActiveView();
   }
   window.saveQuickGroupAttendance = saveQuickGroupAttendance;
