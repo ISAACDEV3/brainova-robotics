@@ -7881,6 +7881,29 @@ ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
     });
   }
 
+  // --- CLOUD AUTO-UPDATER EVENTS & UI TRIGGER ---
+  window.checkAppUpdates = function() {
+    if (window.electronAPI && window.electronAPI.checkForUpdates) {
+      showToast('🔍 جاري فحص المستودع السحابي للتأكد من وجود تحديثات...', 'info');
+      window.electronAPI.checkForUpdates();
+    } else {
+      showToast('فحص التحديثات التلقائية متاح داخل التطبيق المثبت (Production Build)', 'info');
+    }
+  };
+
+  if (window.electronAPI) {
+    if (window.electronAPI.onUpdateAvailable) {
+      window.electronAPI.onUpdateAvailable((ver) => {
+        showToast(`🚀 يتوفر تحديث جديد للبرنامج (v${ver})! جاري التحميل في الخلفية...`, 'info');
+      });
+    }
+    if (window.electronAPI.onUpdateDownloaded) {
+      window.electronAPI.onUpdateDownloaded((ver) => {
+        showToast(`✅ تم اكتمال تحميل التحديث الجديد (v${ver}) بنجاح!`, 'success');
+      });
+    }
+  }
+
   // Initial render (fallback if loadFromPersistentStore already ran)
   renderAll();
 });
