@@ -625,6 +625,22 @@ ipcMain.on('print-receipt', (event, payload) => {
   }
 });
 
+// ── IPC: PRINT DOCUMENT (ATTENDANCE SHEETS, CERTIFICATES, REPORTS) ────────────
+ipcMain.on('print-document', (event, payload) => {
+  try {
+    const html = (typeof payload === 'object' && payload && payload.html) ? payload.html : (typeof payload === 'string' ? payload : '');
+    if (!html) return;
+    const tempDir = app.getPath('temp');
+    const tempFile = path.join(tempDir, `brainova_sheet_${Date.now()}.html`);
+    fs.writeFileSync(tempFile, html, 'utf8');
+    const fileUrl = 'file:///' + tempFile.replace(/\\/g, '/');
+    console.log('[Brainova] Opening Printable Document in Browser/Printer:', fileUrl);
+    shell.openExternal(fileUrl);
+  } catch (err) {
+    console.error('[Brainova Print Document Error]:', err);
+  }
+});
+
 // ── IPC: AUTO UPDATER MANUAL TRIGGER ──────────────────────────────────────────
 ipcMain.on('check-for-updates', () => {
   if (app.isPackaged) {

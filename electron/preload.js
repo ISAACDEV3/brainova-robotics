@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // ── Printing (Native Windows Print Dialog & Receipt Preview)
   print:          () => ipcRenderer.send('print-window'),
   printReceipt:   (html) => ipcRenderer.send('print-receipt', html),
+  printDocument:  (payload) => ipcRenderer.send('print-document', payload),
 
   // ── Auth
   getCurrentUser: () => ipcRenderer.invoke('get-current-user'),

@@ -2429,9 +2429,10 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           <div style="display:flex; justify-content:space-between; align-items:center; border-top: 1px solid var(--color-border); padding-top: 8px; gap:6px; flex-wrap:wrap;">
             <span style="font-size:0.78rem; color:var(--color-text-muted);">الطلاب: <strong style="color:#fff;">${studentCount} / ${g.maxStudents || 12}</strong></span>
-            <div style="display:inline-flex; gap:6px;">
+            <div style="display:inline-flex; gap:6px; flex-wrap:wrap;">
+              <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; border-color:rgba(56,189,248,0.4); color:#38BDF8;" title="طباعة ورقة الحضور الشهرية للمؤطر" onclick="printGroupMonthlyAttendanceSheet('${encodeURIComponent(g.name)}')">📄 ورقة الحضور</button>
               <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; border-color:var(--color-primary); color:var(--color-primary);" onclick="openAttendanceForGroup('${encodeURIComponent(g.name)}')">📝 الحضور</button>
-              <button type="button" class="btn btn--primary btn--small" style="background:#0284C7; font-weight:700; font-size:0.75rem;" onclick="openGroupStudentsModal('${encodeURIComponent(g.name)}')">👥 عرض الطلاب (${studentCount})</button>
+              <button type="button" class="btn btn--primary btn--small" style="background:#0284C7; font-weight:700; font-size:0.75rem;" onclick="openGroupStudentsModal('${encodeURIComponent(g.name)}')">👥 الطلاب (${studentCount})</button>
             </div>
           </div>
         </div>
@@ -2586,6 +2587,492 @@ document.addEventListener('DOMContentLoaded', () => {
       groupSelect.value = window.__currentRosterGroupName;
     }
   };
+
+  // ==========================================
+  // 6.5 PRINTABLE MONTHLY ATTENDANCE SHEET (A4 LANDSCAPE)
+  // ==========================================
+  function openPrintAttendanceSheetModal(preselectedGroupName = '') {
+    const groupSelect = document.getElementById('printSheetGroupSelect');
+    if (groupSelect) {
+      const groups = getData('brainova_groups') || [];
+      groupSelect.innerHTML = groups.map(g => `<option value="${g.name}">${g.name} (${g.level || ''})</option>`).join('');
+      if (preselectedGroupName) {
+        groupSelect.value = preselectedGroupName;
+      }
+    }
+
+    const monthSelect = document.getElementById('printSheetMonthSelect');
+    if (monthSelect) {
+      const monthNames = ['جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+      const currentMonth = monthNames[new Date().getMonth()];
+      monthSelect.value = currentMonth || 'سبتمبر';
+    }
+
+    const yearInput = document.getElementById('printSheetYearInput');
+    if (yearInput) {
+      yearInput.value = new Date().getFullYear();
+    }
+
+    const modal = document.getElementById('printAttendanceSheetModal');
+    if (modal) modal.classList.add('active');
+  }
+  window.openPrintAttendanceSheetModal = openPrintAttendanceSheetModal;
+
+  function closePrintAttendanceSheetModal() {
+    const modal = document.getElementById('printAttendanceSheetModal');
+    if (modal) modal.classList.remove('active');
+  }
+  window.closePrintAttendanceSheetModal = closePrintAttendanceSheetModal;
+
+  function openPrintCurrentGroupAttendanceSheet() {
+    const attGroupSelect = document.getElementById('attGroupSelect');
+    const currentGroup = attGroupSelect ? attGroupSelect.value : '';
+    openPrintAttendanceSheetModal(currentGroup);
+  }
+  window.openPrintCurrentGroupAttendanceSheet = openPrintCurrentGroupAttendanceSheet;
+
+  function submitPrintMonthlyAttendanceSheet(e) {
+    if (e) e.preventDefault();
+    const groupSelect = document.getElementById('printSheetGroupSelect');
+    const monthSelect = document.getElementById('printSheetMonthSelect');
+    const yearInput = document.getElementById('printSheetYearInput');
+    const extraRowsCheck = document.getElementById('printSheetAddExtraRows');
+
+    const groupName = groupSelect ? groupSelect.value : '';
+    const month = monthSelect ? monthSelect.value : 'سبتمبر';
+    const year = yearInput ? yearInput.value : '2026';
+    const addExtra = extraRowsCheck ? extraRowsCheck.checked : true;
+
+    closePrintAttendanceSheetModal();
+    printGroupMonthlyAttendanceSheet(groupName, month, year, addExtra);
+  }
+  window.submitPrintMonthlyAttendanceSheet = submitPrintMonthlyAttendanceSheet;
+
+  function printGroupMonthlyAttendanceSheet(rawGroupName, month = '', year = '', addExtraRows = true) {
+    const groupName = decodeURIComponent(rawGroupName || '').trim();
+    if (!groupName) {
+      showToast('يرجى تحديد الفوج أولاً للطباعة', 'error');
+      return;
+    }
+
+    const groups = getData('brainova_groups') || [];
+    const g = groups.find(x => x.name === groupName || x.id === groupName) || {
+      name: groupName,
+      level: 'المستوى الأول: تفكير منطقي',
+      room: 'قاعة Brainova الرئيسية',
+      educator: 'أ. عابد اسحاق تقي الدين',
+      ageCategory: '8 - 12 سنة'
+    };
+
+    const schedule = getData('brainova_schedule') || [];
+    const sch = schedule.find(s => s.groupId === g.id || s.groupName === g.name || (s.groupName && s.groupName.includes(g.name)));
+    const dayStr = sch ? sch.day : (g.day || 'السبت');
+    const timeStr = sch ? `${sch.startTime} - ${sch.endTime}` : (g.timeSlot || '14:00 - 16:00');
+    const educatorName = g.educator || (sch ? sch.educatorName : '') || 'أ. عابد اسحاق تقي الدين';
+    const roomName = g.room || (sch ? sch.room : '') || 'قاعة Brainova 1';
+
+    const monthNames = ['جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+    const currentMonth = month || monthNames[new Date().getMonth()] || 'سبتمبر';
+    const currentYear = year || String(new Date().getFullYear());
+
+    const allStudents = getData('brainova_students') || [];
+    const groupStudents = allStudents.filter(s => 
+      s.groupId === g.id || 
+      s.group === g.name || 
+      (s.group && s.group.includes(g.name)) ||
+      (s.group && g.name && g.name.includes(s.group))
+    );
+    groupStudents.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ar'));
+
+    const allPayments = getData('brainova_payments') || [];
+
+    // Rows HTML
+    let rowsHtml = '';
+    groupStudents.forEach((stu, idx) => {
+      const timeline = getStudentPaymentTimeline(stu.id, stu, allPayments);
+      let payStatusText = 'مسدد ✅';
+      let payStatusColor = '#15803d';
+      if (timeline.status === 'overdue' || Number(stu.balance) < 0) {
+        payStatusText = 'مستحق ⚠️';
+        payStatusColor = '#b91c1c';
+      } else if (!timeline.hasPayment) {
+        payStatusText = 'جديد ⏳';
+        payStatusColor = '#d97706';
+      }
+
+      rowsHtml += `
+        <tr>
+          <td style="font-weight:700; color:#475569;">${idx + 1}</td>
+          <td class="student-cell">
+            <div style="font-size:11.5px; font-weight:800; color:#0f172a;">${stu.name}</div>
+            <div style="font-size:8.5px; color:#64748b; font-family:monospace;">ID: ${stu.id}</div>
+          </td>
+          <td style="font-family:monospace; font-size:9.5px; direction:ltr; font-weight:700;">${stu.parentPhone || '—'}</td>
+          <!-- Session 1 -->
+          <td>
+            <div style="font-size:8px; color:#94a3b8;">[ &nbsp; &nbsp; / &nbsp; &nbsp; ]</div>
+            <div class="check-boxes"><span><span class="box-sq"></span> ح</span><span><span class="box-sq"></span> ت</span><span><span class="box-sq"></span> غ</span></div>
+          </td>
+          <!-- Session 2 -->
+          <td>
+            <div style="font-size:8px; color:#94a3b8;">[ &nbsp; &nbsp; / &nbsp; &nbsp; ]</div>
+            <div class="check-boxes"><span><span class="box-sq"></span> ح</span><span><span class="box-sq"></span> ت</span><span><span class="box-sq"></span> غ</span></div>
+          </td>
+          <!-- Session 3 -->
+          <td>
+            <div style="font-size:8px; color:#94a3b8;">[ &nbsp; &nbsp; / &nbsp; &nbsp; ]</div>
+            <div class="check-boxes"><span><span class="box-sq"></span> ح</span><span><span class="box-sq"></span> ت</span><span><span class="box-sq"></span> غ</span></div>
+          </td>
+          <!-- Session 4 -->
+          <td>
+            <div style="font-size:8px; color:#94a3b8;">[ &nbsp; &nbsp; / &nbsp; &nbsp; ]</div>
+            <div class="check-boxes"><span><span class="box-sq"></span> ح</span><span><span class="box-sq"></span> ت</span><span><span class="box-sq"></span> غ</span></div>
+          </td>
+          <!-- Session 5 -->
+          <td>
+            <div style="font-size:8px; color:#94a3b8;">[ &nbsp; &nbsp; / &nbsp; &nbsp; ]</div>
+            <div class="check-boxes"><span><span class="box-sq"></span> ح</span><span><span class="box-sq"></span> ت</span><span><span class="box-sq"></span> غ</span></div>
+          </td>
+          <!-- Total -->
+          <td style="font-weight:700; color:#475569;">&nbsp; / 4</td>
+          <!-- Status -->
+          <td style="font-weight:800; font-size:9.5px; color:${payStatusColor};">${payStatusText}</td>
+          <!-- Notes -->
+          <td>&nbsp;</td>
+        </tr>
+      `;
+    });
+
+    // Extra empty rows
+    if (addExtraRows) {
+      const extraCount = Math.max(3, 12 - groupStudents.length);
+      for (let i = 0; i < extraCount; i++) {
+        rowsHtml += `
+          <tr style="background:#fff;">
+            <td style="color:#cbd5e1; font-weight:700;">${groupStudents.length + i + 1}</td>
+            <td class="student-cell" style="color:#94a3b8; font-style:italic;">............................................................</td>
+            <td style="color:#cbd5e1;">........................</td>
+            <td><div class="check-boxes"><span><span class="box-sq"></span> ح</span><span><span class="box-sq"></span> ت</span><span><span class="box-sq"></span> غ</span></div></td>
+            <td><div class="check-boxes"><span><span class="box-sq"></span> ح</span><span><span class="box-sq"></span> ت</span><span><span class="box-sq"></span> غ</span></div></td>
+            <td><div class="check-boxes"><span><span class="box-sq"></span> ح</span><span><span class="box-sq"></span> ت</span><span><span class="box-sq"></span> غ</span></div></td>
+            <td><div class="check-boxes"><span><span class="box-sq"></span> ح</span><span><span class="box-sq"></span> ت</span><span><span class="box-sq"></span> غ</span></div></td>
+            <td><div class="check-boxes"><span><span class="box-sq"></span> ح</span><span><span class="box-sq"></span> ت</span><span><span class="box-sq"></span> غ</span></div></td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+          </tr>
+        `;
+      }
+    }
+
+    const printDateStr = new Date().toLocaleDateString('ar-DZ');
+
+    const sheetHtml = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>قائمة تفقد الحضور والمتابعة الشهرية — ${groupName}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    @page {
+      size: A4 landscape;
+      margin: 8mm 10mm;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    body {
+      font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+      color: #0f172a;
+      background: #fff;
+      margin: 0;
+      padding: 12px 16px;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    .no-print {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0f172a;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    @media print {
+      .no-print { display: none !important; }
+      body { padding: 0; }
+    }
+    .header-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 8px;
+    }
+    .sheet-title-badge {
+      background: #0284C7;
+      color: #fff;
+      font-weight: 900;
+      font-size: 15px;
+      padding: 5px 18px;
+      border-radius: 6px;
+      display: inline-block;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 4px rgba(2,132,199,0.3);
+    }
+    .meta-box {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1.5px solid #334155;
+      background: #f8fafc;
+      margin-bottom: 8px;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .meta-box td {
+      padding: 5px 10px;
+      border: 1px solid #cbd5e1;
+      font-size: 11px;
+    }
+    .meta-label {
+      font-weight: 800;
+      color: #1e293b;
+    }
+    .meta-val {
+      font-weight: 700;
+      color: #0369a1;
+    }
+    .att-grid {
+      width: 100%;
+      border-collapse: collapse;
+      border: 2px solid #0f172a;
+      margin-bottom: 8px;
+    }
+    .att-grid th {
+      background: #1e293b;
+      color: #ffffff;
+      border: 1px solid #334155;
+      padding: 6px 3px;
+      font-weight: 800;
+      font-size: 10px;
+      text-align: center;
+    }
+    .att-grid td {
+      border: 1px solid #475569;
+      padding: 4px 3px;
+      font-size: 10px;
+      text-align: center;
+      vertical-align: middle;
+    }
+    .att-grid tr:nth-child(even) {
+      background: #f8fafc;
+    }
+    .student-cell {
+      text-align: right !important;
+      padding-right: 8px !important;
+    }
+    .check-boxes {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      font-size: 8.5px;
+      color: #475569;
+      font-weight: 700;
+    }
+    .box-sq {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border: 1.2px solid #334155;
+      background: #fff;
+      border-radius: 2px;
+      vertical-align: middle;
+    }
+    .pedagogy-box {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1.5px solid #334155;
+      margin-bottom: 6px;
+    }
+    .pedagogy-box th {
+      background: #f1f5f9;
+      color: #1e293b;
+      font-weight: 800;
+      font-size: 10px;
+      padding: 4px 8px;
+      text-align: right;
+      border-bottom: 1px solid #cbd5e1;
+    }
+    .pedagogy-box td {
+      padding: 4px 8px;
+      font-size: 10px;
+      border: 1px solid #cbd5e1;
+      width: 50%;
+    }
+    .signatures-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .signatures-table td {
+      width: 50%;
+      text-align: center;
+      padding: 4px 16px;
+      vertical-align: top;
+    }
+    .sign-box {
+      border: 1.5px dashed #64748b;
+      border-radius: 6px;
+      height: 52px;
+      margin-top: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      font-size: 9px;
+      background: #f8fafc;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Bar for Browser Preview (Hidden on Print) -->
+  <div class="no-print">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span style="font-size:1.3rem;">📄</span>
+      <div>
+        <strong style="font-size:0.95rem;">معاينة ورقة الحضور الشهرية — ${groupName}</strong>
+        <div style="font-size:0.75rem; color:#94a3b8;">جاهزة للطباعة على ورق A4 بالعرض (Landscape)</div>
+      </div>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button onclick="window.print()" style="background:#0284C7; color:#fff; border:none; padding:7px 18px; border-radius:6px; font-weight:800; cursor:pointer; font-family:inherit; font-size:0.85rem;">
+        🖨️ طباعة الورقة الآن (Print)
+      </button>
+      <button onclick="window.close()" style="background:rgba(255,255,255,0.1); color:#fff; border:none; padding:7px 14px; border-radius:6px; cursor:pointer; font-family:inherit; font-size:0.85rem;">
+        ✕ إغلاق
+      </button>
+    </div>
+  </div>
+
+  <!-- Sheet Header -->
+  <table class="header-table">
+    <tr>
+      <td style="width:30%; text-align:right;">
+        <div style="font-size:13px; font-weight:900; color:#0284C7;">أكاديمية براينوفا للروبوتيك والذكاء الاصطناعي</div>
+        <div style="font-size:9.5px; font-weight:700; color:#64748b; font-family:monospace; letter-spacing:0.5px;">BRAINOVA ROBOTICS & AI ACADEMY</div>
+        <div style="font-size:9px; color:#475569; margin-top:2px;">ولاية أم البواقي • الهاتف: 0791 19 46 33</div>
+      </td>
+      <td style="width:40%; text-align:center;">
+        <div class="sheet-title-badge">قائمة تفقد الحضور والمتابعة البيداغوجية الشهرية</div>
+        <div style="font-size:9.5px; font-weight:800; color:#334155; margin-top:3px;">الموسم التكويني: 2026 / 2027 • شهر: <span style="color:#0284C7; font-size:11px;">${currentMonth} ${currentYear}</span></div>
+      </td>
+      <td style="width:30%; text-align:left; font-size:9.5px; color:#64748b;">
+        <div><strong>المرجع:</strong> BR-ATT-${currentYear}</div>
+        <div><strong>تاريخ الاستخراج:</strong> ${printDateStr}</div>
+        <div><strong>دليل الرموز:</strong> [ح: حاضر] [ت: متأخر] [غ: غائب]</div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- Meta Information -->
+  <table class="meta-box">
+    <tr>
+      <td><span class="meta-label">الفوج التدريبي:</span> <span class="meta-val">${g.name}</span></td>
+      <td><span class="meta-label">المستوى التعليمي:</span> <span class="meta-val">${g.level || 'المستوى الأول'}</span></td>
+      <td><span class="meta-label">المؤطر المشرف:</span> <span class="meta-val">${educatorName}</span></td>
+    </tr>
+    <tr>
+      <td><span class="meta-label">توقيت الحصة:</span> <span class="meta-val">${dayStr} (${timeStr})</span></td>
+      <td><span class="meta-label">القاعة المخصصة:</span> <span class="meta-val">${roomName}</span></td>
+      <td><span class="meta-label">عدد التلاميذ المقيدين:</span> <span class="meta-val">${groupStudents.length} تلاميذ</span></td>
+    </tr>
+  </table>
+
+  <!-- Main Attendance Grid -->
+  <table class="att-grid">
+    <thead>
+      <tr>
+        <th style="width:28px;">N°</th>
+        <th style="width:160px; text-align:right; padding-right:8px;">اسم ولقب التلميذ</th>
+        <th style="width:88px;">هاتف الولي</th>
+        <th style="width:90px;">الحصة 01<br><span style="font-size:8px; font-weight:normal; opacity:0.85;">تاريخ: ___/___</span></th>
+        <th style="width:90px;">الحصة 02<br><span style="font-size:8px; font-weight:normal; opacity:0.85;">تاريخ: ___/___</span></th>
+        <th style="width:90px;">الحصة 03<br><span style="font-size:8px; font-weight:normal; opacity:0.85;">تاريخ: ___/___</span></th>
+        <th style="width:90px;">الحصة 04<br><span style="font-size:8px; font-weight:normal; opacity:0.85;">تاريخ: ___/___</span></th>
+        <th style="width:90px;">الحصة 05 (تعويضية)<br><span style="font-size:8px; font-weight:normal; opacity:0.85;">تاريخ: ___/___</span></th>
+        <th style="width:46px;">المجموع<br><span style="font-size:8px; font-weight:normal; opacity:0.85;">/ 4</span></th>
+        <th style="width:72px;">الاشتراك</th>
+        <th>ملاحظات المؤطر وتقييم الاستيعاب</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rowsHtml}
+    </tbody>
+  </table>
+
+  <!-- Pedagogical Session Topics Summary -->
+  <table class="pedagogy-box">
+    <thead>
+      <tr>
+        <th colspan="2">📘 المحتوى البيداغوجي المنجز خلال الشهر (يملأ من طرف المؤطر):</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>الحصة 1:</strong> ................................................................................................................</td>
+        <td><strong>الحصة 2:</strong> ................................................................................................................</td>
+      </tr>
+      <tr>
+        <td><strong>الحصة 3:</strong> ................................................................................................................</td>
+        <td><strong>الحصة 4:</strong> ................................................................................................................</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Signatures -->
+  <table class="signatures-table">
+    <tr>
+      <td>
+        <strong style="font-size:10px; color:#1e293b;">توقيع وملاحظة المؤطر المشرف:</strong>
+        <div class="sign-box">توقيع الأستاذ(ة)</div>
+      </td>
+      <td>
+        <strong style="font-size:10px; color:#1e293b;">تأشيرة وخاتم إدارة أكاديمية Brainova:</strong>
+        <div class="sign-box">خاتم وتأشيرة الإدارة</div>
+      </td>
+    </tr>
+  </table>
+
+  <script>
+    window.onload = function() {
+      setTimeout(function() {
+        window.print();
+      }, 500);
+    };
+  </script>
+</body>
+</html>`;
+
+    if (window.electronAPI && window.electronAPI.printDocument) {
+      window.electronAPI.printDocument({
+        title: `قائمة حضور ${groupName}`,
+        html: sheetHtml
+      });
+      showToast(`جاري فتح ورقة الحضور الشهرية لفوج (${groupName}) للطباعة... 📄🖨️`, 'success');
+    } else {
+      const w = window.open('', '_blank');
+      if (w) {
+        w.document.write(sheetHtml);
+        w.document.close();
+      } else {
+        showToast('يرجى السماح بالنوافذ المنبثقة لطباعة الورقة', 'error');
+      }
+    }
+  }
+  window.printGroupMonthlyAttendanceSheet = printGroupMonthlyAttendanceSheet;
 
   // --- ROOMS & LABS SYSTEM ---
       function renderRooms() {

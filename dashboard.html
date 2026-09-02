@@ -449,6 +449,10 @@
               <p class="page-subtitle">تسجيل تفقد الحصة المباشر، خصم الرصيد التلقائي، وإشعار الأولياء بالغياب.</p>
             </div>
             <div style="display:flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn--outline btn--small" onclick="openPrintAttendanceSheetModal()" style="background:rgba(56,189,248,0.08); color:#38BDF8; border:1px solid rgba(56,189,248,0.3); font-weight:700;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                طباعة ورقة الحضور الشهرية 📄
+              </button>
               <button class="btn btn--primary btn--small" onclick="openQrScannerModal()" style="background:linear-gradient(135deg, #0284C7 0%, #0369A1 100%); font-weight:800; box-shadow:0 0 12px rgba(2,132,199,0.5);">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                 تشغيل كاميرا مسح بطاقات الطلاب
@@ -1151,6 +1155,69 @@
         <div class="modal__actions">
           <button type="button" class="btn btn--outline" onclick="closeAddStudentModal()" data-i18n="dash_cancel">إلغاء</button>
           <button type="submit" class="btn btn--primary" data-i18n="dash_save">+ حفظ وإضافة التلميذ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Print Monthly Attendance Sheet Modal -->
+  <div class="modal-overlay" id="printAttendanceSheetModal">
+    <div class="modal" style="max-width: 520px;">
+      <div class="modal__header">
+        <h3 class="modal__title" style="display:flex; align-items:center; gap:8px;">
+          <span>📄</span> طباعة ورقة الحضور الشهرية للمؤطر
+        </h3>
+        <button class="modal__close" onclick="closePrintAttendanceSheetModal()">&times;</button>
+      </div>
+      <form class="reg-form" onsubmit="submitPrintMonthlyAttendanceSheet(event)">
+        <div style="font-size:0.85rem; color:#94A3B8; margin-bottom:14px; line-height:1.6;">
+          قم باختيار الفوج التدريبي والشهر لاستخراج وثيقة رسمية جاهزة للطباعة (A4 Landscape) لتفقد الحضور وتوقيع المؤطر داخل القاعة.
+        </div>
+
+        <div class="form-group">
+          <label style="font-weight:700; color:#F8FAFC;">الفوج التدريبي *</label>
+          <select id="printSheetGroupSelect" required class="form-input" style="font-weight:700; color:var(--color-primary);">
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label style="font-weight:700; color:#F8FAFC;">شهر المتابعة *</label>
+            <select id="printSheetMonthSelect" required class="form-input">
+              <option value="جانفي">جانفي (يناير)</option>
+              <option value="فيفري">فيفري (فبراير)</option>
+              <option value="مارس">مارس</option>
+              <option value="أفريل">أفريل (أبريل)</option>
+              <option value="ماي">ماي (مايو)</option>
+              <option value="جوان">جوان (يونيو)</option>
+              <option value="جويلية">جويلية (يوليو)</option>
+              <option value="أوت">أوت (أغسطس)</option>
+              <option value="سبتمبر" selected>سبتمبر</option>
+              <option value="أكتوبر">أكتوبر</option>
+              <option value="نوفمبر">نوفمبر</option>
+              <option value="ديسمبر">ديسمبر</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label style="font-weight:700; color:#F8FAFC;">السنة التكوينية</label>
+            <input type="text" id="printSheetYearInput" class="form-input" value="2026" style="font-family:monospace; font-weight:700;">
+          </div>
+        </div>
+
+        <div style="margin-bottom:16px; background:rgba(255,255,255,0.03); padding:10px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.85rem; color:#E2E8F0;">
+            <input type="checkbox" id="printSheetAddExtraRows" checked style="cursor:pointer;">
+            <span>إضافة 4 أسطر فارغة للطلبة الجدد والحصص التجريبية</span>
+          </label>
+        </div>
+
+        <div class="modal__actions">
+          <button type="button" class="btn btn--outline" onclick="closePrintAttendanceSheetModal()">إلغاء</button>
+          <button type="submit" class="btn btn--primary" style="background:linear-gradient(135deg, #0284C7 0%, #0369A1 100%); font-weight:800; display:flex; align-items:center; gap:6px;">
+            <span>🖨️ استخراج وطباعة الورقة فوراً</span>
+          </button>
         </div>
       </form>
     </div>
