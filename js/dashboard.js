@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  window.getData = function(key) {
+  function getData(key) {
     if (MemoryCache[key] !== undefined) return MemoryCache[key];
     try {
       MemoryCache[key] = JSON.parse(localStorage.getItem(key) || 'null');
@@ -112,19 +112,21 @@ document.addEventListener('DOMContentLoaded', () => {
       MemoryCache[key] = [];
     }
     return MemoryCache[key];
-  };
+  }
+  window.getData = getData;
 
-  window.saveData = function(key, data) {
+  function saveData(key, data) {
     MemoryCache[key] = data;
     // Sync to localStorage (fast, synchronous UI layer)
-    requestAnimationFrame(() => {
+    try {
       localStorage.setItem(key, JSON.stringify(data));
-    });
+    } catch(e){}
     // Sync to electron-store (persistent disk storage, fire-and-forget)
     if (window.electronAPI && window.electronAPI.store) {
       window.electronAPI.store.set(key, data);
     }
-  };
+  }
+  window.saveData = saveData;
 
   // Load persistent data from electron-store into localStorage on startup
   async function loadFromPersistentStore() {
@@ -191,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentView = 'overview';
   let searchQuery = '';
 
-  window.showToast = function(messageKey, type = 'success') {
+  function showToast(messageKey, type = 'success') {
     const container = document.getElementById('toastContainer');
     if (!container) return;
     
@@ -199,8 +201,8 @@ document.addEventListener('DOMContentLoaded', () => {
     toast.className = `toast toast--${type}`;
     const icon = type === 'success' ? '✅' : (type === 'error' ? '❌' : '⚠️');
     
-    const currentLang = document.documentElement.lang || 'ar';
-    const text = dashTranslations[currentLang]?.[messageKey] || messageKey;
+    const currentLang = (document.documentElement && document.documentElement.lang) || 'ar';
+    const text = (typeof dashTranslations !== 'undefined' && dashTranslations[currentLang]?.[messageKey]) || messageKey;
     
     toast.innerHTML = `<span>${icon}</span> <span>${text}</span>`;
     container.appendChild(toast);
@@ -209,7 +211,8 @@ document.addEventListener('DOMContentLoaded', () => {
       toast.style.opacity = '0';
       setTimeout(() => toast.remove(), 200);
     }, 2500);
-  };
+  }
+  window.showToast = showToast;
 
   // --- TAB SWITCHING ---
   const navLinks = document.querySelectorAll('.sidebar__nav a[data-view]');
@@ -296,10 +299,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // 4. SELECTIVE VIEW RENDERING
   // ==========================================
   
-  window.renderAll = function() {
+  function renderAll() {
     updateHeaderBadges();
     renderActiveView();
-  };
+  }
+  window.renderAll = renderAll;
 
   function updateHeaderBadges() {
     const regs = getData('brainova_registrations');
@@ -562,27 +566,212 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+  // --- UTILITY: PARSE DATE STRING ROBUSTLY ---
+  function parseBrainovaDate(dateStr) {
+    if (!dateStr) return null;
+    if (dateStr instanceof Date) return dateStr;
+    const str = String(dateStr).trim();
+    if (str.includes('/')) {
+      const parts = str.split(' ');
+      const dmy = parts[0].split('/');
+      if (dmy.length === 3) {
+        const day = parseInt(dmy[0], 10);
+        const month = parseInt(dmy[1], 10) - 1;
+        const year = parseInt(dmy[2], 10);
+        let hour = 12, min = 0;
+        if (parts[1] && parts[1].includes(':')) {
+          const hm = parts[1].split(':');
+          hour = parseInt(hm[0], 10) || 12;
+          min = parseInt(hm[1], 10) || 0;
+        }
+        return new Date(year, month, day, hour, min);
+      }
+    }
+    const d = new Date(str);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  window.parseBrainovaDate = parseBrainovaDate;
+
+  function getArabicDayName(dateStr) {
+    const d = parseBrainovaDate(dateStr);
+    if (!d) return '';
+    const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    return days[d.getDay()] || '';
+  }
+  window.getArabicDayName = getArabicDayName;
+
+  // --- TIMELINE & PAYMENT TRACKER CALCULATION ---
+  function getStudentPaymentTimeline(studentId, stuObj, allPaymentsList) {
+    const payments = (allPaymentsList || getData('brainova_payments')).filter(p => p.studentId === studentId);
+    
+    // Sort payments latest first
+    payments.sort((a, b) => {
+      const dateA = parseBrainovaDate(a.paidAtIso || a.date) || new Date(0);
+      const dateB = parseBrainovaDate(b.paidAtIso || b.date) || new Date(0);
+      return dateB - dateA;
+    });
+
+    const lastPayment = payments[0];
+    if (!lastPayment) {
+      return {
+        hasPayment: false,
+        status: 'unpaid',
+        statusLabel: 'لم يسدد بعد',
+        badgeClass: 'unpaid',
+        lastDateStr: '—',
+        daysElapsed: null,
+        weeksElapsed: null,
+        elapsedText: 'لا توجد دفعات مسجلة',
+        renewalDateStr: '—',
+        daysRemaining: null,
+        renewalSummary: 'لم يسدد أي اشتراك بعد',
+        lastAmount: 0,
+        lastOpNumber: '—',
+        paymentsCount: 0
+      };
+    }
+
+    const payDate = parseBrainovaDate(lastPayment.paidAtIso || lastPayment.date) || new Date();
+    const now = new Date();
+    const diffMs = now.getTime() - payDate.getTime();
+    const diffDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+    const diffWeeks = Math.floor(diffDays / 7);
+
+    let elapsedText = '';
+    if (diffDays === 0) {
+      elapsedText = 'دفع اليوم';
+    } else if (diffDays === 1) {
+      elapsedText = 'دفع بالأمس';
+    } else if (diffDays < 7) {
+      elapsedText = `دفع منذ ${diffDays} أيام`;
+    } else if (diffDays < 14) {
+      const rem = diffDays - 7;
+      elapsedText = `دفع منذ أسبوع ${rem > 0 ? 'و ' + rem + ' أيام' : ''}`;
+    } else if (diffDays < 21) {
+      elapsedText = `دفع منذ أسبوعين (${diffDays} يوماً)`;
+    } else if (diffDays < 28) {
+      elapsedText = `دفع منذ 3 أسابيع (${diffDays} يوماً)`;
+    } else if (diffDays < 35) {
+      elapsedText = `دفع منذ شهر (${diffDays} يوماً)`;
+    } else {
+      const months = Math.floor(diffDays / 30);
+      elapsedText = `دفع منذ ${months} ${months === 1 ? 'شهر' : 'أشهر'} (${diffDays} يوماً)`;
+    }
+
+    // Monthly Subscription Renewal (Cycle of 30 days)
+    const renewalTimestamp = payDate.getTime() + (30 * 24 * 60 * 60 * 1000);
+    const renewalDate = new Date(renewalTimestamp);
+    const renewalDateStr = `${String(renewalDate.getDate()).padStart(2, '0')}/${String(renewalDate.getMonth() + 1).padStart(2, '0')}/${renewalDate.getFullYear()}`;
+    const daysRemaining = Math.ceil((renewalTimestamp - now.getTime()) / (1000 * 60 * 60 * 24));
+
+    let status = 'active';
+    let statusLabel = 'اشتراك ساري';
+    let badgeClass = 'paid';
+    let renewalSummary = '';
+
+    if (daysRemaining > 5) {
+      status = 'active';
+      statusLabel = 'اشتراك ساري';
+      badgeClass = 'paid';
+      renewalSummary = `متبقي ${daysRemaining} يوماً (استحقاق: ${renewalDateStr})`;
+    } else if (daysRemaining >= 0) {
+      status = 'due_soon';
+      statusLabel = 'اقترب موعد التجديد';
+      badgeClass = 'partial';
+      renewalSummary = `مستحق للتجديد خلال ${daysRemaining === 0 ? 'اليوم' : daysRemaining + ' أيام'} (${renewalDateStr})`;
+    } else {
+      status = 'overdue';
+      statusLabel = 'انتهى الاشتراك الشهري';
+      badgeClass = 'overdue';
+      renewalSummary = `متأخر عن دفع الشهر بـ ${Math.abs(daysRemaining)} يوم (انتهى في: ${renewalDateStr})`;
+    }
+
+    return {
+      hasPayment: true,
+      status,
+      statusLabel,
+      badgeClass,
+      lastDateStr: lastPayment.date || payDate.toLocaleDateString('ar-DZ'),
+      daysElapsed: diffDays,
+      weeksElapsed: diffWeeks,
+      elapsedText,
+      renewalDate,
+      renewalDateStr,
+      daysRemaining,
+      renewalSummary,
+      lastAmount: Number(lastPayment.amountPaid) || 0,
+      lastOpNumber: lastPayment.opNumber || lastPayment.id,
+      paymentsCount: payments.length,
+      allStudentPayments: payments
+    };
+  }
+  window.getStudentPaymentTimeline = getStudentPaymentTimeline;
+
   // --- STUDENTS ---
   function renderStudents() {
-    const students = filterData(getData('brainova_students'), searchQuery);
+    const rawStudents = getData('brainova_students');
+    const allPayments = getData('brainova_payments');
+    const subFilter = document.getElementById('studentSubFilter')?.value || 'all';
     const tbody = document.getElementById('studentsTableBody');
     if (!tbody) return;
-    
+
+    let students = filterData(rawStudents, searchQuery);
+
+    if (subFilter !== 'all') {
+      students = students.filter(stu => {
+        const timeline = getStudentPaymentTimeline(stu.id, stu, allPayments);
+        return timeline.status === subFilter;
+      });
+    }
+
     if (students.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px; color:var(--color-text-muted);">لا توجد بيانات (No data)</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px; color:var(--color-text-muted);">لا توجد بيانات تطابق الفلتر المحدد</td></tr>`;
       return;
     }
-    
+
     tbody.innerHTML = students.map(stu => {
       const balance = Number(stu.balance) || 0;
       const sessions = Number(stu.sessionsRemaining) || 0;
-      let badgeHtml = '';
+      const timeline = getStudentPaymentTimeline(stu.id, stu, allPayments);
+
+      let sessionsBadge = '';
       if (sessions > 0) {
-        badgeHtml = `<span class="payment-badge paid">✅ ${sessions} حصص (${balance} دج)</span>`;
+        sessionsBadge = `<span class="payment-badge paid">✅ ${sessions} حصص (${balance.toLocaleString()} دج)</span>`;
       } else if (balance < 0) {
-        badgeHtml = `<span class="payment-badge overdue">⚠️ دين: ${balance} دج</span>`;
+        sessionsBadge = `<span class="payment-badge overdue">⚠️ دين: ${balance.toLocaleString()} دج</span>`;
       } else {
-        badgeHtml = `<span class="payment-badge partial">⏳ نفدت الحصص</span>`;
+        sessionsBadge = `<span class="payment-badge partial">⏳ نفدت الحصص</span>`;
+      }
+
+      let paymentTimelineBadge = '';
+      if (timeline.hasPayment) {
+        if (timeline.status === 'active') {
+          paymentTimelineBadge = `
+            <div style="margin-top:5px; font-size:0.75rem; line-height:1.35;">
+              <span style="color:#10B981; font-weight:700;">🕒 ${timeline.elapsedText}</span>
+              <br>
+              <span style="font-size:0.72rem; color:#64748B;">📅 التجديد: ${timeline.renewalDateStr} (متبقي ${timeline.daysRemaining} يوم)</span>
+            </div>
+          `;
+        } else if (timeline.status === 'due_soon') {
+          paymentTimelineBadge = `
+            <div style="margin-top:5px; font-size:0.75rem; color:#F59E0B; line-height:1.35;">
+              <span style="font-weight:700;">⏳ ${timeline.elapsedText}</span>
+              <br>
+              <span style="background:rgba(245,158,11,0.15); color:#FBBF24; padding:2px 6px; border-radius:4px; font-weight:700; font-size:0.7rem;">مستحق التجديد خلال ${timeline.daysRemaining === 0 ? 'اليوم' : timeline.daysRemaining + ' أيام'}</span>
+            </div>
+          `;
+        } else {
+          paymentTimelineBadge = `
+            <div style="margin-top:5px; font-size:0.75rem; color:#EF4444; line-height:1.35;">
+              <span style="font-weight:700;">⚠️ ${timeline.elapsedText}</span>
+              <br>
+              <span style="background:rgba(239,68,68,0.15); color:#F87171; padding:2px 6px; border-radius:4px; font-weight:700; font-size:0.7rem;">متأخر بـ ${Math.abs(timeline.daysRemaining)} يوم عن الشهر</span>
+            </div>
+          `;
+        }
+      } else {
+        paymentTimelineBadge = `<div style="margin-top:5px; font-size:0.72rem; color:#64748B;">⚪ لم يسدد أي اشتراك بعد</div>`;
       }
 
       return `
@@ -598,7 +787,10 @@ document.addEventListener('DOMContentLoaded', () => {
             <div>${stu.parentName || '—'}</div>
             <a href="tel:${stu.parentPhone}" dir="ltr" style="color:var(--color-primary); font-size:0.85rem;">${stu.parentPhone || '—'}</a>
           </td>
-          <td>${badgeHtml}</td>
+          <td>
+            ${sessionsBadge}
+            ${paymentTimelineBadge}
+          </td>
           <td style="text-align: center;">
             <div style="display:inline-flex; gap:4px; flex-wrap:nowrap;">
               <button class="btn btn--outline" style="padding: 4px 6px; font-size: 0.75rem;" title="الملف الشامل" onclick="openStudentProfile('${stu.id}')"> الملف</button>
@@ -939,6 +1131,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const d = rawDateTime ? new Date(rawDateTime) : new Date();
     const formattedDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth()+1).padStart(2, '0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    const isoDate = d.toISOString();
+    const timestamp = d.getTime();
 
     const opNumber = String(Math.floor(10000 + Math.random() * 90000));
     const prevBalance = stu.balance || 0;
@@ -947,6 +1141,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     stu.balance = currentBalance;
     stu.sessionsRemaining = currentSessions;
+    stu.lastPaymentDate = formattedDate;
+    stu.lastPaymentIso = isoDate;
+    stu.lastPaymentTimestamp = timestamp;
+    stu.lastPaymentAmount = amount;
     saveData('brainova_students', students);
 
     const newPayment = {
@@ -958,6 +1156,8 @@ document.addEventListener('DOMContentLoaded', () => {
       group: stu.group,
       educatorName: educator ? educator.name : 'عابد اسحاق تقي الدين',
       date: formattedDate,
+      paidAtIso: isoDate,
+      paidAtTimestamp: timestamp,
       amountPaid: amount,
       prevBalance,
       currentBalance,
@@ -1100,11 +1300,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- STUDENT PROFILE MODAL ---
     // --- STUDENT PROFILE MODAL (ORGANIZED DOSSIER) ---
     // --- STUDENT PROFILE MODAL (HIGH-DENSITY ORGANIZED DOSSIER) ---
-  window.openStudentProfile = function(studentId) {
+  function openStudentProfile(studentId) {
     const stu = getData('brainova_students').find(s => s.id === studentId);
     if (!stu) return;
 
-    const payments = getData('brainova_payments').filter(p => p.studentId === studentId);
+    const allPayments = getData('brainova_payments');
+    const payments = allPayments.filter(p => p.studentId === studentId);
     const attendance = getData('brainova_attendance').filter(a => a.studentId === studentId);
 
     const totalAtt = attendance.length;
@@ -1113,7 +1314,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const balance = Number(stu.balance) || 0;
     const sessions = Number(stu.sessionsRemaining) || 0;
 
-    const portalUrl = `${window.location.origin}${window.location.pathname.replace('dashboard.html', 'parent.html')}?id=${stu.id}&u=${encodeURIComponent(stu.username || '')}&p=${encodeURIComponent(stu.password || '')}`;
+    const timeline = getStudentPaymentTimeline(studentId, stu, allPayments);
+
+    // Sort attendance by date descending
+    const sortedAttendance = [...attendance].sort((a, b) => {
+      const dateA = parseBrainovaDate(a.date) || new Date(0);
+      const dateB = parseBrainovaDate(b.date) || new Date(0);
+      return dateB - dateA;
+    });
 
     const content = document.getElementById('studentProfileContent');
     content.innerHTML = `
@@ -1164,7 +1372,137 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>
 
-      <!-- 2. Teacher Educational Notes -->
+      <!-- 2. MONTHLY PAYMENT & RENEWAL TRACKER -->
+      <div class="profile-section-heading">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+        تتبع الاشتراك الشهري وتاريخ التسديد
+        <span class="payment-badge ${timeline.badgeClass}" style="margin-right:auto; font-size:0.75rem;">${timeline.statusLabel}</span>
+      </div>
+      <div style="background:rgba(15,23,42,0.6); border:1px solid ${timeline.status === 'overdue' ? 'rgba(239,68,68,0.4)' : (timeline.status === 'due_soon' ? 'rgba(245,158,11,0.4)' : 'rgba(56,189,248,0.25)')}; border-radius:var(--radius-sm); padding:14px; margin-bottom:14px;">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:10px; margin-bottom:10px;">
+          <div style="background:rgba(255,255,255,0.02); padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
+            <div style="font-size:0.7rem; color:var(--color-text-dim);">🕒 تاريخ آخر تسديد</div>
+            <div style="font-size:0.85rem; font-weight:800; color:#F8FAFC; margin-top:2px;">${timeline.lastDateStr}</div>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.02); padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
+            <div style="font-size:0.7rem; color:var(--color-text-dim);">⏳ المدة المنقضية</div>
+            <div style="font-size:0.85rem; font-weight:800; color:#38BDF8; margin-top:2px;">${timeline.elapsedText}</div>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.02); padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
+            <div style="font-size:0.7rem; color:var(--color-text-dim);">📅 موعد التجديد القادم</div>
+            <div style="font-size:0.85rem; font-weight:800; color:${timeline.status === 'overdue' ? '#EF4444' : '#10B981'}; margin-top:2px;">${timeline.renewalDateStr}</div>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.02); padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
+            <div style="font-size:0.7rem; color:var(--color-text-dim);">💰 آخر مبلغ سُدد</div>
+            <div style="font-size:0.85rem; font-weight:800; color:#10B981; margin-top:2px;">${timeline.lastAmount > 0 ? timeline.lastAmount.toLocaleString() + ' دج' : '—'}</div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:10px;">
+          <div style="font-size:0.8rem; color:${timeline.status === 'overdue' ? '#F87171' : (timeline.status === 'due_soon' ? '#FBBF24' : '#34D399')}; font-weight:700;">
+            📌 ${timeline.renewalSummary}
+          </div>
+          <button type="button" class="btn btn--primary btn--small" onclick="closeStudentProfileModal(); openRecordPaymentModal('${stu.id}')" style="font-size:0.75rem;">
+            💳 تسجيل تجديد الاشتراك
+          </button>
+        </div>
+      </div>
+
+      <!-- 3. DETAILED SESSIONS ATTENDANCE LOG WITH DATES -->
+      <div class="profile-section-heading" style="justify-content:space-between;">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          سجل الحصص التي درسها التلميذ بالتاريخ
+          <span class="status-pill" style="background:rgba(16,185,129,0.1); color:#10B981; border:1px solid rgba(16,185,129,0.25); font-size:0.72rem;">درس ${presentCount} حصص</span>
+        </div>
+        <button type="button" class="btn btn--primary btn--small" onclick="openAddStudentSessionModal('${stu.id}')" style="font-size:0.75rem; padding:4px 8px; background:#0284C7;">
+          ➕ تسجيل حصة حضور بالتاريخ
+        </button>
+      </div>
+
+      ${sortedAttendance.length === 0 ? `
+        <div style="text-align:center; padding:18px; background:rgba(255,255,255,0.02); border:1px dashed var(--color-border); border-radius:8px; color:var(--color-text-dim); font-size:0.82rem; margin-bottom:14px;">
+          لا توجد حصص مسجلة بعد لهذا التلميذ.
+          <br>
+          <button type="button" class="btn btn--outline btn--small" style="margin-top:8px;" onclick="openAddStudentSessionModal('${stu.id}')">
+            ➕ تسجيل أول حصة بالتاريخ الآن
+          </button>
+        </div>
+      ` : `
+        <div style="max-height:220px; overflow-y:auto; border:1px solid var(--color-border); border-radius:8px; margin-bottom:14px;">
+          <table style="width:100%; border-collapse:collapse; font-size:0.78rem; text-align:right;">
+            <thead>
+              <tr style="background:rgba(255,255,255,0.04); border-bottom:1px solid var(--color-border); color:#94A3B8;">
+                <th style="padding:6px 8px; width:28px;">#</th>
+                <th style="padding:6px 8px;">التاريخ واليوم</th>
+                <th style="padding:6px 8px;">التوقيت والفوج</th>
+                <th style="padding:6px 8px;">الحالة</th>
+                <th style="padding:6px 8px;">موضوع الدرس / المشروع</th>
+                <th style="padding:6px 8px; text-align:center; width:36px;">حذف</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sortedAttendance.map((att, idx) => {
+                const dayName = getArabicDayName(att.date);
+                let statusBadge = '';
+                if (att.status === 'present') {
+                  statusBadge = '<span style="color:#10B981; font-weight:700;">✅ حاضر</span>';
+                } else if (att.status === 'late') {
+                  statusBadge = '<span style="color:#F59E0B; font-weight:700;">⏳ متأخر</span>';
+                } else {
+                  statusBadge = '<span style="color:#EF4444; font-weight:700;">❌ غائب</span>';
+                }
+
+                return `
+                  <tr style="border-bottom:1px solid rgba(255,255,255,0.03); background:${idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)'};">
+                    <td style="padding:6px 8px; color:var(--color-text-dim); font-family:monospace;">${sortedAttendance.length - idx}</td>
+                    <td style="padding:6px 8px; font-weight:700; color:#F1F5F9;">
+                      ${dayName ? dayName + ' ' : ''}${att.date}
+                    </td>
+                    <td style="padding:6px 8px; color:#94A3B8;">
+                      ${att.sessionTime || '—'} <span style="font-size:0.7rem; color:var(--color-primary);">(${att.groupName || stu.group || 'الفوج'})</span>
+                    </td>
+                    <td style="padding:6px 8px;">
+                      ${statusBadge}
+                    </td>
+                    <td style="padding:6px 8px; color:#CBD5E1;">
+                      ${att.note || 'حصة تدريبية'}
+                    </td>
+                    <td style="padding:6px 8px; text-align:center;">
+                      <button type="button" style="background:none; border:none; color:#EF4444; cursor:pointer; font-size:0.85rem;" title="حذف الحصة" onclick="deleteStudentSessionRecord('${att.id}', '${stu.id}')">
+                        🗑️
+                      </button>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `}
+
+      <!-- 4. Recent Receipts History -->
+      <div class="profile-section-heading">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+        سجل الوصولات المالية الصادرة (${payments.length})
+      </div>
+      ${payments.length === 0 ? '<div style="color:var(--color-text-dim); font-size:0.78rem; margin-bottom:14px;">لا توجد وصولات مسجلة بعد.</div>' : `
+        <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:14px;">
+          ${payments.slice(0, 4).map(p => `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.02); padding:6px 10px; border-radius:6px; border:1px solid var(--color-border); font-size:0.8rem;">
+              <div>
+                <strong style="color:var(--color-primary); font-family:monospace;">#${p.opNumber || p.id}</strong> — ${p.date} (${Number(p.amountPaid).toLocaleString()} دج)
+              </div>
+              <button class="btn btn--outline btn--small" onclick="openReceiptModal('${p.id}')">🖨️ طباعة الوصل</button>
+            </div>
+          `).join('')}
+        </div>
+      `}
+
+      <!-- 5. Educational Notes -->
       <div class="profile-section-heading">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
         ملاحظات وتوجيهات تربوية خاصة بالتلميذ
@@ -1178,24 +1516,6 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>
 
-      <!-- 4. Recent Receipts -->
-      <div class="profile-section-heading">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
-        سجل الوصولات المالية الصادرة
-      </div>
-      ${payments.length === 0 ? '<div style="color:var(--color-text-dim); font-size:0.78rem; margin-bottom:14px;">لا توجد وصولات مسجلة بعد.</div>' : `
-        <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:14px;">
-          ${payments.slice(0, 3).map(p => `
-            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.02); padding:6px 10px; border-radius:6px; border:1px solid var(--color-border); font-size:0.8rem;">
-              <div>
-                <strong style="color:var(--color-primary); font-family:monospace;">#${p.opNumber || p.id}</strong> — ${p.date} (${Number(p.amountPaid).toLocaleString()} دج)
-              </div>
-              <button class="btn btn--outline btn--small" onclick="openReceiptModal('${p.id}')">طباعة الوصل</button>
-            </div>
-          `).join('')}
-        </div>
-      `}
-
       <!-- Actions Footer -->
       <div class="modal__actions">
         <button type="button" class="btn btn--outline" onclick="closeStudentProfileModal()">إغلاق</button>
@@ -1205,11 +1525,140 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     `;
 
-    document.getElementById('studentProfileModal').classList.add('active');
+    const modalEl = document.getElementById('studentProfileModal');
+    if (modalEl) modalEl.classList.add('active');
+  }
+  window.openStudentProfile = openStudentProfile;
+
+  function closeStudentProfileModal() {
+    const modalEl = document.getElementById('studentProfileModal');
+    if (modalEl) modalEl.classList.remove('active');
+  }
+  window.closeStudentProfileModal = closeStudentProfileModal;
+
+  // --- INDIVIDUAL STUDENT SESSION HANDLERS ---
+  function openAddStudentSessionModal(studentId) {
+    const stu = getData('brainova_students').find(s => s.id === studentId);
+    if (!stu) return;
+
+    const idEl = document.getElementById('sessionStudentId');
+    if (idEl) idEl.value = studentId;
+    const nameEl = document.getElementById('sessionStudentNameDisplay');
+    if (nameEl) nameEl.textContent = `التلميذ: ${stu.name} (${stu.id})`;
+    const grpEl = document.getElementById('sessionStudentGroupDisplay');
+    if (grpEl) grpEl.textContent = `الفوج: ${stu.group || 'غير محدد'} • المستوى: ${stu.level || 'المستوى الأول'}`;
+    
+    // Default date to today
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('sessionDateInput');
+    if (dateInput) dateInput.value = today;
+    
+    const timeInput = document.getElementById('sessionTimeInput');
+    if (timeInput) timeInput.value = '09:00 - 11:00';
+    const groupInput = document.getElementById('sessionGroupInput');
+    if (groupInput) groupInput.value = stu.group || 'الفوج أ';
+    const statusInput = document.getElementById('sessionStatusInput');
+    if (statusInput) statusInput.value = 'present';
+    const topicInput = document.getElementById('sessionTopicInput');
+    if (topicInput) topicInput.value = '';
+    const deductCb = document.getElementById('sessionDeductCheckbox');
+    if (deductCb) deductCb.checked = true;
+
+    const modal = document.getElementById('addStudentSessionModal');
+    if (modal) modal.classList.add('active');
+  }
+  window.openAddStudentSessionModal = openAddStudentSessionModal;
+
+  function closeAddStudentSessionModal() {
+    const modal = document.getElementById('addStudentSessionModal');
+    if (modal) modal.classList.remove('active');
+  }
+  window.closeAddStudentSessionModal = closeAddStudentSessionModal;
+
+  window.handleSessionStatusChange = function() {
+    const status = document.getElementById('sessionStatusInput').value;
+    const deductCb = document.getElementById('sessionDeductCheckbox');
+    if (status === 'absent') {
+      deductCb.checked = false;
+    } else {
+      deductCb.checked = true;
+    }
   };
 
-  window.closeStudentProfileModal = function() {
-    document.getElementById('studentProfileModal').classList.remove('active');
+  window.submitAddStudentSession = function(event) {
+    event.preventDefault();
+    const studentId = document.getElementById('sessionStudentId').value;
+    const sessionDate = document.getElementById('sessionDateInput').value;
+    const sessionTime = document.getElementById('sessionTimeInput').value;
+    const sessionStatus = document.getElementById('sessionStatusInput').value;
+    const groupName = document.getElementById('sessionGroupInput').value.trim() || 'الفوج أ';
+    const topic = document.getElementById('sessionTopicInput').value.trim();
+    const deductSession = document.getElementById('sessionDeductCheckbox').checked;
+
+    if (!studentId || !sessionDate) {
+      showToast('يرجى تحديد تاريخ الحصة!', 'error');
+      return;
+    }
+
+    const students = getData('brainova_students');
+    const stu = students.find(s => s.id === studentId);
+    if (!stu) {
+      showToast('لم يتم العثور على التلميذ!', 'error');
+      return;
+    }
+
+    let allAttendance = getData('brainova_attendance');
+    const newRecord = {
+      id: 'ATT-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+      date: sessionDate,
+      groupName,
+      sessionTime,
+      studentId: stu.id,
+      studentName: stu.name,
+      status: sessionStatus,
+      note: topic || (sessionStatus === 'present' ? 'حصة تدريبية مكتملة' : (sessionStatus === 'late' ? 'حضور متأخر' : 'غياب'))
+    };
+
+    allAttendance.unshift(newRecord);
+
+    if (sessionStatus === 'present' || sessionStatus === 'late') {
+      stu.lastAttendance = `${sessionDate} (${sessionTime})`;
+      if (deductSession && (stu.sessionsRemaining || 0) > 0) {
+        stu.sessionsRemaining = Math.max(0, stu.sessionsRemaining - 1);
+      }
+    }
+
+    saveData('brainova_attendance', allAttendance);
+    saveData('brainova_students', students);
+
+    closeAddStudentSessionModal();
+    showToast(`✅ تم تسجيل الحصة بالتاريخ (${sessionDate}) للتلميذ بنجاح!`, 'success');
+
+    // Refresh profile modal and active views
+    openStudentProfile(studentId);
+    renderActiveView();
+  };
+
+  window.deleteStudentSessionRecord = function(attendanceId, studentId) {
+    if (!confirm('هل أنت متأكد من حذف هذه الحصة من سجل التلميذ؟')) return;
+
+    let allAttendance = getData('brainova_attendance');
+    const record = allAttendance.find(a => a.id === attendanceId);
+    if (!record) return;
+
+    allAttendance = allAttendance.filter(a => a.id !== attendanceId);
+    saveData('brainova_attendance', allAttendance);
+
+    const students = getData('brainova_students');
+    const stu = students.find(s => s.id === studentId);
+    if (stu && (record.status === 'present' || record.status === 'late')) {
+      stu.sessionsRemaining = (stu.sessionsRemaining || 0) + 1;
+      saveData('brainova_students', students);
+    }
+
+    showToast('تم حذف الحصة واسترجاع الرصيد بنجاح!', 'success');
+    openStudentProfile(studentId);
+    renderActiveView();
   };
 
   // Save Teacher Note to Student for Parent Portal

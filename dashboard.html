@@ -264,6 +264,19 @@
               <button class="btn btn--primary btn--small" data-i18n="dash_add_student" onclick="openAddStudentModal()">+ إضافة طالب</button>
             </div>
           </div>
+
+          <!-- Subscription & Payment Filter Toolbar -->
+          <div style="display:flex; gap:12px; align-items:center; margin-bottom:14px; flex-wrap:wrap; background:var(--color-bg-card); padding:10px 16px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">
+            <span style="font-size:0.84rem; color:var(--color-text-muted); font-weight:700;">📅 تصفية حسب تاريخ الدفع والشهر:</span>
+            <select id="studentSubFilter" onchange="renderStudents()" class="form-input" style="width:auto; padding:6px 14px; font-size:0.84rem; height:36px;">
+              <option value="all">جميع الحالات (عرض كل الطلاب)</option>
+              <option value="active">🟢 اشتراك ساري (دفع حديثاً - متبقي أيام)</option>
+              <option value="due_soon">🟡 اقترب موعد التجديد (خلال 5 أيام أو أقل)</option>
+              <option value="overdue">🔴 متأخر عن دفع الشهر (انتهت الـ 30 يوماً)</option>
+              <option value="unpaid">⚪ لم يسدد أي دفعة بعد</option>
+            </select>
+          </div>
+
           <div class="table-container">
             <table class="data-table">
               <thead>
@@ -1214,7 +1227,7 @@
 
   <!-- ===== STUDENT PROFILE MODAL ===== -->
   <div class="modal-overlay" id="studentProfileModal">
-    <div class="modal" style="max-width: 600px;">
+    <div class="modal" style="max-width: 760px; max-height: 90vh; overflow-y: auto;">
       <div class="modal__header">
         <h2 class="modal__title">الملف الشامل للطالب</h2>
         <button class="modal__close" onclick="closeStudentProfileModal()">×</button>
@@ -1480,6 +1493,78 @@
           <button type="submit" class="btn" style="background:#25D366; color:#fff; font-weight:700; display:flex; align-items:center; gap:6px;">
             <span>🚀 فتح وإرسال عبر واتساب</span>
           </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== ADD INDIVIDUAL STUDENT SESSION MODAL ===== -->
+  <div class="modal-overlay" id="addStudentSessionModal">
+    <div class="modal" style="max-width: 520px;">
+      <div class="modal__header">
+        <h2 class="modal__title">➕ تسجيل حصة حضور بالتاريخ للتلميذ</h2>
+        <button class="modal__close" onclick="closeAddStudentSessionModal()">×</button>
+      </div>
+      <form onsubmit="submitAddStudentSession(event)">
+        <input type="hidden" id="sessionStudentId">
+
+        <div style="background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.25); border-radius:10px; padding:12px; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between;">
+          <div>
+            <strong id="sessionStudentNameDisplay" style="color:#fff; font-size:1rem; display:block;">-</strong>
+            <span id="sessionStudentGroupDisplay" style="font-size:0.8rem; color:#94a3b8;">الفوج: -</span>
+          </div>
+          <span style="font-size:1.6rem;">🤖</span>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+          <div class="form-group">
+            <label style="font-size:0.8rem; font-weight:700; color:#94a3b8;">تاريخ الحصة *</label>
+            <input type="date" id="sessionDateInput" class="form-input" required>
+          </div>
+
+          <div class="form-group">
+            <label style="font-size:0.8rem; font-weight:700; color:#94a3b8;">توقيت الحصة *</label>
+            <select id="sessionTimeInput" class="form-input" required>
+              <option value="09:00 - 11:00">09:00 - 11:00 (صباحاً)</option>
+              <option value="11:00 - 13:00">11:00 - 13:00 (منتصف النهار)</option>
+              <option value="14:00 - 16:00">14:00 - 16:00 (مساءً)</option>
+              <option value="16:00 - 18:00">16:00 - 18:00 (مساءً)</option>
+              <option value="18:00 - 20:00">18:00 - 20:00 (مساءً)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+          <div class="form-group">
+            <label style="font-size:0.8rem; font-weight:700; color:#94a3b8;">حالة الحضور *</label>
+            <select id="sessionStatusInput" class="form-input" required onchange="handleSessionStatusChange()">
+              <option value="present">✅ حاضر (Present)</option>
+              <option value="late">⏳ متأخر (Late)</option>
+              <option value="absent">❌ غائب (Absent)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label style="font-size:0.8rem; font-weight:700; color:#94a3b8;">الفوج / المستوى</label>
+            <input type="text" id="sessionGroupInput" class="form-input" placeholder="الفوج">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label style="font-size:0.8rem; font-weight:700; color:#94a3b8;">موضوع الدرس أو المشروع المنجز</label>
+          <input type="text" id="sessionTopicInput" class="form-input" placeholder="مثال: تركيب محركات السيرفو وحساس المسافة Ultrasonic">
+        </div>
+
+        <div style="background:rgba(255,255,255,0.03); border:1px solid var(--color-border); border-radius:8px; padding:10px 14px; margin-bottom:14px; display:flex; align-items:center; gap:10px;">
+          <input type="checkbox" id="sessionDeductCheckbox" checked style="width:18px; height:18px; cursor:pointer;">
+          <label for="sessionDeductCheckbox" style="font-size:0.82rem; color:#f1f5f9; cursor:pointer; margin-bottom:0; font-weight:600;">
+            خصم حصة واحدة (1) من رصيد الحصص المتبقية للتلميذ
+          </label>
+        </div>
+
+        <div class="modal__actions">
+          <button type="button" class="btn btn--outline" onclick="closeAddStudentSessionModal()">إلغاء</button>
+          <button type="submit" class="btn btn--primary">💾 حفظ الحصة في السجل</button>
         </div>
       </form>
     </div>
