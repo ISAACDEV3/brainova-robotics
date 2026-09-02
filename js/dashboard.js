@@ -6876,7 +6876,7 @@ ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
     if (window.electronAPI && window.electronAPI.whatsapp && window.electronAPI.whatsapp.setAiSettings) {
       try {
         await window.electronAPI.whatsapp.setAiSettings({ enabled, apiKey });
-        showToast('✅ تم حفظ إعدادات موظف الاستقبال الذكي بنجاح!', 'success');
+        showToast('✅ تم حفظ الإعدادات بنجاح!', 'success');
       } catch (e) {
         showToast('خطأ في حفظ الإعدادات: ' + e.message, 'danger');
       }
