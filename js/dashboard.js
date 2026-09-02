@@ -3469,9 +3469,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const DEFAULT_WA_SETTINGS = {
     autoAttendance: true,
     autoPayment: true,
+    guardianMaster: true,
+    guardianSessionLate: true,
+    guardianPreSession: true,
+    guardianOverdue: true,
     lateTemplate: 'السلام عليكم السيد(ة) {parent} المحترم(ة)، ولي أمر التلميذ(ة) {student}،\nنعلمكم بتأخره عن موعد حصة الروبوتيك اليوم المقررة على الساعة {time} (فوج: {group}) بأكاديمية Brainova.\nنرجو الاطمئنان عليه.',
     absentTemplate: 'السلام عليكم السيد(ة) {parent} المحترم(ة)، ولي أمر التلميذ(ة) {student}،\nسجلنا غياب التلميذ(ة) اليوم عن حصة الروبوتيك المقررة على الساعة {time} بأكاديمية Brainova.\nنتمنى له السلامة والتوفيق.',
-    overdueTemplate: 'تحية طيبة السيد(ة) {parent} المحترم(ة)، ولي أمر التلميذ(ة) {student}،\nنود تذكيركم بانتهاء اشتراك الشهر في تدريب الروبوتيك بأكاديمية Brainova (آخر تسديد: {last_payment} - منذ {days_ago} يوماً).\nيرجى تسوية مستحقات الشهر القادم لضمان استمرارية الحصص.\nشكراً لثقتكم بأكاديمية Brainova.'
+    overdueTemplate: 'تحية طيبة السيد(ة) {parent} المحترم(ة)، ولي أمر التلميذ(ة) {student}،\nنود تذكيركم بانتهاء اشتراك الشهر في تدريب الروبوتيك بأكاديمية Brainova (آخر تسديد: {last_payment} - منذ {days_ago} يوماً).\nيرجى تسوية مستحقات الشهر القادم لضمان استمرارية الحصص.\nشكراً لثقتكم بأكاديمية Brainova.',
+    preSessionTemplate: 'تحية طيبة السيد(ة) {parent} المحترم(ة)، ولي أمر التلميذ(ة) {student}،\nنود تذكيركم بموعد حصة الروبوتيك اليوم المقررة على الساعة {time} (فوج: {group}) بأكاديمية Brainova.\nنرجو تشريفنا بالحضور في الوقت المحدد. شكراً لتعاونكم.'
   };
 
   function getWhatsAppSettings() {
@@ -3487,6 +3492,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function saveWhatsAppSettings() {
     const autoAtt = document.getElementById('waAutoAttendanceToggle')?.checked ?? true;
     const autoPay = document.getElementById('waAutoPaymentToggle')?.checked ?? true;
+    const guardianMaster = document.getElementById('waGuardianMasterToggle')?.checked ?? true;
+    const guardianSessionLate = document.getElementById('waGuardianSessionLateToggle')?.checked ?? true;
+    const guardianPreSession = document.getElementById('waGuardianPreSessionToggle')?.checked ?? true;
+    const guardianOverdue = document.getElementById('waGuardianOverdueToggle')?.checked ?? true;
+
     const lateTpl = document.getElementById('waLateTemplateInput')?.value || DEFAULT_WA_SETTINGS.lateTemplate;
     const overdueTpl = document.getElementById('waOverdueTemplateInput')?.value || DEFAULT_WA_SETTINGS.overdueTemplate;
 
@@ -3494,12 +3504,16 @@ document.addEventListener('DOMContentLoaded', () => {
       ...getWhatsAppSettings(),
       autoAttendance: autoAtt,
       autoPayment: autoPay,
+      guardianMaster,
+      guardianSessionLate,
+      guardianPreSession,
+      guardianOverdue,
       lateTemplate: lateTpl,
       overdueTemplate: overdueTpl
     };
 
     localStorage.setItem('brainova_wa_settings', JSON.stringify(newSettings));
-    showToast('✅ تم حفظ إعدادات وقوالب بوت الواتساب بنجاح!', 'success');
+    showToast('✅ تم حفظ إعدادات وقوالب مراقب الواتساب الذكي بنجاح!', 'success');
   }
   window.saveWhatsAppSettings = saveWhatsAppSettings;
 
@@ -3519,8 +3533,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const payToggle = document.getElementById('waAutoPaymentToggle');
     if (payToggle) payToggle.checked = settings.autoPayment !== false;
 
+    const gMaster = document.getElementById('waGuardianMasterToggle');
+    if (gMaster) gMaster.checked = settings.guardianMaster !== false;
+
+    const gSessionLate = document.getElementById('waGuardianSessionLateToggle');
+    if (gSessionLate) gSessionLate.checked = settings.guardianSessionLate !== false;
+
+    const gPreSession = document.getElementById('waGuardianPreSessionToggle');
+    if (gPreSession) gPreSession.checked = settings.guardianPreSession !== false;
+
+    const gOverdue = document.getElementById('waGuardianOverdueToggle');
+    if (gOverdue) gOverdue.checked = settings.guardianOverdue !== false;
+
     populateWaStudentAutoSelect();
     renderWaQueues();
+    renderWaGuardianLogs();
     await refreshWhatsAppStatus();
   }
   window.renderWhatsAppView = renderWhatsAppView;
@@ -4070,6 +4097,235 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   window.triggerBatchPaymentReminders = triggerBatchPaymentReminders;
 
+  // ==========================================
+  // 11. AUTONOMOUS AI GUARDIAN & REAL-TIME ENGINE
+  // ==========================================
+  function getWaGuardianLogs() {
+    try {
+      return JSON.parse(localStorage.getItem('brainova_wa_guardian_logs') || '[]');
+    } catch(e) { return []; }
+  }
+
+  function addWaGuardianLog(msg) {
+    const timeStr = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const logs = getWaGuardianLogs();
+    logs.unshift(`[${timeStr}] ${msg}`);
+    if (logs.length > 50) logs.pop();
+    localStorage.setItem('brainova_wa_guardian_logs', JSON.stringify(logs));
+    renderWaGuardianLogs();
+  }
+  window.addWaGuardianLog = addWaGuardianLog;
+
+  function renderWaGuardianLogs() {
+    const logBox = document.getElementById('waGuardianLiveLog');
+    if (!logBox) return;
+    const logs = getWaGuardianLogs();
+    if (logs.length === 0) {
+      logBox.innerHTML = '<span style="color:#64748B;">🤖 المراقب الآلي في حالة استعداد وجاهز لبدء دورات الفحص...</span>';
+    } else {
+      logBox.innerHTML = logs.map(l => `<div>${l}</div>`).join('');
+    }
+  }
+  window.renderWaGuardianLogs = renderWaGuardianLogs;
+
+  function clearWaGuardianLogs() {
+    localStorage.removeItem('brainova_wa_guardian_logs');
+    renderWaGuardianLogs();
+    showToast('تم مسح سجل قرارات المراقب الآلي.', 'info');
+  }
+  window.clearWaGuardianLogs = clearWaGuardianLogs;
+
+  // --- FULL AUTONOMOUS AUDIT & DISPATCH CYCLE ---
+  async function runAutonomousGuardianLoop(isManual = false) {
+    if (!window.electronAPI || !window.electronAPI.whatsapp) {
+      if (isManual) showToast('ميزة المراقب المستقل متاحة داخل تطبيق الديسكتوب فقط', 'error');
+      return;
+    }
+
+    const settings = getWhatsAppSettings();
+    const statusBadge = document.getElementById('waGuardianStatusBadge');
+
+    if (settings.guardianMaster === false) {
+      if (statusBadge) {
+        statusBadge.textContent = '🔴 المراقب معطل من الإعدادات';
+        statusBadge.style.color = '#EF4444';
+        statusBadge.style.background = 'rgba(239,68,68,0.15)';
+        statusBadge.style.borderColor = 'rgba(239,68,68,0.3)';
+      }
+      if (isManual) showToast('المراقب المستقل معطل حالياً من الخيارات!', 'info');
+      return;
+    }
+
+    // Check WhatsApp connection
+    let waStatus = { connected: false };
+    try {
+      waStatus = await window.electronAPI.whatsapp.getStatus();
+    } catch(e) {}
+
+    if (!waStatus || !waStatus.connected) {
+      if (statusBadge) {
+        statusBadge.textContent = '🟡 في انتظار اتصال البوت بالواتساب';
+        statusBadge.style.color = '#F59E0B';
+        statusBadge.style.background = 'rgba(245,158,11,0.15)';
+        statusBadge.style.borderColor = 'rgba(245,158,11,0.3)';
+      }
+      if (isManual) showToast('بوت الواتساب غير متصل حالياً! يرجى مسح رمز QR ليعمل المراقب.', 'error');
+      return;
+    }
+
+    if (statusBadge) {
+      statusBadge.textContent = '🟢 نشط ويعمل في الخلفية';
+      statusBadge.style.color = '#10B981';
+      statusBadge.style.background = 'rgba(16,185,129,0.15)';
+      statusBadge.style.borderColor = 'rgba(16,185,129,0.3)';
+    }
+
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
+    let sentAlerts = {};
+    try {
+      sentAlerts = JSON.parse(localStorage.getItem('brainova_wa_sent_alerts') || '{}');
+    } catch(e) { sentAlerts = {}; }
+
+    // Clean old alerts keys if not today
+    if (sentAlerts.__date !== todayStr) {
+      sentAlerts = { __date: todayStr };
+    }
+
+    let actionsCount = 0;
+
+    // ──────────────────────────────────────────────────────────
+    // 1. AUTONOMOUS AUDIT: OVERDUE MONTHLY PAYMENTS
+    // ──────────────────────────────────────────────────────────
+    if (settings.guardianOverdue) {
+      const students = getData('brainova_students');
+      const allPayments = getData('brainova_payments');
+
+      const overdueStudents = students.filter(s => {
+        const timeline = getStudentPaymentTimeline(s.id, s, allPayments);
+        return timeline.status === 'overdue' && s.parentPhone;
+      });
+
+      for (const s of overdueStudents) {
+        if (s.lastWaReminderDate === todayStr) continue;
+
+        const timeline = getStudentPaymentTimeline(s.id, s, allPayments);
+        const parentName = s.parentName && s.parentName.trim() ? s.parentName.trim() : `ولي أمر ${s.name}`;
+
+        const text = settings.overdueTemplate
+          .replace(/{student}/g, s.name)
+          .replace(/{parent}/g, parentName)
+          .replace(/{last_payment}/g, timeline.lastDateStr)
+          .replace(/{days_ago}/g, String(timeline.daysElapsed));
+
+        const res = await window.electronAPI.whatsapp.sendMessage(s.parentPhone, text);
+        if (res && res.success) {
+          s.lastWaReminderDate = todayStr;
+          actionsCount++;
+          addWaGuardianLog(`💳 [تسديد أوتوماتيكي] تم إرسال تذكير انتهاء الشهر لولي أمر (${s.name})`);
+        }
+        await new Promise(r => setTimeout(r, 2500));
+      }
+
+      if (actionsCount > 0) {
+        saveData('brainova_students', students);
+      }
+    }
+
+    // ──────────────────────────────────────────────────────────
+    // 2. AUTONOMOUS AUDIT: SESSIONS TIMING & REAL-TIME LATE ALERTS
+    // ──────────────────────────────────────────────────────────
+    if (settings.guardianSessionLate || settings.guardianPreSession) {
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const currentDay = days[now.getDay()];
+      const curMin = now.getHours() * 60 + now.getMinutes();
+
+      const schedule = getData('brainova_schedule') || [];
+      const students = getData('brainova_students');
+      const allAttendance = getData('brainova_attendance');
+
+      const todaySessions = schedule.filter(s => s.day === currentDay);
+
+      for (const session of todaySessions) {
+        const [sh, sm] = (session.startTime || '00:00').split(':').map(Number);
+        const startMin = sh * 60 + (sm || 0);
+
+        const enrolledMap = new Map();
+        students.forEach(s => {
+          if (s.groupId === session.groupId || s.group === session.groupName || (s.group && session.groupName && (s.group.includes(session.groupName) || session.groupName.includes(s.group)))) {
+            enrolledMap.set(s.id, s);
+          }
+        });
+        const enrolledStudents = Array.from(enrolledMap.values());
+
+        // A) Pre-Session Reminder (30-40 min before start)
+        if (settings.guardianPreSession && curMin >= startMin - 40 && curMin < startMin) {
+          const preKey = `pre_session_${session.id}_${todayStr}`;
+          if (!sentAlerts[preKey]) {
+            sentAlerts[preKey] = true;
+            localStorage.setItem('brainova_wa_sent_alerts', JSON.stringify(sentAlerts));
+
+            let preCount = 0;
+            for (const stu of enrolledStudents) {
+              if (!stu.parentPhone) continue;
+              const parentName = stu.parentName && stu.parentName.trim() ? stu.parentName.trim() : `ولي أمر ${stu.name}`;
+              const text = (settings.preSessionTemplate || DEFAULT_WA_SETTINGS.preSessionTemplate)
+                .replace(/{student}/g, stu.name)
+                .replace(/{parent}/g, parentName)
+                .replace(/{group}/g, session.groupName || 'الفوج')
+                .replace(/{time}/g, session.startTime || '—');
+
+              const res = await window.electronAPI.whatsapp.sendMessage(stu.parentPhone, text);
+              if (res && res.success) preCount++;
+              await new Promise(r => setTimeout(r, 2000));
+            }
+            addWaGuardianLog(`🕒 [تذكير مسبق] أرسل البوت تذكيراً لحصة (${session.startTime}) لـ (${preCount}) أولياء في (${session.groupName}).`);
+          }
+        }
+
+        // B) Real-Time Late / Absent Detection (15 to 70 min after start)
+        if (settings.guardianSessionLate && curMin >= startMin + 15 && curMin <= startMin + 75) {
+          const todayAtt = allAttendance.filter(a => a.date === todayStr);
+
+          for (const stu of enrolledStudents) {
+            if (!stu.parentPhone) continue;
+            const att = todayAtt.find(a => a.studentId === stu.id);
+
+            // If marked late or absent
+            if (att && (att.status === 'late' || att.status === 'absent')) {
+              const lateKey = `late_${stu.id}_${todayStr}`;
+              if (!sentAlerts[lateKey]) {
+                sentAlerts[lateKey] = true;
+                localStorage.setItem('brainova_wa_sent_alerts', JSON.stringify(sentAlerts));
+
+                const parentName = stu.parentName && stu.parentName.trim() ? stu.parentName.trim() : `ولي أمر ${stu.name}`;
+                const tpl = att.status === 'late' ? settings.lateTemplate : settings.absentTemplate;
+                const text = tpl
+                  .replace(/{student}/g, stu.name)
+                  .replace(/{parent}/g, parentName)
+                  .replace(/{group}/g, session.groupName || stu.group || '—')
+                  .replace(/{time}/g, session.startTime || '—')
+                  .replace(/{date}/g, 'اليوم');
+
+                const res = await window.electronAPI.whatsapp.sendMessage(stu.parentPhone, text);
+                if (res && res.success) {
+                  addWaGuardianLog(`⏳ [تأخر آلي] رصد تأخر (${stu.name}) عن حصة (${session.startTime}) وتم إرسال تنبيه لوالده.`);
+                }
+                await new Promise(r => setTimeout(r, 2000));
+              }
+            }
+          }
+        }
+      }
+    }
+
+    renderWaQueues();
+    if (isManual) {
+      showToast('✅ اكتملت دورة الفحص والتحليل الذاتي بنجاح!', 'success');
+    }
+  }
+  window.runAutonomousGuardianLoop = runAutonomousGuardianLoop;
+
   // Setup IPC listeners on DOM ready
   if (window.electronAPI && window.electronAPI.whatsapp) {
     window.electronAPI.whatsapp.onQr((qr) => {
@@ -4078,16 +4334,17 @@ document.addEventListener('DOMContentLoaded', () => {
     window.electronAPI.whatsapp.onStatus((status) => {
       updateWhatsAppUI(status);
     });
-    // Check status on load
     setTimeout(refreshWhatsAppStatus, 1500);
 
-    // Auto-check overdue payments once a day (after 12 seconds of startup)
+    // Initial Guardian audit after 8 seconds of startup
     setTimeout(() => {
-      const settings = getWhatsAppSettings();
-      if (settings.autoPayment) {
-        triggerBatchPaymentReminders(true);
-      }
-    }, 12000);
+      runAutonomousGuardianLoop(false);
+    }, 8000);
+
+    // Autonomous Heartbeat: runs every 60 seconds completely in background!
+    setInterval(() => {
+      runAutonomousGuardianLoop(false);
+    }, 60000);
   }
 
   // Initial render (fallback if loadFromPersistentStore already ran)

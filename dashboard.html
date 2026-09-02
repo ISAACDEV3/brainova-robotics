@@ -800,6 +800,62 @@
             </div>
           </div>
 
+          <!-- Autonomous AI Guardian & Scheduler Engine Banner -->
+          <div class="card" style="margin-bottom:20px; background:linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(99, 102, 241, 0.06) 100%); border:1px solid rgba(14, 165, 233, 0.3); border-radius:14px; padding:18px 22px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; margin-bottom:14px;">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size:2rem;">🤖</span>
+                <div>
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <h3 style="font-size:1.15rem; font-weight:800; color:#F8FAFC; margin:0;">المراقب والمحلل الذكي المستقل (Autonomous AI Guardian)</h3>
+                    <span id="waGuardianStatusBadge" class="status-pill" style="background:rgba(16,185,129,0.15); color:#10B981; border:1px solid rgba(16,185,129,0.3); font-weight:800; font-size:0.75rem;">
+                      🟢 نشط ويعمل في الخلفية
+                    </span>
+                  </div>
+                  <p style="font-size:0.8rem; color:#94A3B8; margin:4px 0 0 0;">
+                    يحلل الحصص والوقت والتأخر واشتراكات الطلاب أوتوماتيكياً كل دقيقة، ويرسل للأولياء وحده دون أي تدخل بشري.
+                  </p>
+                </div>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <button type="button" class="btn btn--primary btn--small" style="background:#0284C7; display:flex; align-items:center; gap:6px;" onclick="runAutonomousGuardianLoop(true)">
+                  <span>⚡ تشغيل دورة الفحص الشامل الآن</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Autonomous Rules Checkboxes -->
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:12px; margin-bottom:14px; padding:12px; background:rgba(0,0,0,0.25); border-radius:10px; border:1px solid rgba(255,255,255,0.05);">
+              <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; font-size:0.8rem; color:#E2E8F0;">
+                <input type="checkbox" id="waGuardianMasterToggle" checked style="margin-top:2px; cursor:pointer;" onchange="saveWhatsAppSettings()">
+                <span><strong>التشغيل المستقل التام (100% Autonomous)</strong><br><small style="color:#94a3b8;">إرسال تلقائي مباشر دون طلب تأكيد</small></span>
+              </label>
+              <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; font-size:0.8rem; color:#E2E8F0;">
+                <input type="checkbox" id="waGuardianSessionLateToggle" checked style="margin-top:2px; cursor:pointer;" onchange="saveWhatsAppSettings()">
+                <span><strong>مراقبة توقيت الحصص والتأخر</strong><br><small style="color:#94a3b8;">تنبيه آلي بعد 15 دقيقة من انطلاق الحصة</small></span>
+              </label>
+              <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; font-size:0.8rem; color:#E2E8F0;">
+                <input type="checkbox" id="waGuardianPreSessionToggle" checked style="margin-top:2px; cursor:pointer;" onchange="saveWhatsAppSettings()">
+                <span><strong>تذكير مسبق قبل الحصة (30 دقيقة)</strong><br><small style="color:#94a3b8;">تذكير أولياء الفوج بموعد الحصة اليوم</small></span>
+              </label>
+              <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; font-size:0.8rem; color:#E2E8F0;">
+                <input type="checkbox" id="waGuardianOverdueToggle" checked style="margin-top:2px; cursor:pointer;" onchange="saveWhatsAppSettings()">
+                <span><strong>فحص الاشتراكات المنتهية دورياً</strong><br><small style="color:#94a3b8;">تذكير الأولياء بتجديد الشهر تلقائياً</small></span>
+              </label>
+            </div>
+
+            <!-- Live Autonomous Activity Feed (Console) -->
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="font-size:0.75rem; font-weight:700; color:#38BDF8; font-family:monospace;">● سجل القرارات والأنشطة الآلية المباشرة (Live Autonomous Log):</span>
+                <button type="button" style="background:none; border:none; color:#64748B; font-size:0.72rem; cursor:pointer;" onclick="clearWaGuardianLogs()">مسح السجل</button>
+              </div>
+              <div id="waGuardianLiveLog" style="background:#070E1A; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:10px 14px; font-family:monospace; font-size:0.75rem; color:#A7F3D0; height:90px; overflow-y:auto; line-height:1.7;">
+                <!-- Logs rendered by JS -->
+              </div>
+            </div>
+          </div>
+
           <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
             
             <!-- Column 1: Connection & QR Code -->
