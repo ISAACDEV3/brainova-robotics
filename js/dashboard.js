@@ -1457,40 +1457,75 @@ document.addEventListener('DOMContentLoaded', () => {
                   statusBadge = '<span style="color:#EF4444; font-weight:700;">❌ غائب</span>';
                 }
 
-                // Check if payment was made on this date
+                // 1. Check if payment was made on this date
                 const matchedPayment = payments.find(p => {
                   const pDate = parseBrainovaDate(p.date || p.paidAtIso);
                   const aDate = parseBrainovaDate(att.date);
                   return pDate && aDate && pDate.toDateString() === aDate.toDateString();
                 });
 
+                // 2. Next payment after this session date
+                const attDateObj = parseBrainovaDate(att.date);
+                const nextPayment = payments
+                  .filter(p => {
+                    const pDate = parseBrainovaDate(p.paidAtIso || p.date);
+                    return pDate && attDateObj && (pDate.getTime() >= attDateObj.getTime());
+                  })
+                  .sort((a, b) => (parseBrainovaDate(a.date || a.paidAtIso) - parseBrainovaDate(b.date || b.paidAtIso)))[0];
+
+                // 3. Format exact payment date and time string
+                let exactTimeStr = '';
+                if (att.paidAt) {
+                  if (att.paidAt.includes('T')) {
+                    const d = new Date(att.paidAt);
+                    exactTimeStr = !isNaN(d.getTime())
+                      ? d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+                      : att.paidAt;
+                  } else {
+                    exactTimeStr = att.paidAt;
+                  }
+                }
+
                 let paymentMarkerHtml = '';
                 if (att.paidMarker === 'paid_next') {
+                  const displayTime = exactTimeStr || (nextPayment ? (nextPayment.date || nextPayment.paidAtIso) : '') || (att.date ? att.date + ' • الحصة التالية' : '');
+                  const receiptExtra = nextPayment ? `<span style="font-size:0.67rem; color:#94A3B8; display:block;">وصل #${nextPayment.opNumber || nextPayment.id} • ${Number(nextPayment.amountPaid).toLocaleString()} دج</span>` : '';
+
                   paymentMarkerHtml = `
-                    <div style="display:inline-flex; align-items:center; gap:4px;">
-                      <span class="payment-badge paid" style="background:rgba(16,185,129,0.2); border:1px solid #10B981; color:#34D399; font-weight:800; font-size:0.72rem; padding:2px 8px; border-radius:4px;" title="تم تسجيل أنه دفع في الحصة التالية">
-                        💳 دفع في الحصة التالية
-                      </span>
-                      <button type="button" style="background:none; border:none; color:#94A3B8; cursor:pointer; font-size:0.75rem;" onclick="toggleSessionPaymentMarker('${att.id}', '${stu.id}')" title="تغيير علامة التسديد">
-                        🔄
-                      </button>
+                    <div style="display:inline-flex; flex-direction:column; align-items:center; gap:2px;">
+                      <div style="display:inline-flex; align-items:center; gap:4px;">
+                        <span class="payment-badge paid" style="background:rgba(16,185,129,0.2); border:1px solid #10B981; color:#34D399; font-weight:800; font-size:0.72rem; padding:2px 8px; border-radius:4px;" title="تم تسجيل أنه دفع في الحصة التالية">
+                          💳 دفع في الحصة التالية
+                        </span>
+                        <button type="button" style="background:none; border:none; color:#94A3B8; cursor:pointer; font-size:0.75rem;" onclick="toggleSessionPaymentMarker('${att.id}', '${stu.id}')" title="تغيير علامة التسديد">
+                          🔄
+                        </button>
+                      </div>
+                      ${displayTime ? `<span style="font-size:0.69rem; color:#38BDF8; font-weight:700; font-family:monospace; direction:ltr; display:inline-block;" title="التاريخ والوقت الدقيق للدفع">🕒 ${displayTime}</span>` : ''}
+                      ${receiptExtra}
                     </div>
                   `;
                 } else if (att.paidMarker === 'paid_this' || matchedPayment) {
-                  const amt = matchedPayment ? ` (${Number(matchedPayment.amountPaid).toLocaleString()} دج)` : '';
+                  const displayTime = exactTimeStr || (matchedPayment ? (matchedPayment.date || matchedPayment.paidAtIso) : '') || att.date;
+                  const amt = matchedPayment ? `<span style="font-size:0.67rem; color:#94A3B8; display:block;">وصل #${matchedPayment.opNumber || matchedPayment.id} • ${Number(matchedPayment.amountPaid).toLocaleString()} دج</span>` : '';
+
                   paymentMarkerHtml = `
-                    <div style="display:inline-flex; align-items:center; gap:4px;">
-                      <span class="payment-badge paid" style="background:rgba(56,189,248,0.2); border:1px solid #38BDF8; color:#38BDF8; font-weight:800; font-size:0.72rem; padding:2px 8px; border-radius:4px;" title="سدد في هذه الحصة">
-                        💰 سدد في هذه الحصة${amt}
-                      </span>
-                      <button type="button" style="background:none; border:none; color:#94A3B8; cursor:pointer; font-size:0.75rem;" onclick="toggleSessionPaymentMarker('${att.id}', '${stu.id}')" title="تغيير علامة التسديد">
-                        🔄
-                      </button>
+                    <div style="display:inline-flex; flex-direction:column; align-items:center; gap:2px;">
+                      <div style="display:inline-flex; align-items:center; gap:4px;">
+                        <span class="payment-badge paid" style="background:rgba(56,189,248,0.2); border:1px solid #38BDF8; color:#38BDF8; font-weight:800; font-size:0.72rem; padding:2px 8px; border-radius:4px;" title="سدد في هذه الحصة">
+                          💰 سدد في هذه الحصة
+                        </span>
+                        <button type="button" style="background:none; border:none; color:#94A3B8; cursor:pointer; font-size:0.75rem;" onclick="toggleSessionPaymentMarker('${att.id}', '${stu.id}')" title="تغيير علامة التسديد">
+                          🔄
+                        </button>
+                      </div>
+                      ${displayTime ? `<span style="font-size:0.69rem; color:#10B981; font-weight:700; font-family:monospace; direction:ltr; display:inline-block;" title="التاريخ والوقت الدقيق للدفع">🕒 ${displayTime}</span>` : ''}
+                      ${amt}
                     </div>
                   `;
                 } else {
                   paymentMarkerHtml = `
-                    <button type="button" class="btn btn--outline btn--small" style="padding:1px 6px; font-size:0.68rem; color:#94A3B8; border-color:rgba(255,255,255,0.15);" onclick="toggleSessionPaymentMarker('${att.id}', '${stu.id}')" title="انقر لوضع علامة أنه دفع في الحصة التالية">
+                    <button type="button" class="btn btn--outline btn--small" style="padding:1px 6px; font-size:0.68rem; color:#94A3B8; border-color:rgba(255,255,255,0.15);" onclick="toggleSessionPaymentMarker('${att.id}', '${stu.id}')" title="انقر لوضع علامة أنه دفع في الحصة التالية بالتاريخ والوقت">
                       + تحديد كـ دفع
                     </button>
                   `;
@@ -1606,6 +1641,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (topicInput) topicInput.value = '';
     const markerInput = document.getElementById('sessionPaymentMarkerInput');
     if (markerInput) markerInput.value = 'paid_next';
+
+    const dtInput = document.getElementById('sessionPaymentDateTimeInput');
+    if (dtInput) {
+      const now = new Date();
+      const localIso = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+      dtInput.value = localIso;
+    }
+
     const deductCb = document.getElementById('sessionDeductCheckbox');
     if (deductCb) deductCb.checked = true;
 
@@ -1653,6 +1696,20 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    let paidAtValue = null;
+    if (paidMarker) {
+      const dtInput = document.getElementById('sessionPaymentDateTimeInput')?.value;
+      if (dtInput) {
+        const d = new Date(dtInput);
+        paidAtValue = !isNaN(d.getTime())
+          ? d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+          : dtInput;
+      } else {
+        const now = new Date();
+        paidAtValue = now.toLocaleDateString('fr-FR') + ' ' + now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      }
+    }
+
     let allAttendance = getData('brainova_attendance');
     const newRecord = {
       id: 'ATT-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
@@ -1664,6 +1721,7 @@ document.addEventListener('DOMContentLoaded', () => {
       status: sessionStatus,
       paidMarker: paidMarker || null,
       paidMarkerLabel: paidMarker === 'paid_next' ? 'دفع في الحصة التالية' : (paidMarker === 'paid_this' ? 'سدد في هذه الحصة' : null),
+      paidAt: paidAtValue,
       note: topic || (sessionStatus === 'present' ? 'حصة تدريبية مكتملة' : (sessionStatus === 'late' ? 'حضور متأخر' : 'غياب'))
     };
 
@@ -1680,7 +1738,8 @@ document.addEventListener('DOMContentLoaded', () => {
     saveData('brainova_students', students);
 
     closeAddStudentSessionModal();
-    showToast(`✅ تم تسجيل الحصة بالتاريخ (${sessionDate}) للتلميذ بنجاح!`, 'success');
+    const timeFeedback = paidAtValue ? ` • التسديد: ${paidAtValue}` : '';
+    showToast(`✅ تم تسجيل الحصة بالتاريخ (${sessionDate})${timeFeedback} بنجاح!`, 'success');
 
     // Refresh profile modal and active views
     openStudentProfile(studentId);
@@ -1692,18 +1751,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const att = allAttendance.find(a => a.id === attendanceId);
     if (!att) return;
 
+    const now = new Date();
+    const currentDateTimeStr = now.toLocaleDateString('fr-FR') + ' ' + now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
     if (att.paidMarker === 'paid_next') {
       att.paidMarker = 'paid_this';
       att.paidMarkerLabel = 'سدد في هذه الحصة';
-      showToast('✅ تم التغيير إلى: سدد في هذه الحصة', 'success');
+      att.paidAt = currentDateTimeStr;
+      showToast(`✅ تم التغيير إلى: سدد في هذه الحصة (${currentDateTimeStr})`, 'success');
     } else if (att.paidMarker === 'paid_this') {
       att.paidMarker = null;
       att.paidMarkerLabel = null;
+      att.paidAt = null;
       showToast('تمت إزالة علامة التسديد', 'info');
     } else {
       att.paidMarker = 'paid_next';
       att.paidMarkerLabel = 'دفع في الحصة التالية';
-      showToast('✅ تم وضع علامة: دفع في الحصة التالية', 'success');
+      att.paidAt = currentDateTimeStr;
+      showToast(`✅ تم وضع علامة: دفع في الحصة التالية (${currentDateTimeStr})`, 'success');
     }
 
     saveData('brainova_attendance', allAttendance);
