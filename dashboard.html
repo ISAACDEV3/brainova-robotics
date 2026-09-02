@@ -1152,9 +1152,108 @@
           </select>
         </div>
 
+        <!-- Start Date -->
+        <div class="form-group">
+          <label>تاريخ بدء الدراسة / أول حصة *</label>
+          <input type="date" id="newStudentStartDate" required class="form-input" style="font-weight:700;">
+        </div>
+
+        <!-- Checkbox Options for Initial Session & Payment -->
+        <div style="background:rgba(255,255,255,0.03); border:1px solid var(--color-border); border-radius:8px; padding:10px 14px; margin-bottom:14px; display:flex; flex-direction:column; gap:8px;">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.82rem; color:#f1f5f9; margin-bottom:0;">
+            <input type="checkbox" id="newStudentRegisterFirstSession" style="width:16px; height:16px; cursor:pointer;">
+            <span><strong>تسجيل أول حصة حضور الآن</strong> (إدراج حضور هذا التاريخ في السجل كـ حاضر)</span>
+          </label>
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.82rem; color:#f1f5f9; margin-bottom:0;">
+            <input type="checkbox" id="newStudentPayInitial" checked style="width:16px; height:16px; cursor:pointer;">
+            <span><strong>تم تسديد الاشتراك الأول عند التسجيل</strong> (تسجيل وصل مالي فوري وإضافة 4 حصص)</span>
+          </label>
+        </div>
+
         <div class="modal__actions">
           <button type="button" class="btn btn--outline" onclick="closeAddStudentModal()" data-i18n="dash_cancel">إلغاء</button>
           <button type="submit" class="btn btn--primary" data-i18n="dash_save">حفظ بيانات التلميذ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== EDIT STUDENT & GROUP MODAL ===== -->
+  <div class="modal-overlay" id="editStudentModal">
+    <div class="modal" style="max-width: 540px;">
+      <div class="modal__header">
+        <h3 class="modal__title">✏️ تعديل بيانات التلميذ والفوج</h3>
+        <button class="modal__close" onclick="closeEditStudentModal()">&times;</button>
+      </div>
+      <form id="editStudentForm" class="reg-form" onsubmit="submitEditStudent(event)">
+        <input type="hidden" id="editStudentId">
+        
+        <!-- Student Name -->
+        <div class="form-group">
+          <label>اسم التلميذ واللقب *</label>
+          <input type="text" id="editStudentName" required class="form-input">
+        </div>
+
+        <!-- Parent Info Row -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>اسم ولي الأمر *</label>
+            <input type="text" id="editStudentParentName" required class="form-input">
+          </div>
+          <div class="form-group">
+            <label>رقم هاتف الولي (WhatsApp) *</label>
+            <input type="tel" id="editStudentParentPhone" required class="form-input" dir="ltr">
+          </div>
+        </div>
+
+        <!-- Group and Level Row -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>تحديد الفوج التدريبي *</label>
+            <select id="editStudentGroup" required class="form-input" onchange="onEditStudentGroupSelectChange()">
+              <!-- Populated via JS -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label>المستوى التعليمي *</label>
+            <select id="editStudentLevel" required class="form-input">
+              <option value="المستوى الأول">المستوى 1: التفكير المنطقي وأساسيات الروبوت</option>
+              <option value="المستوى الثاني">المستوى 2: البرمجة المرئية بسكراتش</option>
+              <option value="المستوى الثالث">المستوى 3: برمجة الأردوينو والمستشعرات</option>
+              <option value="المستوى الرابع">المستوى 4: الذكاء الاصطناعي والرؤية الحاسوبية</option>
+              <option value="المستوى الخامس">المستوى 5: الروبوتات المتقدمة و IoT</option>
+              <option value="المستوى السادس">المستوى 6: المشاريع الابتكارية والمسابقات</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Session Timing Row: Start & End Time -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>وقت بداية الحصة</label>
+            <input type="time" id="editStudentStartTime" class="form-input" style="font-weight:600; font-family:monospace;">
+          </div>
+          <div class="form-group">
+            <label>وقت نهاية الحصة</label>
+            <input type="time" id="editStudentEndTime" class="form-input" style="font-weight:600; font-family:monospace;">
+          </div>
+        </div>
+
+        <!-- Remaining Sessions & Fee -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>الحصص المتبقية</label>
+            <input type="number" id="editStudentSessionsRemaining" min="0" max="48" class="form-input" style="font-weight:700;">
+          </div>
+          <div class="form-group">
+            <label>قيمة الاشتراك الشهري (دج)</label>
+            <input type="number" id="editStudentMonthlyFee" min="0" step="500" class="form-input" style="font-weight:700;">
+          </div>
+        </div>
+
+        <div class="modal__actions">
+          <button type="button" class="btn btn--outline" onclick="closeEditStudentModal()">إلغاء</button>
+          <button type="submit" class="btn btn--primary">💾 حفظ التعديلات</button>
         </div>
       </form>
     </div>

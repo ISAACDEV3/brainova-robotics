@@ -84,23 +84,50 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem(key, JSON.stringify(singleEducator));
             MemoryCache[key] = singleEducator;
           } else if (key === 'brainova_groups' && (!parsed || parsed.length === 0)) {
-            localStorage.setItem(key, JSON.stringify(defaultGroups));
-            MemoryCache[key] = defaultGroups;
+            saveData(key, defaultGroups);
           } else if (key === 'brainova_rooms' && (!parsed || parsed.length === 0)) {
-            localStorage.setItem(key, JSON.stringify(defaultRooms));
-            MemoryCache[key] = defaultRooms;
+            saveData(key, defaultRooms);
           } else if (key === 'brainova_schedule' && (!parsed || parsed.length === 0)) {
-            localStorage.setItem(key, JSON.stringify(defaultSchedule));
-            MemoryCache[key] = defaultSchedule;
+            saveData(key, defaultSchedule);
           } else {
             MemoryCache[key] = parsed;
           }
         } catch(e) {
-          localStorage.setItem(key, JSON.stringify(defaultData[key]));
-          MemoryCache[key] = defaultData[key];
+          saveData(key, defaultData[key]);
         }
       }
     }
+
+    // Auto-heal orphaned student groups so students never lose their group
+    try {
+      const currentGroups = getData('brainova_groups') || [];
+      const currentStudents = getData('brainova_students') || [];
+      let groupsUpdated = false;
+      currentStudents.forEach(stu => {
+        if (stu.group && stu.group.trim()) {
+          const trimmedGroup = stu.group.trim();
+          const exists = currentGroups.some(g => g.name && g.name.trim().toLowerCase() === trimmedGroup.toLowerCase());
+          if (!exists) {
+            currentGroups.push({
+              id: 'GRP-' + Date.now() + '-' + Math.floor(Math.random() * 100),
+              name: trimmedGroup,
+              level: stu.level || 'المستوى الأول',
+              ageCategory: 'جميع الفئات',
+              room: 'قاعة Brainova الرئيسية',
+              educatorId: 'EDU-001',
+              educatorName: 'عابد اسحاق تقي الدين',
+              maxStudents: 12,
+              startTime: stu.startTime || '14:00',
+              endTime: stu.endTime || '16:00'
+            });
+            groupsUpdated = true;
+          }
+        }
+      });
+      if (groupsUpdated) {
+        saveData('brainova_groups', currentGroups);
+      }
+    } catch(e) {}
   }
 
   function getData(key) {
@@ -697,31 +724,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-  // --- UTILITY: PARSE DATE STRING ROBUSTLY ---
+  // --- UTILITY: PARSE DATE STRING ROBUSTLY & EXACT GROUP MATCHING ---
+  function cleanDateDigits(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/[\u200E\u200F\u202A-\u202E]/g, '')
+      .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+      .trim();
+  }
+
   function parseBrainovaDate(dateStr) {
     if (!dateStr) return null;
-    if (dateStr instanceof Date) return dateStr;
-    const str = String(dateStr).trim();
-    if (str.includes('/')) {
-      const parts = str.split(' ');
-      const dmy = parts[0].split('/');
-      if (dmy.length === 3) {
-        const day = parseInt(dmy[0], 10);
-        const month = parseInt(dmy[1], 10) - 1;
-        const year = parseInt(dmy[2], 10);
-        let hour = 12, min = 0;
-        if (parts[1] && parts[1].includes(':')) {
-          const hm = parts[1].split(':');
-          hour = parseInt(hm[0], 10) || 12;
-          min = parseInt(hm[1], 10) || 0;
-        }
-        return new Date(year, month, day, hour, min);
-      }
+    if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
+    const str = cleanDateDigits(dateStr);
+    if (!str) return null;
+
+    // ISO format YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss.sssZ
+    if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+      const d = new Date(str);
+      if (!isNaN(d.getTime())) return d;
     }
-    const d = new Date(str);
-    return isNaN(d.getTime()) ? null : d;
+
+    // DD/MM/YYYY or DD-MM-YYYY (with optional HH:mm)
+    const match = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
+    if (match) {
+      const day = parseInt(match[1], 10);
+      const month = parseInt(match[2], 10) - 1;
+      const year = parseInt(match[3], 10);
+      const hour = match[4] !== undefined ? parseInt(match[4], 10) : 12;
+      const min = match[5] !== undefined ? parseInt(match[5], 10) : 0;
+      const d = new Date(year, month, day, hour, min);
+      if (!isNaN(d.getTime())) return d;
+    }
+
+    const fallback = new Date(str);
+    return isNaN(fallback.getTime()) ? null : fallback;
   }
   window.parseBrainovaDate = parseBrainovaDate;
+
+  function isStudentInGroup(student, groupName) {
+    if (!student || !student.group || !groupName) return false;
+    return String(student.group).trim().toLowerCase() === String(groupName).trim().toLowerCase();
+  }
+  window.isStudentInGroup = isStudentInGroup;
 
   function getArabicDayName(dateStr) {
     const d = parseBrainovaDate(dateStr);
@@ -744,6 +789,54 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const lastPayment = payments[0];
     if (!lastPayment) {
+      if (stuObj && (stuObj.lastPaymentIso || stuObj.lastPaymentDate)) {
+        const payDate = parseBrainovaDate(stuObj.lastPaymentIso || stuObj.lastPaymentDate) || new Date();
+        const now = new Date();
+        const diffMs = now.getTime() - payDate.getTime();
+        const diffDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+        const renewalTimestamp = payDate.getTime() + (30 * 24 * 60 * 60 * 1000);
+        const renewalDate = new Date(renewalTimestamp);
+        const renewalDateStr = `${String(renewalDate.getDate()).padStart(2, '0')}/${String(renewalDate.getMonth() + 1).padStart(2, '0')}/${renewalDate.getFullYear()}`;
+        const daysRemaining = Math.ceil((renewalTimestamp - now.getTime()) / (1000 * 60 * 60 * 24));
+        const remSessions = stuObj.sessionsRemaining !== undefined ? stuObj.sessionsRemaining : 4;
+        
+        let status = 'active';
+        let statusLabel = 'اشتراك ساري';
+        let badgeClass = 'paid';
+        let renewalSummary = `متبقي ${daysRemaining} يوماً (${remSessions} حصص) • استحقاق: ${renewalDateStr}`;
+
+        if (remSessions <= 0) {
+          status = 'due_soon';
+          statusLabel = 'نفدت الحصص (مستحق للتجديد)';
+          badgeClass = 'partial';
+          renewalSummary = `استهلك جميع الحصص (0 متبقية) • استحقاق التجديد: ${renewalDateStr}`;
+        } else if (daysRemaining <= 0) {
+          status = 'overdue';
+          statusLabel = 'انتهى الاشتراك الشهري';
+          badgeClass = 'overdue';
+          renewalSummary = `متأخر عن دفع الشهر بـ ${Math.abs(daysRemaining)} يوم (انتهى في: ${renewalDateStr})`;
+        }
+
+        return {
+          hasPayment: true,
+          status,
+          statusLabel,
+          badgeClass,
+          lastDateStr: stuObj.lastPaymentDate || renewalDateStr,
+          daysElapsed: diffDays,
+          weeksElapsed: Math.floor(diffDays / 7),
+          elapsedText: diffDays === 0 ? 'دفع اليوم' : `دفع منذ ${diffDays} يوم`,
+          renewalDate,
+          renewalDateStr,
+          daysRemaining,
+          renewalSummary,
+          lastAmount: stuObj.lastPaymentAmount || stuObj.monthlyFee || 5000,
+          lastOpNumber: '—',
+          paymentsCount: 1,
+          allStudentPayments: []
+        };
+      }
+
       return {
         hasPayment: false,
         status: 'unpaid',
@@ -795,16 +888,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const renewalDateStr = `${String(renewalDate.getDate()).padStart(2, '0')}/${String(renewalDate.getMonth() + 1).padStart(2, '0')}/${renewalDate.getFullYear()}`;
     const daysRemaining = Math.ceil((renewalTimestamp - now.getTime()) / (1000 * 60 * 60 * 24));
 
+    const remSessions = stuObj && stuObj.sessionsRemaining !== undefined ? stuObj.sessionsRemaining : (lastPayment.sessionsRemaining || 0);
+
     let status = 'active';
     let statusLabel = 'اشتراك ساري';
     let badgeClass = 'paid';
     let renewalSummary = '';
 
-    if (daysRemaining > 5) {
+    if (remSessions <= 0) {
+      status = 'due_soon';
+      statusLabel = 'نفدت الحصص (مستحق للتجديد)';
+      badgeClass = 'partial';
+      renewalSummary = `استهلك جميع الحصص (0 متبقية) • استحقاق التجديد: ${renewalDateStr}`;
+    } else if (daysRemaining > 5) {
       status = 'active';
       statusLabel = 'اشتراك ساري';
       badgeClass = 'paid';
-      renewalSummary = `متبقي ${daysRemaining} يوماً (استحقاق: ${renewalDateStr})`;
+      renewalSummary = `متبقي ${daysRemaining} يوماً (${remSessions} حصص) • استحقاق: ${renewalDateStr}`;
     } else if (daysRemaining >= 0) {
       status = 'due_soon';
       statusLabel = 'اقترب موعد التجديد';
@@ -945,6 +1045,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="display:inline-flex; gap:4px; flex-wrap:nowrap;">
               <button class="btn btn--outline" style="padding: 4px 6px; font-size: 0.75rem;" title="الملف الشامل" onclick="openStudentProfile('${stu.id}')"> الملف</button>
               <button class="btn btn--outline btn--small" style="padding: 4px 6px; font-size: 0.75rem; border-color:rgba(16,185,129,0.35); color:#10B981;" title="التقرير البيداغوجي والتقييم الشهري" onclick="openPedagogicalReportModal('${stu.id}')">تقييم</button>
+              <button class="btn btn--outline btn--small" style="padding: 4px 6px; font-size: 0.75rem; color:#F59E0B; border-color:rgba(245,158,11,0.35);" title="تعديل بيانات التلميذ والفوج" onclick="openEditStudentModal('${stu.id}')">✏️ تعديل</button>
               <button class="btn btn--outline btn--small" style="padding: 4px 6px; font-size: 0.75rem; border-color:rgba(56,189,248,0.35); color:#38BDF8;" title="بطاقة الطالب الذكية (CR80)" onclick="openStudentIdCard('${stu.id}')">بطاقة</button>
               <button class="btn btn--small" style="padding: 4px 6px; font-size: 0.75rem; background:#25D366; color:#fff;" title="إشعار واتساب للولي" onclick="openWhatsAppDispatchModal('${stu.id}')">واتساب</button>
               <button class="btn btn--primary" style="padding: 4px 6px; font-size: 0.75rem;" title="تسجيل دفعة" onclick="openRecordPaymentModal('${stu.id}')">🧾 وصل</button>
@@ -1014,8 +1115,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedTime = timeSelect ? timeSelect.value : '09:00 - 11:00';
 
     const allStudents = getData('brainova_students');
-    const groupStudents = allStudents.filter(s => s.group === selectedGroup || (s.group && s.group.includes(selectedGroup)));
-    const existingRecords = getData('brainova_attendance').filter(a => a.date === selectedDate && (a.groupName === selectedGroup || a.groupId === selectedGroup) && (!a.sessionTime || a.sessionTime === selectedTime));
+    const groupStudents = allStudents.filter(s => isStudentInGroup(s, selectedGroup));
+    const existingRecords = getData('brainova_attendance').filter(a => a.date === selectedDate && (String(a.groupName || '').trim().toLowerCase() === String(selectedGroup || '').trim().toLowerCase() || a.groupId === selectedGroup) && (!a.sessionTime || a.sessionTime === selectedTime));
 
     activeAttendanceDraft = {};
     groupStudents.forEach(stu => {
@@ -1833,6 +1934,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <!-- Actions Footer -->
       <div class="modal__actions">
         <button type="button" class="btn btn--outline" onclick="closeStudentProfileModal()">إغلاق</button>
+        <button type="button" class="btn btn--outline" style="color:#F59E0B; border-color:rgba(245,158,11,0.35);" onclick="closeStudentProfileModal(); openEditStudentModal('${stu.id}');">✏️ تعديل الفوج والبيانات</button>
         <button type="button" class="btn btn--outline" onclick="closeStudentProfileModal(); openStudentIdCard('${stu.id}');">🪪 بطاقة التلميذ</button>
         <button type="button" class="btn btn--outline" style="color:#25D366; border-color:rgba(37,211,102,0.3);" onclick="closeStudentProfileModal(); openWhatsAppDispatchModal('${stu.id}');"> واتساب الولي</button>
         <button type="button" class="btn btn--primary" onclick="closeStudentProfileModal(); openRecordPaymentModal('${stu.id}');">+ تسجيل دفعة</button>
@@ -2317,7 +2419,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!select || !infoEl) return;
 
     const groupName = select.value;
-    const students = getData('brainova_students').filter(s => s.group === groupName || (s.group && s.group.includes(groupName)));
+    const students = getData('brainova_students').filter(s => isStudentInGroup(s, groupName));
     const pagesCount = Math.ceil(students.length / 8) || 1;
 
     infoEl.innerHTML = `
@@ -2342,7 +2444,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.printGroupBadges = async function(groupName) {
-    const students = getData('brainova_students').filter(s => s.group === groupName || (s.group && s.group.includes(groupName)));
+    const students = getData('brainova_students').filter(s => isStudentInGroup(s, groupName));
     if (students.length === 0) {
       showToast('لا يوجد طلاب مسجلين في هذا الفوج لطباعة بطاقاتهم!', 'error');
       return;
@@ -3074,24 +3176,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const existing = students.find(s => s.name === regs[index].studentName || (s.parentPhone && s.parentPhone === regs[index].parentPhone));
     
     if (!existing) {
-      const newStudentId = "STU-" + String(students.length + 1).padStart(3, '0');
+      const maxIdNum = students.reduce((max, s) => {
+        const num = parseInt(String(s.id).replace(/\D/g, ''), 10);
+        return !isNaN(num) ? Math.max(max, num) : max;
+      }, 0);
+      const newStudentId = "STU-" + String(maxIdNum + 1).padStart(3, '0');
       const planStr = regs[index].pricingPlan || '';
       const monthlyFee = planStr.includes('8000') ? 8000 : (planStr.includes('11000') ? 11000 : 5000);
+      const todayIso = new Date().toISOString().split('T')[0];
       const newStudent = {
         id: newStudentId,
         name: regs[index].studentName,
         parentName: regs[index].parentName || "—",
         parentPhone: regs[index].parentPhone || "—",
-        group: regs[index].group || regs[index].preferredGroup || "الفوج أ (السبت)",
-        level: regs[index].preferredLevel || "المستوى الأول: Explorer",
+        group: regs[index].group || regs[index].preferredGroup || "الفوج أ (مبتدئ)",
+        level: regs[index].preferredLevel || "المستوى الأول",
         username: generateRandomCode(8),
         password: generateRandomCode(8),
         monthlyFee: monthlyFee,
         plan: planStr || 'طفل واحد (5,000 دج)',
         balance: 0,
-        sessionsRemaining: 4,
+        sessionsRemaining: 0,
         lastAttendance: "جديد",
-        joinDate: new Date().toISOString().split('T')[0]
+        joinedDate: todayIso,
+        startDate: todayIso
       };
       students.push(newStudent);
       saveData('brainova_students', students);
@@ -3156,7 +3264,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     grid.innerHTML = filtered.map(g => {
-      const studentCount = students.filter(s => s.group === g.name || (s.group && s.group.includes(g.name))).length;
+      const studentCount = students.filter(s => isStudentInGroup(s, g.name)).length;
       const schedules = getData('brainova_schedule') || [];
       const sch = schedules.find(s => s.groupId === g.id || s.groupName === g.name || (s.groupName && s.groupName.includes(g.name)));
       const dayStr = sch ? sch.day : (g.day || 'السبت');
@@ -3247,7 +3355,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const groups = getData('brainova_groups');
     const group = groups.find(g => g.name === groupName) || { name: groupName, educator: 'عابد اسحاق تقي الدين', room: 'قاعة Brainova', ageCategory: 'جميع الفئات' };
     const allStudents = getData('brainova_students');
-    const groupStudents = allStudents.filter(s => s.group === groupName || (s.group && s.group.includes(groupName)));
+    const groupStudents = allStudents.filter(s => isStudentInGroup(s, groupName));
 
     const titleEl = document.getElementById('groupRosterTitle');
     if (titleEl) titleEl.textContent = `طلاب ${group.name} (${groupStudents.length} تلميذ)`;
@@ -3312,6 +3420,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <td style="text-align: center;">
                 <div style="display:inline-flex; gap:6px;">
                   <button type="button" class="btn btn--outline btn--small" style="padding:4px 8px; font-size:0.75rem;" onclick="closeGroupStudentsModal(); openStudentProfile('${stu.id}')">الملف</button>
+                  <button type="button" class="btn btn--outline btn--small" style="padding:4px 8px; font-size:0.75rem; color:#F59E0B; border-color:rgba(245,158,11,0.35);" onclick="closeGroupStudentsModal(); openEditStudentModal('${stu.id}')">✏️ تعديل</button>
                   <button type="button" class="btn btn--primary btn--small" style="padding:4px 8px; font-size:0.75rem; background:#0284C7;" onclick="closeGroupStudentsModal(); openRecordPaymentModal('${stu.id}')">💳 دفع</button>
                 </div>
               </td>
@@ -3336,6 +3445,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const groupSelect = document.getElementById('newStudentGroup');
     if (groupSelect && window.__currentRosterGroupName) {
       groupSelect.value = window.__currentRosterGroupName;
+      onStudentGroupSelectChange();
     }
   };
 
@@ -3427,11 +3537,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedTime = document.getElementById('quickAttTime')?.value || '14:00 - 16:00';
 
     const allStudents = getData('brainova_students') || [];
-    const groupStudents = allStudents.filter(s => 
-      s.group === groupName || 
-      (s.group && s.group.includes(groupName)) ||
-      (groupName && s.group && groupName.includes(s.group))
-    );
+    const groupStudents = allStudents.filter(s => isStudentInGroup(s, groupName));
 
     if (groupStudents.length === 0) {
       listEl.innerHTML = `
@@ -3446,7 +3552,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const allAttendance = getData('brainova_attendance') || [];
     const existingAtt = allAttendance.filter(a => 
       a.date === selectedDate && 
-      (a.groupName === groupName || (a.groupName && a.groupName.includes(groupName))) &&
+      String(a.groupName || '').trim().toLowerCase() === String(groupName || '').trim().toLowerCase() &&
       (!a.sessionTime || a.sessionTime === selectedTime || selectedTime.includes(a.sessionTime))
     );
 
@@ -3703,12 +3809,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentYear = year || String(new Date().getFullYear());
 
     const allStudents = getData('brainova_students') || [];
-    const groupStudents = allStudents.filter(s => 
-      s.groupId === g.id || 
-      s.group === g.name || 
-      (s.group && s.group.includes(g.name)) ||
-      (s.group && g.name && g.name.includes(s.group))
-    );
+    const groupStudents = allStudents.filter(s => s.groupId === g.id || isStudentInGroup(s, g.name));
     groupStudents.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ar'));
 
     const allPayments = getData('brainova_payments') || [];
@@ -4845,7 +4946,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const selectedGroup = groupSelect.value;
     const schedule = getData('brainova_schedule') || [];
-    const matched = schedule.find(s => s.groupName === selectedGroup || (s.groupName && s.groupName.includes(selectedGroup)));
+    const matched = schedule.find(s => isStudentInGroup({ group: s.groupName }, selectedGroup));
 
     if (matched && matched.startTime && matched.endTime) {
       startInput.value = matched.startTime;
@@ -4857,9 +4958,13 @@ document.addEventListener('DOMContentLoaded', () => {
   window.openAddStudentModal = function() {
     const groupSelect = document.getElementById('newStudentGroup');
     if (groupSelect) {
-      const groups = getData('brainova_groups');
+      const groups = getData('brainova_groups') || [];
       groupSelect.innerHTML = groups.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
       onStudentGroupSelectChange();
+    }
+    const startDateInput = document.getElementById('newStudentStartDate');
+    if (startDateInput) {
+      startDateInput.value = new Date().toISOString().slice(0, 10);
     }
     document.getElementById('addStudentModal').classList.add('active');
   };
@@ -4878,7 +4983,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.submitAddStudent = function(e) {
     e.preventDefault();
-    const students = getData('brainova_students');
+    const students = getData('brainova_students') || [];
     const name = document.getElementById('newStudentName').value.trim();
     const parentName = document.getElementById('newStudentParentName') ? document.getElementById('newStudentParentName').value.trim() : '—';
     const parentPhone = document.getElementById('newStudentParentPhone') ? document.getElementById('newStudentParentPhone').value.trim() : '—';
@@ -4891,8 +4996,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const planValue = document.getElementById('newStudentPlan') ? document.getElementById('newStudentPlan').value : '5000';
     const fee = Number(planValue) || 5000;
 
+    const startDateInput = document.getElementById('newStudentStartDate')?.value;
+    const startDate = startDateInput || new Date().toISOString().slice(0, 10);
+    const registerFirstSession = document.getElementById('newStudentRegisterFirstSession')?.checked || false;
+    const payInitial = document.getElementById('newStudentPayInitial')?.checked || false;
+
+    // Safe Non-Duplicate ID Generation
+    const maxIdNum = students.reduce((max, s) => {
+      const num = parseInt(String(s.id).replace(/\D/g, ''), 10);
+      return !isNaN(num) ? Math.max(max, num) : max;
+    }, 0);
+    const newStudentId = "STU-" + String(maxIdNum + 1).padStart(3, '0');
+
+    let initialSessions = payInitial ? 4 : 0;
+    let initialBalance = payInitial ? fee : 0;
+
     const newStudent = {
-      id: "STU-" + String(students.length + 1).padStart(3, '0'),
+      id: newStudentId,
       name: name,
       group: group,
       level: level,
@@ -4905,15 +5025,156 @@ document.addEventListener('DOMContentLoaded', () => {
       password: generateRandomCode(8),
       monthlyFee: fee,
       plan: planValue === '8000' ? 'طفلين (خصم إخوة)' : (planValue === '11000' ? '3 أطفال (عائلي)' : 'طفل واحد'),
-      balance: 0,
-      sessionsRemaining: 4,
+      balance: initialBalance,
+      sessionsRemaining: initialSessions,
       lastAttendance: "جديد",
-      joinedDate: new Date().toLocaleDateString('ar-DZ')
+      joinedDate: startDate,
+      startDate: startDate
     };
+
+    // 1. If initial payment was made at registration, record it with 100% precision
+    if (payInitial) {
+      const now = new Date();
+      const opNumber = String(Math.floor(10000 + Math.random() * 90000));
+      const formattedPaymentDate = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth()+1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const isoPaymentDate = now.toISOString();
+      const timestamp = now.getTime();
+
+      newStudent.lastPaymentDate = formattedPaymentDate;
+      newStudent.lastPaymentIso = isoPaymentDate;
+      newStudent.lastPaymentTimestamp = timestamp;
+      newStudent.lastPaymentAmount = fee;
+
+      const newPayment = {
+        id: 'REC-' + opNumber,
+        opNumber,
+        studentId: newStudentId,
+        studentName: name,
+        level,
+        group,
+        educatorName: 'عابد اسحاق تقي الدين',
+        date: formattedPaymentDate,
+        paidAtIso: isoPaymentDate,
+        paidAtTimestamp: timestamp,
+        amountPaid: fee,
+        prevBalance: 0,
+        currentBalance: fee,
+        sessionsPurchased: 4,
+        sessionsRemaining: 4,
+        lastAttendance: 'جديد',
+        method: 'نقداً (Cash)',
+        status: 'paid',
+        notes: 'تسديد الاشتراك الأول عند التسجيل'
+      };
+      const payments = getData('brainova_payments') || [];
+      payments.unshift(newPayment);
+      saveData('brainova_payments', payments);
+    }
+
+    // 2. If first session attendance is recorded
+    if (registerFirstSession) {
+      let allAttendance = getData('brainova_attendance') || [];
+      allAttendance.unshift({
+        id: 'ATT-' + Date.now() + '-' + newStudentId,
+        date: startDate,
+        groupName: group,
+        sessionTime: sessionTime,
+        studentId: newStudentId,
+        studentName: name,
+        status: 'present',
+        paidMarker: payInitial ? 'paid_this' : null,
+        note: 'الحصة الافتتاحية الأولى'
+      });
+      saveData('brainova_attendance', allAttendance);
+      newStudent.lastAttendance = `${startDate} (${sessionTime})`;
+      if (newStudent.sessionsRemaining > 0) {
+        newStudent.sessionsRemaining = Math.max(0, newStudent.sessionsRemaining - 1);
+      }
+    }
+
     students.push(newStudent);
     saveData('brainova_students', students);
     closeAddStudentModal();
-    showToast(`✅ تم تسجيل التلميذ (${name}) بفوج (${group}) وتوقيت (${sessionTime}) بنجاح! 🚀`, 'success');
+    showToast(`✅ تم تسجيل التلميذ (${name}) بفوج (${group}) بدقة! 🚀`, 'success');
+    renderActiveView();
+  };
+
+  // --- EDIT STUDENT & GROUP LOGIC ---
+  window.openEditStudentModal = function(studentId) {
+    const students = getData('brainova_students') || [];
+    const stu = students.find(s => s.id === studentId);
+    if (!stu) {
+      showToast('لم يتم العثور على التلميذ!', 'error');
+      return;
+    }
+
+    const groups = getData('brainova_groups') || [];
+    const groupSelect = document.getElementById('editStudentGroup');
+    if (groupSelect) {
+      groupSelect.innerHTML = groups.map(g => `<option value="${g.name}" ${isStudentInGroup(stu, g.name) ? 'selected' : ''}>${g.name}</option>`).join('');
+      // If current student's group is not in list, add it as selected
+      if (stu.group && !groups.some(g => isStudentInGroup(stu, g.name))) {
+        groupSelect.add(new Option(stu.group, stu.group, true, true));
+      }
+    }
+
+    document.getElementById('editStudentId').value = stu.id;
+    document.getElementById('editStudentName').value = stu.name || '';
+    document.getElementById('editStudentParentName').value = stu.parentName !== '—' ? (stu.parentName || '') : '';
+    document.getElementById('editStudentParentPhone').value = stu.parentPhone !== '—' ? (stu.parentPhone || '') : '';
+    document.getElementById('editStudentLevel').value = stu.level || 'المستوى الأول';
+    document.getElementById('editStudentStartTime').value = stu.startTime || '14:00';
+    document.getElementById('editStudentEndTime').value = stu.endTime || '16:00';
+    document.getElementById('editStudentSessionsRemaining').value = stu.sessionsRemaining !== undefined ? stu.sessionsRemaining : 4;
+    document.getElementById('editStudentMonthlyFee').value = stu.monthlyFee || 5000;
+
+    const modal = document.getElementById('editStudentModal');
+    if (modal) modal.classList.add('active');
+  };
+
+  window.closeEditStudentModal = function() {
+    const modal = document.getElementById('editStudentModal');
+    if (modal) modal.classList.remove('active');
+  };
+
+  window.onEditStudentGroupSelectChange = function() {
+    const groupSelect = document.getElementById('editStudentGroup');
+    const startInput = document.getElementById('editStudentStartTime');
+    const endInput = document.getElementById('editStudentEndTime');
+    if (!groupSelect || !startInput || !endInput) return;
+
+    const selectedGroup = groupSelect.value;
+    const schedule = getData('brainova_schedule') || [];
+    const matched = schedule.find(s => isStudentInGroup({ group: s.groupName }, selectedGroup));
+    if (matched && matched.startTime && matched.endTime) {
+      startInput.value = matched.startTime;
+      endInput.value = matched.endTime;
+    }
+  };
+
+  window.submitEditStudent = function(e) {
+    e.preventDefault();
+    const studentId = document.getElementById('editStudentId').value;
+    const students = getData('brainova_students') || [];
+    const stu = students.find(s => s.id === studentId);
+    if (!stu) return;
+
+    const prevGroup = stu.group;
+    stu.name = document.getElementById('editStudentName').value.trim();
+    stu.parentName = document.getElementById('editStudentParentName').value.trim() || '—';
+    stu.parentPhone = document.getElementById('editStudentParentPhone').value.trim() || '—';
+    stu.group = document.getElementById('editStudentGroup').value;
+    stu.level = document.getElementById('editStudentLevel').value;
+    stu.startTime = document.getElementById('editStudentStartTime').value || '14:00';
+    stu.endTime = document.getElementById('editStudentEndTime').value || '16:00';
+    stu.sessionTime = `${stu.startTime} - ${stu.endTime}`;
+    stu.sessionsRemaining = Math.max(0, parseInt(document.getElementById('editStudentSessionsRemaining').value, 10) || 0);
+    stu.monthlyFee = Math.max(0, parseInt(document.getElementById('editStudentMonthlyFee').value, 10) || 5000);
+
+    saveData('brainova_students', students);
+    closeEditStudentModal();
+    const groupChangedMsg = prevGroup !== stu.group ? ` وتم نقله إلى (${stu.group})` : '';
+    showToast(`✅ تم تحديث بيانات التلميذ (${stu.name})${groupChangedMsg} بنجاح!`, 'success');
     renderActiveView();
   };
 
@@ -6445,7 +6706,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const enrolledMap = new Map();
         students.forEach(s => {
-          if (s.groupId === session.groupId || s.group === session.groupName || (s.group && session.groupName && (s.group.includes(session.groupName) || session.groupName.includes(s.group)))) {
+          if (s.groupId === session.groupId || isStudentInGroup(s, session.groupName)) {
             enrolledMap.set(s.id, s);
           }
         });
