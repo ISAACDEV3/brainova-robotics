@@ -1223,6 +1223,64 @@
     </div>
   </div>
 
+  <!-- Quick Group Attendance Modal (Directly in Groups section) -->
+  <div class="modal-overlay" id="quickGroupAttendanceModal">
+    <div class="modal" style="max-width: 680px; width:95%;">
+      <div class="modal__header">
+        <div>
+          <h3 class="modal__title" id="quickAttModalTitle" style="display:flex; align-items:center; gap:8px;">
+            <span>📝</span> تفقد حضور وغياب الفوج
+          </h3>
+          <p class="modal__subtitle" id="quickAttModalSubtitle" style="color:#94A3B8; font-size:0.82rem; margin:3px 0 0 0;">
+            تسجيل وتعديل حالة حضور وغياب تلاميذ الفوج في التوقيت المحدد للحصة
+          </p>
+        </div>
+        <button class="modal__close" onclick="closeQuickGroupAttendanceModal()">&times;</button>
+      </div>
+
+      <div style="padding:16px 20px;">
+        <!-- Session Timing and Controls Box -->
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; background:rgba(0,188,212,0.06); border:1px solid rgba(0,188,212,0.25); border-radius:10px; padding:12px 16px; margin-bottom:14px;">
+          <div>
+            <label style="font-size:0.75rem; color:#00E5FF; font-weight:700; display:block; margin-bottom:4px;">📅 تاريخ الحصة</label>
+            <input type="date" id="quickAttDate" class="form-input" style="font-family:monospace; font-weight:700; height:34px;" onchange="renderQuickAttendanceStudents()">
+          </div>
+          <div>
+            <label style="font-size:0.75rem; color:#00E5FF; font-weight:700; display:block; margin-bottom:4px;">🕒 توقيت الحصة المحدد للفوج</label>
+            <input type="text" id="quickAttTime" class="form-input" style="font-family:monospace; font-weight:700; height:34px; color:#38BDF8;" placeholder="14:00 - 16:00" onchange="renderQuickAttendanceStudents()">
+          </div>
+          <div>
+            <label style="font-size:0.75rem; color:#94A3B8; font-weight:700; display:block; margin-bottom:4px;">⚡ إجراءات جماعية سريعة</label>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="btn btn--small" style="background:rgba(16,185,129,0.2); color:#10B981; border:1px solid rgba(16,185,129,0.4); font-size:0.72rem; padding:4px 8px;" onclick="setAllQuickAttendance('present')">الكل حاضر ✅</button>
+              <button type="button" class="btn btn--small" style="background:rgba(239,68,68,0.2); color:#EF4444; border:1px solid rgba(239,68,68,0.4); font-size:0.72rem; padding:4px 8px;" onclick="setAllQuickAttendance('absent')">الكل غائب ❌</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Student Attendance List -->
+        <div style="max-height:360px; overflow-y:auto; border:1px solid var(--color-border); border-radius:10px; background:rgba(0,0,0,0.2);">
+          <div id="quickAttStudentsList" style="display:flex; flex-direction:column; gap:1px;">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Action Footer -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; flex-wrap:wrap; gap:10px;">
+          <div style="font-size:0.78rem; color:#94A3B8;">
+            <span>💡 حفظ الحضور يخصم الرصيد تلقائياً ويرسل تنبيهات الواتساب للغائبين والمتأخرين.</span>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="btn btn--outline" onclick="closeQuickGroupAttendanceModal()">إلغاء</button>
+            <button type="button" class="btn btn--primary" style="background:#10B981; font-weight:800;" onclick="saveQuickGroupAttendance()">
+              💾 حفظ واعتماد تفقد الحصة
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Edit Registration Modal -->
   <div class="modal-overlay" id="editRegModal">
     <div class="modal">

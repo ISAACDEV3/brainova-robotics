@@ -2409,6 +2409,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     grid.innerHTML = filtered.map(g => {
       const studentCount = students.filter(s => s.group === g.name || (s.group && s.group.includes(g.name))).length;
+      const schedules = getData('brainova_schedule') || [];
+      const sch = schedules.find(s => s.groupId === g.id || s.groupName === g.name || (s.groupName && s.groupName.includes(g.name)));
+      const dayStr = sch ? sch.day : (g.day || 'السبت');
+      const timeSlot = sch ? `${sch.startTime} - ${sch.endTime}` : (g.timeSlot || '14:00 - 16:00');
+
       return `
         <div class="stat-card" style="padding: 16px;">
           <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
@@ -2424,21 +2429,27 @@ document.addEventListener('DOMContentLoaded', () => {
           <div style="font-size:0.8rem; color:var(--color-text-muted); margin-bottom:6px;">
             <span> القاعة: <strong>${g.room || 'قاعة Brainova'}</strong></span>
           </div>
-          <div style="font-size:0.8rem; color:var(--color-text-muted); margin-bottom:12px;">
+          <div style="font-size:0.8rem; color:var(--color-text-muted); margin-bottom:6px;">
             <span> الأستاذ: <strong>${g.educator || 'عابد اسحاق تقي الدين'}</strong></span>
+          </div>
+          <div style="font-size:0.8rem; color:#38BDF8; margin-bottom:12px; background:rgba(56,189,248,0.08); padding:5px 8px; border-radius:6px; border:1px solid rgba(56,189,248,0.2);">
+            <span>🕒 موعد الحصة المحدد: <strong style="color:#F8FAFC;">${dayStr} (${timeSlot})</strong></span>
           </div>
           <div style="display:flex; justify-content:space-between; align-items:center; border-top: 1px solid var(--color-border); padding-top: 8px; gap:6px; flex-wrap:wrap;">
             <span style="font-size:0.78rem; color:var(--color-text-muted);">الطلاب: <strong style="color:#fff;">${studentCount} / ${g.maxStudents || 12}</strong></span>
             <div style="display:inline-flex; gap:6px; flex-wrap:wrap;">
+              <button type="button" class="btn btn--primary btn--small" style="background:#10B981; font-weight:800; font-size:0.75rem; display:inline-flex; align-items:center; gap:4px;" title="تسجيل وتعديل تفقد حضور وغياب الفوج مباشرة" onclick="openQuickGroupAttendanceModal('${encodeURIComponent(g.name)}')">
+                <span>📝 تفقد الحضور والغياب</span>
+              </button>
               <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; border-color:rgba(56,189,248,0.4); color:#38BDF8;" title="طباعة ورقة الحضور الشهرية للمؤطر" onclick="printGroupMonthlyAttendanceSheet('${encodeURIComponent(g.name)}')">📄 ورقة الحضور</button>
-              <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; border-color:var(--color-primary); color:var(--color-primary);" onclick="openAttendanceForGroup('${encodeURIComponent(g.name)}')">📝 الحضور</button>
-              <button type="button" class="btn btn--primary btn--small" style="background:#0284C7; font-weight:700; font-size:0.75rem;" onclick="openGroupStudentsModal('${encodeURIComponent(g.name)}')">👥 الطلاب (${studentCount})</button>
+              <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem;" onclick="openGroupStudentsModal('${encodeURIComponent(g.name)}')">👥 الطلاب (${studentCount})</button>
             </div>
           </div>
         </div>
       `;
     }).join('');
   }
+  window.renderGroups = renderGroups;
 
   // Navigation shortcuts to Attendance
   window.openAttendanceForGroup = function(encodedGroupName) {
@@ -2587,6 +2598,234 @@ document.addEventListener('DOMContentLoaded', () => {
       groupSelect.value = window.__currentRosterGroupName;
     }
   };
+
+  // ==========================================
+  // QUICK GROUP ATTENDANCE LOGIC (DIRECTLY IN GROUPS VIEW)
+  // ==========================================
+  window.__quickAttGroupName = '';
+  window.__quickAttDraft = {};
+
+  function openQuickGroupAttendanceModal(encodedGroupName) {
+    const groupName = decodeURIComponent(encodedGroupName || '').trim();
+    if (!groupName) return;
+    window.__quickAttGroupName = groupName;
+    window.__quickAttDraft = {};
+
+    const titleEl = document.getElementById('quickAttModalTitle');
+    if (titleEl) {
+      titleEl.innerHTML = `<span>📝</span> تفقد حضور وغياب: <span style="color:#38BDF8;">${groupName}</span>`;
+    }
+
+    // Set Date to Today
+    const dateInput = document.getElementById('quickAttDate');
+    if (dateInput) {
+      dateInput.value = new Date().toISOString().slice(0, 10);
+    }
+
+    // Find scheduled time for this group
+    const groups = getData('brainova_groups') || [];
+    const g = groups.find(x => x.name === groupName || x.id === groupName);
+    const schedules = getData('brainova_schedule') || [];
+    const sch = schedules.find(s => s.groupId === (g ? g.id : '') || s.groupName === groupName || (s.groupName && s.groupName.includes(groupName)));
+    const timeInput = document.getElementById('quickAttTime');
+    if (timeInput) {
+      const scheduledTime = sch ? `${sch.startTime} - ${sch.endTime}` : (g?.timeSlot || '14:00 - 16:00');
+      timeInput.value = scheduledTime;
+    }
+
+    renderQuickAttendanceStudents();
+
+    const modal = document.getElementById('quickGroupAttendanceModal');
+    if (modal) modal.classList.add('active');
+  }
+  window.openQuickGroupAttendanceModal = openQuickGroupAttendanceModal;
+
+  function closeQuickGroupAttendanceModal() {
+    const modal = document.getElementById('quickGroupAttendanceModal');
+    if (modal) modal.classList.remove('active');
+  }
+  window.closeQuickGroupAttendanceModal = closeQuickGroupAttendanceModal;
+
+  function renderQuickAttendanceStudents() {
+    const listEl = document.getElementById('quickAttStudentsList');
+    if (!listEl) return;
+
+    const groupName = window.__quickAttGroupName;
+    const selectedDate = document.getElementById('quickAttDate')?.value || new Date().toISOString().slice(0, 10);
+    const selectedTime = document.getElementById('quickAttTime')?.value || '14:00 - 16:00';
+
+    const allStudents = getData('brainova_students') || [];
+    const groupStudents = allStudents.filter(s => 
+      s.group === groupName || 
+      (s.group && s.group.includes(groupName)) ||
+      (groupName && s.group && groupName.includes(s.group))
+    );
+
+    if (groupStudents.length === 0) {
+      listEl.innerHTML = `
+        <div style="text-align:center; padding:30px; color:#94A3B8;">
+          <div style="font-size:1.8rem; margin-bottom:6px;">👥</div>
+          <div>لا يوجد طلاب مسجلين في هذا الفوج حتى الآن.</div>
+        </div>
+      `;
+      return;
+    }
+
+    // Check existing attendance in database for this date, group, and time
+    const allAttendance = getData('brainova_attendance') || [];
+    const existingAtt = allAttendance.filter(a => 
+      a.date === selectedDate && 
+      (a.groupName === groupName || (a.groupName && a.groupName.includes(groupName))) &&
+      (!a.sessionTime || a.sessionTime === selectedTime || selectedTime.includes(a.sessionTime))
+    );
+
+    // Initialize draft state if empty
+    groupStudents.forEach(stu => {
+      if (!window.__quickAttDraft[stu.id]) {
+        const found = existingAtt.find(a => a.studentId === stu.id);
+        window.__quickAttDraft[stu.id] = {
+          status: found ? found.status : 'present',
+          note: found ? (found.note || '') : ''
+        };
+      }
+    });
+
+    listEl.innerHTML = groupStudents.map(stu => {
+      const state = window.__quickAttDraft[stu.id] || { status: 'present', note: '' };
+      const status = state.status;
+      const sessions = Number(stu.sessionsRemaining) || 0;
+
+      const isPresent = status === 'present';
+      const isLate = status === 'late';
+      const isAbsent = status === 'absent';
+
+      return `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:rgba(255,255,255,0.02); border-bottom:1px solid rgba(255,255,255,0.06); gap:12px; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:10px; min-width:180px;">
+            <div style="width:32px; height:32px; border-radius:50%; background:#0284C7; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.85rem;">
+              ${stu.name.trim().charAt(0)}
+            </div>
+            <div>
+              <div style="font-weight:700; color:#F8FAFC; font-size:0.9rem;">${stu.name}</div>
+              <div style="font-size:0.75rem; color:#94A3B8;">
+                <span>${stu.parentPhone || '—'}</span> • <span style="color:#00E5FF;">(${sessions} حصص متبقية)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Status Buttons Row -->
+          <div style="display:flex; align-items:center; gap:6px;">
+            <button type="button" class="btn btn--small" 
+              style="padding:5px 12px; font-size:0.78rem; font-weight:700; border-radius:6px; cursor:pointer; 
+              ${isPresent ? 'background:#10B981; color:#fff; border:1px solid #059669; box-shadow:0 0 10px rgba(16,185,129,0.4);' : 'background:rgba(255,255,255,0.05); color:#94A3B8; border:1px solid rgba(255,255,255,0.1);'}"
+              onclick="setQuickStudentStatus('${stu.id}', 'present')">
+              حاضر ✅
+            </button>
+
+            <button type="button" class="btn btn--small" 
+              style="padding:5px 12px; font-size:0.78rem; font-weight:700; border-radius:6px; cursor:pointer; 
+              ${isLate ? 'background:#F59E0B; color:#fff; border:1px solid #D97706; box-shadow:0 0 10px rgba(245,158,11,0.4);' : 'background:rgba(255,255,255,0.05); color:#94A3B8; border:1px solid rgba(255,255,255,0.1);'}"
+              onclick="setQuickStudentStatus('${stu.id}', 'late')">
+              متأخر ⏳
+            </button>
+
+            <button type="button" class="btn btn--small" 
+              style="padding:5px 12px; font-size:0.78rem; font-weight:700; border-radius:6px; cursor:pointer; 
+              ${isAbsent ? 'background:#EF4444; color:#fff; border:1px solid #DC2626; box-shadow:0 0 10px rgba(239,68,68,0.4);' : 'background:rgba(255,255,255,0.05); color:#94A3B8; border:1px solid rgba(255,255,255,0.1);'}"
+              onclick="setQuickStudentStatus('${stu.id}', 'absent')">
+              غائب ❌
+            </button>
+          </div>
+
+          <!-- Note Input -->
+          <div style="flex:1; min-width:140px; max-width:200px;">
+            <input type="text" class="form-input" placeholder="ملاحظة عن الحصة..." 
+              value="${state.note || ''}" 
+              style="height:30px; font-size:0.75rem; padding:4px 8px;" 
+              oninput="setQuickStudentNote('${stu.id}', this.value)">
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+  window.renderQuickAttendanceStudents = renderQuickAttendanceStudents;
+
+  function setQuickStudentStatus(studentId, status) {
+    if (!window.__quickAttDraft[studentId]) {
+      window.__quickAttDraft[studentId] = { status: 'present', note: '' };
+    }
+    window.__quickAttDraft[studentId].status = status;
+    renderQuickAttendanceStudents();
+  }
+  window.setQuickStudentStatus = setQuickStudentStatus;
+
+  function setQuickStudentNote(studentId, note) {
+    if (!window.__quickAttDraft[studentId]) {
+      window.__quickAttDraft[studentId] = { status: 'present', note: '' };
+    }
+    window.__quickAttDraft[studentId].note = note;
+  }
+  window.setQuickStudentNote = setQuickStudentNote;
+
+  function setAllQuickAttendance(status) {
+    Object.keys(window.__quickAttDraft).forEach(id => {
+      window.__quickAttDraft[id].status = status;
+    });
+    renderQuickAttendanceStudents();
+    showToast(status === 'present' ? 'تم تحديد جميع التلاميذ كحاضرين ✅' : 'تم تحديد جميع التلاميذ كغائبين ❌', 'info');
+  }
+  window.setAllQuickAttendance = setAllQuickAttendance;
+
+  function saveQuickGroupAttendance() {
+    const groupName = window.__quickAttGroupName;
+    if (!groupName) return;
+
+    const selectedDate = document.getElementById('quickAttDate')?.value || new Date().toISOString().slice(0, 10);
+    const selectedTime = document.getElementById('quickAttTime')?.value || '14:00 - 16:00';
+
+    let allAttendance = getData('brainova_attendance') || [];
+    allAttendance = allAttendance.filter(a => !(a.date === selectedDate && a.groupName === groupName && (!a.sessionTime || a.sessionTime === selectedTime)));
+
+    const students = getData('brainova_students') || [];
+    let savedCount = 0;
+    let lateOrAbsentCount = 0;
+
+    for (const [studentId, data] of Object.entries(window.__quickAttDraft)) {
+      const stu = students.find(s => s.id === studentId);
+      allAttendance.push({
+        id: 'ATT-' + Date.now() + '-' + studentId,
+        date: selectedDate,
+        groupName: groupName,
+        sessionTime: selectedTime,
+        studentId: studentId,
+        studentName: stu ? stu.name : 'Unknown',
+        status: data.status,
+        note: data.note || ''
+      });
+      savedCount++;
+
+      if (stu && (data.status === 'present' || data.status === 'late')) {
+        stu.lastAttendance = `${selectedDate} (${selectedTime})`;
+        if (stu.sessionsRemaining > 0) {
+          stu.sessionsRemaining = Math.max(0, stu.sessionsRemaining - 1);
+        }
+      }
+
+      // Zero-click WhatsApp alert if late or absent
+      if (stu && (data.status === 'late' || data.status === 'absent')) {
+        lateOrAbsentCount++;
+        triggerAutoAttendanceWhatsApp(stu, data.status, selectedTime, selectedDate);
+      }
+    }
+
+    saveData('brainova_attendance', allAttendance);
+    saveData('brainova_students', students);
+
+    closeQuickGroupAttendanceModal();
+    showToast(`✅ تم حفظ تفقد حضور وغياب (${savedCount}) تلميذ لفوج (${groupName}) بتوقيت (${selectedTime}) بنجاح!`, 'success');
+    renderActiveView();
+  }
+  window.saveQuickGroupAttendance = saveQuickGroupAttendance;
 
   // ==========================================
   // 6.5 PRINTABLE MONTHLY ATTENDANCE SHEET (A4 LANDSCAPE)
