@@ -74,6 +74,15 @@
 
     <!-- ========== MAIN CONTENT ========== -->
     <main class="main-content">
+      <!-- Central Broadcast Banner from HQ -->
+      <div id="centralBroadcastBanner" style="display:none; background:linear-gradient(90deg, #1E1B4B, #312E81); border-bottom:1px solid #6366F1; color:#EEF2FF; padding:10px 24px; font-size:0.86rem; font-weight:700; align-items:center; justify-content:space-between; z-index:9999;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="background:rgba(99,102,241,0.3); padding:3px 8px; border-radius:6px; font-size:0.75rem; border:1px solid rgba(99,102,241,0.5);">📢 تعميم مركزي</span>
+          <span id="centralBroadcastBannerText"></span>
+        </div>
+        <button onclick="document.getElementById('centralBroadcastBanner').style.display='none'" style="background:transparent; border:none; color:#C7D2FE; cursor:pointer; font-size:1.1rem; line-height:1;">✕</button>
+      </div>
+
       <!-- Topbar -->
       <header class="topbar">
         <div class="topbar__left">

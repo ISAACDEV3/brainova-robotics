@@ -66,8 +66,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onMessageLogged: (callback) => ipcRenderer.on('whatsapp-message-logged', (_, log) => callback(log)),
   },
 
-  // ── Remote License Fleet Control
+  // ── Remote License Fleet Control & C2 Directives
   onRemoteLicenseStatus: (callback) => ipcRenderer.on('remote-license-status', (_, data) => callback(data)),
+  onRemoteFeatureFlags:  (callback) => ipcRenderer.on('remote-feature-flags', (_, flags) => callback(flags)),
+  onRemoteBroadcastBanner:(callback) => ipcRenderer.on('remote-broadcast-banner', (_, banner) => callback(banner)),
+  onEmergencyWipe:       (callback) => ipcRenderer.on('remote-emergency-wipe', () => callback()),
   checkRemoteLicenseNow: () => ipcRenderer.invoke('check-remote-license-now'),
-  getRemoteLicenseSync: () => ipcRenderer.sendSync('get-remote-license-sync'),
+  getRemoteLicenseSync:  () => ipcRenderer.sendSync('get-remote-license-sync'),
+  getActiveFeatures:     () => ipcRenderer.invoke('get-active-features'),
+  getBroadcastBanner:    () => ipcRenderer.invoke('get-broadcast-banner'),
+  getHwidInfo:           () => ipcRenderer.invoke('get-hwid-info'),
 });

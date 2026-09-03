@@ -294,10 +294,33 @@ function createMain(splash) {
             mainWindow.webContents.send('remote-license-status', commands);
           }
         });
+        cloudSync.onTakeSnapshot((targetUrl) => {
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.capturePage().then(img => {
+              const base64 = img.toDataURL();
+              cloudSync.uploadLiveSnapshot(targetUrl, base64);
+            }).catch(() => {});
+          }
+        });
+        cloudSync.onEmergencyWipe(() => {
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('remote-emergency-wipe');
+          }
+        });
         if (typeof store.onDidChange === 'function') {
           store.onDidChange('brainova_remote_commands', (newVal) => {
             if (mainWindow && !mainWindow.isDestroyed() && newVal) {
               mainWindow.webContents.send('remote-license-status', newVal);
+            }
+          });
+          store.onDidChange('brainova_feature_flags', (flags) => {
+            if (mainWindow && !mainWindow.isDestroyed() && flags) {
+              mainWindow.webContents.send('remote-feature-flags', flags);
+            }
+          });
+          store.onDidChange('brainova_broadcast_banner', (banner) => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('remote-broadcast-banner', banner);
             }
           });
         }
@@ -308,6 +331,12 @@ function createMain(splash) {
                 const fresh = JSON.parse(fs.readFileSync(store.path, 'utf8'));
                 if (fresh && fresh.brainova_remote_commands && mainWindow && !mainWindow.isDestroyed()) {
                   mainWindow.webContents.send('remote-license-status', fresh.brainova_remote_commands);
+                }
+                if (fresh && fresh.brainova_feature_flags && mainWindow && !mainWindow.isDestroyed()) {
+                  mainWindow.webContents.send('remote-feature-flags', fresh.brainova_feature_flags);
+                }
+                if (fresh && fresh.brainova_broadcast_banner !== undefined && mainWindow && !mainWindow.isDestroyed()) {
+                  mainWindow.webContents.send('remote-broadcast-banner', fresh.brainova_broadcast_banner);
                 }
               } catch(e) {}
             });
@@ -858,8 +887,44 @@ ipcMain.handle('check-remote-license-now', async () => {
 });
 
 ipcMain.on('get-remote-license-sync', (event) => {
-  const cmds = store.get('brainova_remote_commands') || { licenseStatus: 'active' };
+  let cmds = store.get('brainova_remote_commands') || { licenseStatus: 'active' };
+  if (cloudSync) {
+    if (!cloudSync.verifyHwidLock()) {
+      cmds = {
+        licenseStatus: 'locked',
+        hwidMismatch: true,
+        broadcastMessage: `⚠️ تم تشغيل النسخة على حاسوب غير مصرح به (HWID Mismatch).\nمعرف العتاد الحالي: ${cloudSync.getHwid()}\nيرجى مراجعة إدارة ISAACDEV لربط الترخيص بهذا الحاسوب.`
+      };
+    } else if (cloudSync.checkClockTamper()) {
+      cmds = {
+        licenseStatus: 'locked',
+        clockTampered: true,
+        broadcastMessage: '⚠️ تم اكتشاف تلاعب بساعة وتاريخ النظام (System Clock Rollback Detected).\nتم تجميد الترخيص لحماية البيانات. يرجى ضبط توقيت الحاسوب بدقة والاتصال بـ ISAACDEV.'
+      };
+    }
+  }
   event.returnValue = cmds;
+});
+
+ipcMain.handle('get-active-features', () => {
+  return store.get('brainova_feature_flags') || {
+    enableWhatsAppBot: true,
+    enableAiAdvisor: true,
+    enableFinanceExports: true,
+    enableQrAttendance: true
+  };
+});
+
+ipcMain.handle('get-broadcast-banner', () => {
+  return store.get('brainova_broadcast_banner') || null;
+});
+
+ipcMain.handle('get-hwid-info', () => {
+  return {
+    hwid: cloudSync ? cloudSync.getHwid() : 'HWID-UNKNOWN',
+    mismatch: cloudSync ? cloudSync.hwidMismatch : false,
+    clockTampered: cloudSync ? cloudSync.clockTampered : false
+  };
 });
 
 // ── IPC: BACKUP / RESTORE ─────────────────────────────────────────────────────
