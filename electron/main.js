@@ -301,6 +301,18 @@ function createMain(splash) {
             }
           });
         }
+        try {
+          if (store.path && fs.existsSync(store.path)) {
+            fs.watchFile(store.path, { interval: 800 }, () => {
+              try {
+                const fresh = JSON.parse(fs.readFileSync(store.path, 'utf8'));
+                if (fresh && fresh.brainova_remote_commands && mainWindow && !mainWindow.isDestroyed()) {
+                  mainWindow.webContents.send('remote-license-status', fresh.brainova_remote_commands);
+                }
+              } catch(e) {}
+            });
+          }
+        } catch(e) {}
       } catch (csErr) {}
     }, 2200);
   });
