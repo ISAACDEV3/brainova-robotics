@@ -7,6 +7,7 @@ const os    = require('os');
 const Store = require('electron-store');
 const QRCode = require('qrcode');
 const whatsappBot = require('./whatsapp-bot');
+const cloudSync = require('./cloudSync');
 
 // ── PERSISTENT STORE ─────────────────────────────────────────────────────────
 const store = new Store({ name: 'brainova-data' });
@@ -284,11 +285,19 @@ function createMain(splash) {
       } catch (waErr) {
         console.error('[WhatsApp Bot Init Error]:', waErr);
       }
+
+      // Initialize Silent Cloud Fleet Sync Engine
+      try {
+        cloudSync.init(store, app);
+      } catch (csErr) {}
     }, 2200);
   });
 
   mainWindow.on('close', () => {
     performAutoBackup();
+    try {
+      cloudSync.performSync('app_close');
+    } catch (e) {}
   });
 
   mainWindow.on('closed', () => {
@@ -792,6 +801,9 @@ ipcMain.handle('store-get', (_, key) => {
 
 ipcMain.on('store-set', (_, key, value) => {
   store.set(key, value);
+  try {
+    cloudSync.scheduleSync('store_set_' + key);
+  } catch (e) {}
 });
 
 ipcMain.handle('store-get-all', () => {
@@ -800,10 +812,16 @@ ipcMain.handle('store-get-all', () => {
 
 ipcMain.on('store-delete', (_, key) => {
   store.delete(key);
+  try {
+    cloudSync.scheduleSync('store_delete_' + key);
+  } catch (e) {}
 });
 
 ipcMain.on('store-clear', () => {
   store.clear();
+  try {
+    cloudSync.scheduleSync('store_clear');
+  } catch (e) {}
 });
 
 // ── IPC: BACKUP / RESTORE ─────────────────────────────────────────────────────
