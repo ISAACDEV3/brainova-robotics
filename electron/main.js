@@ -442,6 +442,44 @@ ipcMain.on('print-receipt', (event, payload) => {
     const balanceNum = (stu && stu.balance !== undefined) ? stu.balance : amountNum;
     const balanceStr = `${remainingSessions} حصص متاحة / ${Number(balanceNum).toLocaleString()} دج`;
 
+    // Subscription Validity, First Session Date, and Expected Renewal Date
+    const daysMap = { 'الأحد': 0, 'الاحد': 0, 'الإثنين': 1, 'الاثنين': 1, 'الثلاثاء': 2, 'الأربعاء': 3, 'الاربعاء': 3, 'الخميس': 4, 'الجمعة': 5, 'السبت': 6 };
+    let payBaseDate = new Date();
+    if (pay && pay.paidAtIso) {
+      payBaseDate = new Date(pay.paidAtIso);
+    } else if (pay && pay.date) {
+      const parts = pay.date.trim().split(' ')[0].split(/[\/\-]/);
+      if (parts.length === 3) {
+        payBaseDate = parts[0].length === 4 ? new Date(parts[0], parts[1]-1, parts[2]) : new Date(parts[2], parts[1]-1, parts[0]);
+      }
+    }
+    const purchasedSessions = (pay && pay.sessionsPurchased) || 4;
+    const validityStr = `${purchasedSessions} حصص (${purchasedSessions === 4 ? 'اشتراك شهري' : 'باقة تدريبية'})`;
+
+    let firstSessionStr = '';
+    const dayName = (stu && stu.day) ? stu.day : 'السبت';
+    const timeStr = (stu && stu.sessionTime) ? stu.sessionTime : (stu && stu.startTime ? `${stu.startTime} - ${stu.endTime || ''}` : '14:00 - 16:00');
+    if (daysMap[dayName] !== undefined) {
+      const targetDay = daysMap[dayName];
+      const d = new Date(payBaseDate);
+      d.setHours(12, 0, 0, 0);
+      const currentDay = d.getDay();
+      const daysToAdd = (targetDay - currentDay + 7) % 7;
+      const nextDate = new Date(d.getTime() + (daysToAdd * 24 * 60 * 60 * 1000));
+      const y = nextDate.getFullYear();
+      const m = String(nextDate.getMonth() + 1).padStart(2, '0');
+      const day = String(nextDate.getDate()).padStart(2, '0');
+      firstSessionStr = `${dayName} ${day}/${m}/${y} (${timeStr})`;
+    } else {
+      firstSessionStr = (stu && stu.startDate) ? `${stu.startDate} (${timeStr})` : `الحصة القادمة (${timeStr})`;
+    }
+
+    const renewalDateObj = new Date(payBaseDate.getTime() + (30 * 24 * 60 * 60 * 1000));
+    const ry = renewalDateObj.getFullYear();
+    const rm = String(renewalDateObj.getMonth() + 1).padStart(2, '0');
+    const rday = String(renewalDateObj.getDate()).padStart(2, '0');
+    const renewalDateStr = `${rday}/${rm}/${ry}`;
+
     // High resolution robot icon base64
     let robotDataUri = '';
     try {
@@ -604,9 +642,13 @@ ipcMain.on('print-receipt', (event, payload) => {
       <tr><th>اسم التلميذ</th><td style="font-size:12px; font-weight:900; color:#0f172a;">${stuName}</td></tr>
       <tr><th>ولي الأمر</th><td>${parentName}</td></tr>
       <tr><th>المستوى والفوج</th><td>${levelGroup}</td></tr>
+      <tr><th>صلاحية الاشتراك</th><td style="color:#0284c7; font-weight:800;">${validityStr}</td></tr>
+      <tr><th>موعد أول حصة قادمة</th><td style="color:#059669; font-weight:800;">${firstSessionStr}</td></tr>
+      <tr><th>تاريخ استحقاق التجديد</th><td style="color:#d97706; font-weight:800; font-family:'JetBrains Mono', monospace;">${renewalDateStr}</td></tr>
       <tr><th>تاريخ الدفع</th><td style="font-family:'JetBrains Mono', monospace;">${dateStr}</td></tr>
       <tr><th>طريقة الدفع</th><td style="color:#0284c7; font-weight:800;">${payMethod}</td></tr>
       <tr><th>المبلغ المدفوع</th><td class="highlight-amount">${amountStr}</td></tr>
+      <tr><th>المبلغ بالحروف</th><td class="highlight-words">${wordsTafqeet}</td></tr>
       <tr><th>الرصيد والحصص</th><td>${balanceStr}</td></tr>
     </table>
 

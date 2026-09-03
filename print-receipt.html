@@ -289,6 +289,18 @@
         <td id="rcptLevelGroup">المستوى الثاني • الفوج ب</td>
       </tr>
       <tr>
+        <th>صلاحية الاشتراك</th>
+        <td id="rcptSubscriptionValidity" style="font-weight:800; color:#0284c7;">4 حصص (اشتراك شهري)</td>
+      </tr>
+      <tr>
+        <th>موعد أول حصة قادمة</th>
+        <td id="rcptFirstSessionDate" style="font-weight:800; color:#059669;">السبت 05/09/2026 (14:00 - 16:00)</td>
+      </tr>
+      <tr>
+        <th>تاريخ استحقاق التجديد</th>
+        <td id="rcptRenewalDate" style="font-weight:800; color:#d97706; font-family:'JetBrains Mono', monospace;">03/10/2026</td>
+      </tr>
+      <tr>
         <th>تاريخ الدفع</th>
         <td id="rcptDateTime" style="font-family:'JetBrains Mono', monospace;">18/08/2026 17:47</td>
       </tr>
@@ -299,6 +311,10 @@
       <tr>
         <th>المبلغ المدفوع</th>
         <td class="highlight-amount" id="rcptAmount">5,000 دج</td>
+      </tr>
+      <tr>
+        <th>المبلغ بالحروف</th>
+        <td class="highlight-words" id="rcptAmountWords">فقط خمسة آلاف دينار جزائري لا غير</td>
       </tr>
       <tr>
         <th>الرصيد والحصص</th>
@@ -363,6 +379,54 @@
         document.getElementById('rcptStudentName').textContent = (student && student.name) || pay.studentName || '—';
         document.getElementById('rcptParentName').textContent = (student && student.parentName) || pay.parentName || 'ولي أمر التلميذ';
         document.getElementById('rcptLevelGroup').textContent = (pay.level || 'المستوى الأول') + ' • ' + (pay.group || 'الفوج أ');
+
+        // Calculate Subscription Validity, First Session Date, and Expected Renewal Date
+        const daysMap = { 'الأحد': 0, 'الاحد': 0, 'الإثنين': 1, 'الاثنين': 1, 'الثلاثاء': 2, 'الأربعاء': 3, 'الاربعاء': 3, 'الخميس': 4, 'الجمعة': 5, 'السبت': 6 };
+        let payBaseDate = new Date();
+        if (pay.paidAtIso) {
+          payBaseDate = new Date(pay.paidAtIso);
+        } else if (pay.date) {
+          const parts = pay.date.trim().split(' ')[0].split(/[\/\-]/);
+          if (parts.length === 3) {
+            payBaseDate = parts[0].length === 4 ? new Date(parts[0], parts[1]-1, parts[2]) : new Date(parts[2], parts[1]-1, parts[0]);
+          }
+        }
+        const purchasedSessions = pay.sessionsPurchased || 4;
+        
+        const elValidity = document.getElementById('rcptSubscriptionValidity');
+        if (elValidity) {
+          elValidity.textContent = purchasedSessions + ' حصص (' + (purchasedSessions === 4 ? 'اشتراك شهري' : 'باقة تدريبية') + ')';
+        }
+
+        const elFirstSession = document.getElementById('rcptFirstSessionDate');
+        if (elFirstSession) {
+          const dayName = (student && student.day) ? student.day : 'السبت';
+          const timeStr = (student && student.sessionTime) ? student.sessionTime : (student && student.startTime ? (student.startTime + ' - ' + (student.endTime || '')) : '14:00 - 16:00');
+          if (daysMap[dayName] !== undefined) {
+            const targetDay = daysMap[dayName];
+            const d = new Date(payBaseDate);
+            d.setHours(12, 0, 0, 0);
+            const currentDay = d.getDay();
+            const daysToAdd = (targetDay - currentDay + 7) % 7;
+            const nextDate = new Date(d.getTime() + (daysToAdd * 24 * 60 * 60 * 1000));
+            const y = nextDate.getFullYear();
+            const m = String(nextDate.getMonth() + 1).padStart(2, '0');
+            const day = String(nextDate.getDate()).padStart(2, '0');
+            elFirstSession.textContent = dayName + ' ' + day + '/' + m + '/' + y + ' (' + timeStr + ')';
+          } else {
+            elFirstSession.textContent = (student && student.startDate) ? (student.startDate + ' (' + timeStr + ')') : ('الحصة القادمة (' + timeStr + ')');
+          }
+        }
+
+        const elRenewal = document.getElementById('rcptRenewalDate');
+        if (elRenewal) {
+          const renewalDateObj = new Date(payBaseDate.getTime() + (30 * 24 * 60 * 60 * 1000));
+          const ry = renewalDateObj.getFullYear();
+          const rm = String(renewalDateObj.getMonth() + 1).padStart(2, '0');
+          const rday = String(renewalDateObj.getDate()).padStart(2, '0');
+          elRenewal.textContent = rday + '/' + rm + '/' + ry;
+        }
+
         document.getElementById('rcptDateTime').textContent = pay.date || new Date().toLocaleString('ar-DZ');
         document.getElementById('rcptMethod').textContent = pay.method || 'نقداً (Cash)';
         document.getElementById('rcptAmount').textContent = amount.toLocaleString() + ' دج';

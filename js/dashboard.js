@@ -1828,6 +1828,45 @@ document.addEventListener('DOMContentLoaded', () => {
     const elLevelGroup = document.getElementById('rcptLevelGroup');
     if (elLevelGroup) elLevelGroup.textContent = `${(stu && stu.level) || payment.level || 'المستوى الأول'} • ${(stu && stu.group) || payment.group || 'الفوج أ'}`;
 
+    // Subscription Validity, First Session Date, and Expected Renewal Date
+    const daysMap = { 'الأحد': 0, 'الاحد': 0, 'الإثنين': 1, 'الاثنين': 1, 'الثلاثاء': 2, 'الأربعاء': 3, 'الاربعاء': 3, 'الخميس': 4, 'الجمعة': 5, 'السبت': 6 };
+    const payBaseDate = parseBrainovaDate(payment.paidAtIso || payment.date) || new Date();
+    const purchasedSessions = payment.sessionsPurchased || 4;
+
+    const elValidity = document.getElementById('rcptSubscriptionValidity');
+    if (elValidity) {
+      elValidity.textContent = `${purchasedSessions} حصص (${purchasedSessions === 4 ? 'اشتراك شهري' : 'باقة تدريبية'})`;
+    }
+
+    const elFirstSession = document.getElementById('rcptFirstSessionDate');
+    if (elFirstSession) {
+      const dayName = (stu && stu.day) ? stu.day : 'السبت';
+      const timeStr = (stu && stu.sessionTime) ? stu.sessionTime : (stu && stu.startTime ? `${stu.startTime} - ${stu.endTime || ''}` : '14:00 - 16:00');
+      if (daysMap[dayName] !== undefined) {
+        const targetDay = daysMap[dayName];
+        const d = new Date(payBaseDate);
+        d.setHours(12, 0, 0, 0);
+        const currentDay = d.getDay();
+        const daysToAdd = (targetDay - currentDay + 7) % 7;
+        const nextDate = new Date(d.getTime() + (daysToAdd * 24 * 60 * 60 * 1000));
+        const y = nextDate.getFullYear();
+        const m = String(nextDate.getMonth() + 1).padStart(2, '0');
+        const day = String(nextDate.getDate()).padStart(2, '0');
+        elFirstSession.textContent = `${dayName} ${day}/${m}/${y} (${timeStr})`;
+      } else {
+        elFirstSession.textContent = stu && stu.startDate ? `${stu.startDate} (${timeStr})` : `الحصة القادمة (${timeStr})`;
+      }
+    }
+
+    const elRenewal = document.getElementById('rcptRenewalDate');
+    if (elRenewal) {
+      const renewalDateObj = new Date(payBaseDate.getTime() + (30 * 24 * 60 * 60 * 1000));
+      const ry = renewalDateObj.getFullYear();
+      const rm = String(renewalDateObj.getMonth() + 1).padStart(2, '0');
+      const rday = String(renewalDateObj.getDate()).padStart(2, '0');
+      elRenewal.textContent = `${rday}/${rm}/${ry}`;
+    }
+
     const elDateTime = document.getElementById('rcptDateTime');
     if (elDateTime) elDateTime.textContent = payment.date || new Date().toLocaleString('ar-DZ');
 
