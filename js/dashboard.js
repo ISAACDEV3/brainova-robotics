@@ -5645,8 +5645,22 @@ document.addEventListener('DOMContentLoaded', () => {
       daySelect.value = stu.day || 'السبت';
     }
 
-    document.getElementById('editStudentStartTime').value = stu.startTime || '14:00';
-    document.getElementById('editStudentEndTime').value = stu.endTime || '16:00';
+    const startVal = stu.startTime || '14:00';
+    const endVal = stu.endTime || '16:00';
+    const startSel = document.getElementById('editStudentStartTime');
+    const endSel = document.getElementById('editStudentEndTime');
+    if (startSel) {
+      if (!Array.from(startSel.options).some(o => o.value === startVal)) {
+        startSel.add(new Option(startVal, startVal, true, true));
+      }
+      startSel.value = startVal;
+    }
+    if (endSel) {
+      if (!Array.from(endSel.options).some(o => o.value === endVal)) {
+        endSel.add(new Option(endVal, endVal, true, true));
+      }
+      endSel.value = endVal;
+    }
     document.getElementById('editStudentSessionsRemaining').value = stu.sessionsRemaining !== undefined ? stu.sessionsRemaining : 4;
     document.getElementById('editStudentMonthlyFee').value = stu.monthlyFee || 5000;
 
@@ -5677,12 +5691,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (matched && matched.startTime && matched.endTime) {
-      if (startInput) startInput.value = matched.startTime;
-      if (endInput) endInput.value = matched.endTime;
+      if (startInput) {
+        if (!Array.from(startInput.options).some(o => o.value === matched.startTime)) {
+          startInput.add(new Option(matched.startTime, matched.startTime, true, true));
+        }
+        startInput.value = matched.startTime;
+      }
+      if (endInput) {
+        if (!Array.from(endInput.options).some(o => o.value === matched.endTime)) {
+          endInput.add(new Option(matched.endTime, matched.endTime, true, true));
+        }
+        endInput.value = matched.endTime;
+      }
     } else if (matchedGroup?.timeSlot && matchedGroup.timeSlot.includes('-')) {
       const [st, et] = matchedGroup.timeSlot.split('-').map(t => t.trim());
-      if (startInput && st) startInput.value = st;
-      if (endInput && et) endInput.value = et;
+      if (startInput && st) {
+        if (!Array.from(startInput.options).some(o => o.value === st)) {
+          startInput.add(new Option(st, st, true, true));
+        }
+        startInput.value = st;
+      }
+      if (endInput && et) {
+        if (!Array.from(endInput.options).some(o => o.value === et)) {
+          endInput.add(new Option(et, et, true, true));
+        }
+        endInput.value = et;
+      }
     }
   };
 
