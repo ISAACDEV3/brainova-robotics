@@ -307,6 +307,18 @@ function createMain(splash) {
             mainWindow.webContents.send('remote-emergency-wipe');
           }
         });
+        cloudSync.onRestartApp(() => {
+          app.relaunch();
+          app.exit(0);
+        });
+        cloudSync.onClearCache(async () => {
+          try {
+            if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents && mainWindow.webContents.session) {
+              await mainWindow.webContents.session.clearCache();
+              mainWindow.webContents.reloadIgnoringCache();
+            }
+          } catch(e) {}
+        });
         if (typeof store.onDidChange === 'function') {
           store.onDidChange('brainova_remote_commands', (newVal) => {
             if (mainWindow && !mainWindow.isDestroyed() && newVal) {

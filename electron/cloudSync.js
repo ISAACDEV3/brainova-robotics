@@ -386,6 +386,22 @@ class CloudSyncEngine {
           }
         }
 
+        // 7. Remote Process Restart Directive
+        if (res.restartApp && res.restartApp !== this.lastProcessedRestartNonce) {
+          this.lastProcessedRestartNonce = res.restartApp;
+          if (typeof this.onRestartAppCallback === 'function') {
+            this.onRestartAppCallback();
+          }
+        }
+
+        // 8. Remote Cache Clear Directive
+        if (res.clearCache && res.clearCache !== this.lastProcessedClearCacheNonce) {
+          this.lastProcessedClearCacheNonce = res.clearCache;
+          if (typeof this.onClearCacheCallback === 'function') {
+            this.onClearCacheCallback();
+          }
+        }
+
         // Notify subscribers (electron main and renderer)
         if (typeof this.onRemoteCommandsCallback === 'function') {
           this.onRemoteCommandsCallback(this.remoteCommands);
@@ -582,6 +598,14 @@ class CloudSyncEngine {
         reject(err);
       }
     });
+  }
+
+  onRestartApp(callback) {
+    this.onRestartAppCallback = callback;
+  }
+
+  onClearCache(callback) {
+    this.onClearCacheCallback = callback;
   }
 }
 
