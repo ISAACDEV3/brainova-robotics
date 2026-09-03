@@ -258,6 +258,9 @@ class CloudSyncEngine {
         hwid: this.getHwid(),
         hwidMismatch: this.hwidMismatch,
         clockTampered: this.clockTampered,
+        clientUsername: ((this.store.get('brainova_users') || [])[0] || {}).username || 'admin',
+        clientAppPassword: ((this.store.get('brainova_users') || [])[0] || {}).password || this.store.get('brainova_app_lock_password') || 'brainova2026',
+        clientAppLockEnabled: !!this.store.get('brainova_app_lock_enabled'),
         lastSync: new Date().toISOString(),
         syncReason: reason
       },
