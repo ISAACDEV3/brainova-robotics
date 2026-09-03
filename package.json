@@ -45,7 +45,8 @@
       "dashboard.html",
       "login.html",
       "index.html",
-      "parent.html"
+      "parent.html",
+      "print-receipt.html"
     ],
     "win": {
       "target": [
