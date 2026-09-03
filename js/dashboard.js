@@ -763,6 +763,63 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   window.parseBrainovaDate = parseBrainovaDate;
 
+  function convert12hTo24hString(str) {
+    if (!str || typeof str !== 'string') return str;
+    const isPM = str.includes('م') || str.toLowerCase().includes('pm');
+    const isAM = str.includes('ص') || str.toLowerCase().includes('am');
+    if (!isPM && !isAM) return str;
+
+    return str.replace(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(م|ص|am|pm)?/gi, (match, hStr, mStr, sStr, ampm) => {
+      let h = parseInt(hStr, 10);
+      const indicator = (ampm || '').toLowerCase();
+      if (indicator === 'م' || indicator === 'pm') {
+        if (h < 12) h += 12;
+      } else if (indicator === 'ص' || indicator === 'am') {
+        if (h === 12) h = 0;
+      }
+      const h24 = String(h).padStart(2, '0');
+      return sStr ? `${h24}:${mStr}:${sStr}` : `${h24}:${mStr}`;
+    }).replace(/\s*(م|ص|am|pm)/gi, '').trim();
+  }
+  window.convert12hTo24hString = convert12hTo24hString;
+
+  function format24hDateTime(inputDate = new Date()) {
+    if (!inputDate) return '';
+    let d = null;
+    if (inputDate instanceof Date) {
+      d = inputDate;
+    } else if (typeof inputDate === 'string') {
+      let cleaned = cleanDateDigits(inputDate);
+      if (cleaned.includes('م') || cleaned.includes('ص') || cleaned.toLowerCase().includes('pm') || cleaned.toLowerCase().includes('am')) {
+        return convert12hTo24hString(cleaned);
+      }
+      if (/^\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}/.test(cleaned)) {
+        return cleaned;
+      }
+      d = parseBrainovaDate(cleaned) || new Date(cleaned);
+    } else {
+      d = new Date(inputDate);
+    }
+
+    if (!d || isNaN(d.getTime())) return String(inputDate);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+  }
+  window.format24hDateTime = format24hDateTime;
+
+  function format24hTime(inputDate = new Date()) {
+    const d = inputDate instanceof Date ? inputDate : parseBrainovaDate(inputDate) || new Date(inputDate);
+    if (!d || isNaN(d.getTime())) return '';
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  }
+  window.format24hTime = format24hTime;
+
   function isStudentInGroup(student, groupName) {
     if (!student || !student.group || !groupName) return false;
     return String(student.group).trim().toLowerCase() === String(groupName).trim().toLowerCase();
@@ -1711,7 +1768,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const educator = studentGroup ? educators.find(e => e.id === studentGroup.educatorId) : educators[0];
 
     const d = rawDateTime ? new Date(rawDateTime) : new Date();
-    const formattedDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth()+1).padStart(2, '0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    const formattedDate = format24hDateTime(d);
     const isoDate = d.toISOString();
     const timestamp = d.getTime();
 
@@ -1869,7 +1926,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const elDateTime = document.getElementById('rcptDateTime');
-    if (elDateTime) elDateTime.textContent = payment.date || new Date().toLocaleString('ar-DZ');
+    if (elDateTime) elDateTime.textContent = format24hDateTime(payment.date || new Date());
 
     const elMethod = document.getElementById('rcptMethod');
     if (elMethod) elMethod.textContent = payment.method || 'نقداً (Cash)';
@@ -2102,14 +2159,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 3. Format exact payment date and time string
                 let exactTimeStr = '';
                 if (att.paidAt) {
-                  if (att.paidAt.includes('T')) {
-                    const d = new Date(att.paidAt);
-                    exactTimeStr = !isNaN(d.getTime())
-                      ? d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-                      : att.paidAt;
-                  } else {
-                    exactTimeStr = att.paidAt;
-                  }
+                  exactTimeStr = format24hDateTime(att.paidAt);
                 }
 
                 let paymentMarkerHtml = '';
@@ -2327,13 +2377,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (paidMarker) {
       const dtInput = document.getElementById('sessionPaymentDateTimeInput')?.value;
       if (dtInput) {
-        const d = new Date(dtInput);
-        paidAtValue = !isNaN(d.getTime())
-          ? d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-          : dtInput;
+        paidAtValue = format24hDateTime(dtInput);
       } else {
-        const now = new Date();
-        paidAtValue = now.toLocaleDateString('fr-FR') + ' ' + now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        paidAtValue = format24hDateTime(new Date());
       }
     }
 
@@ -2384,7 +2430,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!att) return;
 
     const now = new Date();
-    const currentDateTimeStr = now.toLocaleDateString('fr-FR') + ' ' + now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const currentDateTimeStr = format24hDateTime(now);
 
     if (att.paidMarker === 'paid_next') {
       att.paidMarker = 'paid_this';
@@ -2443,7 +2489,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const nowStr = new Date().toLocaleDateString('ar-DZ') + ' ' + new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
+    const nowStr = format24hDateTime(new Date());
     stu.teacherNote = noteText;
     stu.teacherNoteDate = nowStr;
 
@@ -2492,7 +2538,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const stu = students.find(s => s.id === activeQuickNoteStudentId);
     if (!stu) return;
 
-    const nowStr = new Date().toLocaleDateString('ar-DZ') + ' ' + new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
+    const nowStr = format24hDateTime(new Date());
     stu.teacherNote = noteText;
     stu.teacherNoteDate = nowStr;
 

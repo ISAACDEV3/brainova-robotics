@@ -1236,12 +1236,37 @@
             </select>
           </div>
           <div class="form-group">
-            <label>وقت بداية الحصة *</label>
-            <input type="time" id="newStudentStartTime" required class="form-input" value="14:00" style="font-weight:600; font-family:monospace;">
+            <label>وقت بداية الحصة * (نظام 24 ساعة)</label>
+            <select id="newStudentStartTime" required class="form-input" style="font-weight:700; font-family:monospace;">
+              <option value="08:00">08:00</option>
+              <option value="09:00">09:00</option>
+              <option value="10:00">10:00</option>
+              <option value="11:00">11:00</option>
+              <option value="12:00">12:00</option>
+              <option value="13:00">13:00</option>
+              <option value="14:00" selected>14:00</option>
+              <option value="15:00">15:00</option>
+              <option value="16:00">16:00</option>
+              <option value="17:00">17:00</option>
+              <option value="18:00">18:00</option>
+              <option value="19:00">19:00</option>
+            </select>
           </div>
           <div class="form-group">
-            <label>وقت نهاية الحصة *</label>
-            <input type="time" id="newStudentEndTime" required class="form-input" value="16:00" style="font-weight:600; font-family:monospace;">
+            <label>وقت نهاية الحصة * (نظام 24 ساعة)</label>
+            <select id="newStudentEndTime" required class="form-input" style="font-weight:700; font-family:monospace;">
+              <option value="10:00">10:00</option>
+              <option value="11:00">11:00</option>
+              <option value="12:00">12:00</option>
+              <option value="13:00">13:00</option>
+              <option value="14:00">14:00</option>
+              <option value="15:00">15:00</option>
+              <option value="16:00" selected>16:00</option>
+              <option value="17:00">17:00</option>
+              <option value="18:00">18:00</option>
+              <option value="19:00">19:00</option>
+              <option value="20:00">20:00</option>
+            </select>
           </div>
         </div>
 
@@ -1346,12 +1371,37 @@
             </select>
           </div>
           <div class="form-group">
-            <label>وقت بداية الحصة</label>
-            <input type="time" id="editStudentStartTime" class="form-input" style="font-weight:600; font-family:monospace;">
+            <label>وقت بداية الحصة (24 ساعة)</label>
+            <select id="editStudentStartTime" class="form-input" style="font-weight:700; font-family:monospace;">
+              <option value="08:00">08:00</option>
+              <option value="09:00">09:00</option>
+              <option value="10:00">10:00</option>
+              <option value="11:00">11:00</option>
+              <option value="12:00">12:00</option>
+              <option value="13:00">13:00</option>
+              <option value="14:00">14:00</option>
+              <option value="15:00">15:00</option>
+              <option value="16:00">16:00</option>
+              <option value="17:00">17:00</option>
+              <option value="18:00">18:00</option>
+              <option value="19:00">19:00</option>
+            </select>
           </div>
           <div class="form-group">
-            <label>وقت نهاية الحصة</label>
-            <input type="time" id="editStudentEndTime" class="form-input" style="font-weight:600; font-family:monospace;">
+            <label>وقت نهاية الحصة (24 ساعة)</label>
+            <select id="editStudentEndTime" class="form-input" style="font-weight:700; font-family:monospace;">
+              <option value="10:00">10:00</option>
+              <option value="11:00">11:00</option>
+              <option value="12:00">12:00</option>
+              <option value="13:00">13:00</option>
+              <option value="14:00">14:00</option>
+              <option value="15:00">15:00</option>
+              <option value="16:00">16:00</option>
+              <option value="17:00">17:00</option>
+              <option value="18:00">18:00</option>
+              <option value="19:00">19:00</option>
+              <option value="20:00">20:00</option>
+            </select>
           </div>
         </div>
 
@@ -1632,12 +1682,36 @@
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
           <div class="form-group" style="margin-bottom: 0;">
-            <label data-i18n="dash_start_time">وقت البداية</label>
-            <input type="time" id="sessionStart" required min="08:00" max="18:00" class="form-input">
+            <label data-i18n="dash_start_time">وقت البداية (24 ساعة)</label>
+            <select id="sessionStart" required class="form-input" style="font-weight:700; font-family:monospace;">
+              <option value="08:00">08:00</option>
+              <option value="09:00">09:00</option>
+              <option value="10:00">10:00</option>
+              <option value="11:00">11:00</option>
+              <option value="12:00">12:00</option>
+              <option value="13:00">13:00</option>
+              <option value="14:00" selected>14:00</option>
+              <option value="15:00">15:00</option>
+              <option value="16:00">16:00</option>
+              <option value="17:00">17:00</option>
+              <option value="18:00">18:00</option>
+            </select>
           </div>
           <div class="form-group" style="margin-bottom: 0;">
-            <label data-i18n="dash_end_time">وقت النهاية</label>
-            <input type="time" id="sessionEnd" required min="08:00" max="18:00" class="form-input">
+            <label data-i18n="dash_end_time">وقت النهاية (24 ساعة)</label>
+            <select id="sessionEnd" required class="form-input" style="font-weight:700; font-family:monospace;">
+              <option value="10:00">10:00</option>
+              <option value="11:00">11:00</option>
+              <option value="12:00">12:00</option>
+              <option value="13:00">13:00</option>
+              <option value="14:00">14:00</option>
+              <option value="15:00">15:00</option>
+              <option value="16:00" selected>16:00</option>
+              <option value="17:00">17:00</option>
+              <option value="18:00">18:00</option>
+              <option value="19:00">19:00</option>
+              <option value="20:00">20:00</option>
+            </select>
           </div>
         </div>
         <div class="form-group">

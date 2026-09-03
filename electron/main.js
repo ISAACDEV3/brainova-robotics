@@ -415,6 +415,52 @@ ipcMain.on('print-window', (event) => {
   }
 });
 
+function convert12hTo24hString(str) {
+  if (!str || typeof str !== 'string') return str;
+  const isPM = str.includes('م') || str.toLowerCase().includes('pm');
+  const isAM = str.includes('ص') || str.toLowerCase().includes('am');
+  if (!isPM && !isAM) return str;
+
+  return str.replace(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(م|ص|am|pm)?/gi, (match, hStr, mStr, sStr, ampm) => {
+    let h = parseInt(hStr, 10);
+    const indicator = (ampm || '').toLowerCase();
+    if (indicator === 'م' || indicator === 'pm') {
+      if (h < 12) h += 12;
+    } else if (indicator === 'ص' || indicator === 'am') {
+      if (h === 12) h = 0;
+    }
+    const h24 = String(h).padStart(2, '0');
+    return sStr ? `${h24}:${mStr}:${sStr}` : `${h24}:${mStr}`;
+  }).replace(/\s*(م|ص|am|pm)/gi, '').trim();
+}
+
+function format24hDateTime(inputDate = new Date()) {
+  if (!inputDate) return '';
+  let d = null;
+  if (inputDate instanceof Date) {
+    d = inputDate;
+  } else if (typeof inputDate === 'string') {
+    let cleaned = inputDate.trim();
+    if (cleaned.includes('م') || cleaned.includes('ص') || cleaned.toLowerCase().includes('pm') || cleaned.toLowerCase().includes('am')) {
+      return convert12hTo24hString(cleaned);
+    }
+    if (/^\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}/.test(cleaned)) {
+      return cleaned;
+    }
+    d = new Date(cleaned);
+  } else {
+    d = new Date(inputDate);
+  }
+
+  if (!d || isNaN(d.getTime())) return String(inputDate);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
+}
+
 ipcMain.on('print-receipt', (event, payload) => {
   try {
     const paymentId = (typeof payload === 'object' && payload && payload.id) ? payload.id : (typeof payload === 'string' ? payload : '');
@@ -427,7 +473,7 @@ ipcMain.on('print-receipt', (event, payload) => {
     const stuName = (stu && stu.name) || (pay && pay.studentName) || 'تلميذ';
     const parentName = (stu && stu.parentName) || (pay && pay.parentName) || 'ولي الأمر';
     const levelGroup = `${(pay && pay.level) || 'المستوى الأول'} • ${(pay && pay.group) || 'الفوج أ'}`;
-    const dateStr = (pay && pay.date) || new Date().toLocaleString('ar-DZ');
+    const dateStr = format24hDateTime((pay && pay.date) || new Date());
     const payMethod = (pay && pay.method) || 'نقداً (Cash)';
     const amountNum = Number((pay && pay.amountPaid) || 5000);
     const amountStr = `${amountNum.toLocaleString()} دج`;
