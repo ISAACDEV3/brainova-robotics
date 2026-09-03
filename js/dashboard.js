@@ -20,44 +20,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const MemoryCache = {};
 
-      function initializeData() {
-    const singleEducator = [
-      { id: "EDU-001", name: "عابد اسحاق تقي الدين", specialty: "هندسة الروبوتيك والذكاء الاصطناعي", phone: "0791194633" }
-    ];
-
-    const defaultRooms = [
-      { id: "ROOM-1", name: "قاعة Brainova الرئيسية", capacity: 14, type: "قاعة تدريب تفاعلية", equipment: "حواسيب، حقائب أردوينو، شاشة ذكية", status: "available", currentGroup: "الفوج أ (مبتدئ)" },
-      { id: "ROOM-2", name: "قاعة البرمجة والروبوتيك", capacity: 16, type: "مخبر حواسيب", equipment: "حواسيب محمولة، شاشة عرض، إنترنت", status: "available", currentGroup: "الفوج ب (متوسط)" },
-      { id: "ROOM-3", name: "مخبر الذكاء الاصطناعي و3D", capacity: 12, type: "مخبر ابتكار وتصنيع", equipment: "طابعات 3D، كاميرات AI، أردوينو متقدم", status: "available", currentGroup: "الفوج ج (متقدم)" }
-    ];
-
-    const defaultGroups = [
-      { id: "GRP-001", name: "الفوج أ (مبتدئ)", level: "المستوى الأول", ageCategory: "6 - 8 سنوات (براعم)", room: "قاعة Brainova الرئيسية", educatorId: "EDU-001", educatorName: "عابد اسحاق تقي الدين", maxStudents: 12 },
-      { id: "GRP-002", name: "الفوج ب (متوسط)", level: "المستوى الثاني", ageCategory: "8 - 11 سنة (ناشئين)", room: "قاعة البرمجة والروبوتيك", educatorId: "EDU-001", educatorName: "عابد اسحاق تقي الدين", maxStudents: 12 },
-      { id: "GRP-003", name: "الفوج ج (متقدم)", level: "المستوى الثالث", ageCategory: "11 - 15 سنة (فتيان)", room: "مخبر الذكاء الاصطناعي و3D", educatorId: "EDU-001", educatorName: "عابد اسحاق تقي الدين", maxStudents: 10 }
-    ];
-
-    const defaultCourses = [
-      { id: "CRS-001", name: "المستوى الأول: التفكير المنطقي وأساسيات الروبوت", age: "6-8 سنوات", duration: "3 أشهر (12 حصة)" },
-      { id: "CRS-002", name: "المستوى الثاني: البرمجة المرئية بسكراتش", age: "8-11 سنة", duration: "3 أشهر (12 حصة)" },
-      { id: "CRS-003", name: "المستوى الثالث: برمجة الأردوينو والمستشعرات", age: "11-15 سنة", duration: "4 أشهر (16 حصة)" },
-      { id: "CRS-004", name: "المستوى الرابع: الذكاء الاصطناعي والرؤية الحاسوبية", age: "12-18 سنة", duration: "4 أشهر (16 حصة)" }
-    ];
-
-    const defaultSchedule = [
-      { id: "SCH-001", groupId: "GRP-001", groupName: "الفوج أ (مبتدئ)", educatorName: "عابد اسحاق تقي الدين", day: "Saturday", startTime: "08:00", endTime: "10:00", room: "قاعة Brainova الرئيسية" },
-      { id: "SCH-002", groupId: "GRP-002", groupName: "الفوج ب (متوسط)", educatorName: "عابد اسحاق تقي الدين", day: "Saturday", startTime: "10:00", endTime: "12:00", room: "قاعة البرمجة والروبوتيك" },
-      { id: "SCH-003", groupId: "GRP-003", groupName: "الفوج ج (متقدم)", educatorName: "عابد اسحاق تقي الدين", day: "Saturday", startTime: "14:00", endTime: "16:00", room: "مخبر الذكاء الاصطناعي و3D" }
-    ];
-
+  function initializeData() {
     const defaultData = {
       brainova_registrations: [],
       brainova_students: [],
-      brainova_educators: singleEducator,
-      brainova_groups: defaultGroups,
-      brainova_rooms: defaultRooms,
-      brainova_courses: defaultCourses,
-      brainova_schedule: defaultSchedule,
+      brainova_educators: [],
+      brainova_groups: [],
+      brainova_rooms: [],
+      brainova_courses: [],
+      brainova_schedule: [],
       brainova_attendance: [],
       brainova_payments: [],
       brainova_settings: {
