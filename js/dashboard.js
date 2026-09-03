@@ -343,6 +343,22 @@ document.addEventListener('DOMContentLoaded', () => {
       values = [item];
     }
 
+    // Automatic semantic tags for recognized entities
+    if (item && item.id && item.name && item.group !== undefined) {
+      values.push('طالب طلاب تلميذ تلاميذ student students');
+    } else if (item && item.ageCategory !== undefined) {
+      values.push('فوج افواج مجموعة مجموعات group groups');
+    } else if (item && item.amountPaid !== undefined) {
+      values.push('دفع مدفوعات وصل وصولات اشتراك تسديد payment payments receipt receipts');
+    } else if (item && item.specialty !== undefined) {
+      values.push('استاذ اساتذة معلم معلمون مؤطر مؤطرين teacher educator educators');
+    } else if (item && item.capacity !== undefined) {
+      values.push('قاعة قاعات مخبر مخابر مختبر مختبرات room rooms lab labs');
+    }
+    if (item && item.keywords) {
+      values.push(item.keywords);
+    }
+
     const rawJoined = values
       .filter(Boolean)
       .map(v => (typeof v === 'object' ? JSON.stringify(v) : String(v)))
@@ -363,9 +379,14 @@ document.addEventListener('DOMContentLoaded', () => {
       return true;
     }
 
-    // Check 3: All tokens must match in the item
+    // Check 3: All tokens must match in the item (including Arabic 'ال' stripping)
     return qTokens.every(token => {
-      return normJoined.includes(token) || noSpaceNormJoined.includes(token);
+      if (normJoined.includes(token) || noSpaceNormJoined.includes(token)) return true;
+      if (token.startsWith('ال') && token.length > 3) {
+        const bare = token.slice(2);
+        if (normJoined.includes(bare) || noSpaceNormJoined.includes(bare)) return true;
+      }
+      return false;
     });
   }
   window.matchesSmartSearch = matchesSmartSearch;
@@ -3021,13 +3042,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const groups = getData('brainova_groups');
 
     const staticActions = [
-      { id: 'act_add_student', label: 'تسجيل تلميذ جديد', sub: 'فتح نافذة إضافة طالب جديد', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>', type: 'action', run: () => openAddStudentModal() },
-      { id: 'act_attendance', label: 'تفقد الحضور والجلسات', sub: 'الانتقال إلى جدول تسجيل الحضور اليومي', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>', type: 'nav', target: 'attendance' },
-      { id: 'act_qr_scan', label: 'ماسح الحضور الذكي بالكاميرا', sub: 'مسح بطاقات الطلاب بالكاميرا تلقائياً', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>', type: 'action', run: () => openQrScannerModal() },
-      { id: 'act_batch_badges', label: 'طباعة بطاقات الفوج (A4)', sub: 'توليد ورقة A4 مجمعة لبطاقات طلاب الفوج', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>', type: 'action', run: () => openBatchBadgesModal() },
-      { id: 'act_backup_export', label: 'تصدير نسخة احتياطية فورية', sub: 'حفظ ملف قاعدة البيانات بالكامل', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>', type: 'action', run: () => doBackupExport() },
-      { id: 'act_whatsapp_hub', label: 'الوصي الآلي لواتساب (Guardian)', sub: 'إدارة الروبوت والمحادثات المباشرة', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>', type: 'nav', target: 'whatsapp' },
-      { id: 'act_schedule', label: 'جدول الحصص والقاعات', sub: 'عرض الحصص والمختبرات', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>', type: 'nav', target: 'schedule' }
+      { id: 'nav_students', label: 'قائمة الطلاب والتلاميذ', sub: 'عرض وإدارة جميع الطلاب المسجلين والاشتراكات (Students)', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', type: 'nav', target: 'students', keywords: 'الطلاب طالب تلاميذ تلميذ students' },
+      { id: 'act_add_student', label: 'تسجيل تلميذ جديد (+ Add Student)', sub: 'فتح نافذة إضافة طالب جديد', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>', type: 'action', run: () => openAddStudentModal(), keywords: 'اضافة طالب تسجيل جديد' },
+      { id: 'nav_payments', label: 'المدفوعات والوصولات المالية', sub: 'إدارة اشتراكات الطلاب وتسديد المستحقات والوصولات', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>', type: 'nav', target: 'payments', keywords: 'مدفوعات دفع وصل وصولات payments' },
+      { id: 'act_record_payment', label: 'تسجيل دفعة وإصدار وصل مالي', sub: 'تسديد اشتراك شهري وإصدار إيصال معتمد', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4"/><path d="M12 16V8"/></svg>', type: 'action', run: () => openRecordPaymentModal(), keywords: 'تسجيل دفعة وصل مالي دفع' },
+      { id: 'nav_attendance', label: 'تفقد الحضور والغياب', sub: 'الانتقال إلى جدول تسجيل الحضور اليومي وتفقد الأفواج', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>', type: 'nav', target: 'attendance', keywords: 'حضور غياب جلسات حصة attendance' },
+      { id: 'act_quick_att', label: 'تسجيل الحضور السريع للأفواج', sub: 'نافذة التحضير الفوري بضغطة زر لجميع الطلاب', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m13 2-2 2.5h3L11 11l5-2-4 11 9-12h-4l3-6z"/></svg>', type: 'action', run: () => openQuickAttendanceModal(), keywords: 'حضور سريع تحضير فوري' },
+      { id: 'act_qr_scan', label: 'ماسح الحضور الذكي بالكاميرا (QR)', sub: 'مسح بطاقات الطلاب الذكية بالكاميرا تلقائياً', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>', type: 'action', run: () => openQrScannerModal(), keywords: 'كاميرا باركود qr كود ماسح' },
+      { id: 'nav_groups', label: 'الأفواج والفئات العمرية', sub: 'عرض وتنظيم مجموعات الطلاب والقاعات', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>', type: 'nav', target: 'groups', keywords: 'افواج فئات عمرية مجموعات groups' },
+      { id: 'nav_educators', label: 'طاقم الأساتذة والمعلمين', sub: 'إدارة المعلمين وتوزيعهم على الأفواج', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>', type: 'nav', target: 'educators', keywords: 'اساتذة معلمين مؤطرين educators' },
+      { id: 'nav_rooms', label: 'تنظيم وتوزيع القاعات والمخابر', sub: 'متابعة الطاقة الاستيعابية وجدول القاعات في الوقت الفعلي', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M3 7v14"/><path d="M21 7v14"/><path d="M7 21V11a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v10"/></svg>', type: 'nav', target: 'rooms', keywords: 'قاعات مخابر مختبرات rooms' },
+      { id: 'nav_schedule', label: 'جدول الحصص والتوقيت الأسبوعي', sub: 'عرض جدول الحصص الأسبوعي لجميع الأفواج', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>', type: 'nav', target: 'schedule', keywords: 'جدول حصص توقيت اسبوعي schedule' },
+      { id: 'nav_registrations', label: 'طلبات التسجيل الجديدة', sub: 'مراجعة طلبات التسجيل الواردة وقبولها في الأفواج', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>', type: 'nav', target: 'registrations', keywords: 'تسجيلات طلبات جديدة registrations' },
+      { id: 'nav_settings', label: 'مركز الأمان والنسخ الاحتياطي (Vault)', sub: 'إدارة النسخ الاحتياطية وسجل تدقيق العمليات والأمان المشفر', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>', type: 'nav', target: 'settings', keywords: 'امان نسخ احتياطي اعدادات سحابي vault backup security' },
+      { id: 'nav_whatsapp_hub', label: 'الوصي الآلي لواتساب (Guardian)', sub: 'إدارة محادثات واتساب الآلية وإشعارات الأولياء', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>', type: 'nav', target: 'whatsapp', keywords: 'واتساب بوت وصي guardian whatsapp' },
+      { id: 'act_batch_badges', label: 'طباعة بطاقات الفوج (A4 Badges)', sub: 'توليد ورقة A4 مجمعة لبطاقات طلاب الفوج للطباعة', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>', type: 'action', run: () => openBatchBadgesModal(), keywords: 'بطاقات طباعة badges a4' },
+      { id: 'act_backup_export', label: 'تصدير نسخة احتياطية فورية', sub: 'حفظ ملف قاعدة البيانات بالكامل (JSON)', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>', type: 'action', run: () => doBackupExport(), keywords: 'تصدير نسخة احتياطية حفظ بيانات' }
     ];
 
     let matchedActions = [];
