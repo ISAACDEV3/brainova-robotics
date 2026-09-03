@@ -1542,7 +1542,7 @@ document.addEventListener('DOMContentLoaded', () => {
         studentId,
         studentName: stu ? stu.name : 'Unknown',
         status: data.status,
-        note: data.note || (selectedType === 'makeup' ? 'حصة تعويضية' : '')
+        note: data.note || ''
       });
       savedCount++;
 
@@ -2169,7 +2169,7 @@ document.addEventListener('DOMContentLoaded', () => {
                       ${statusBadge}
                     </td>
                     <td style="padding:6px 8px; color:#CBD5E1;">
-                      ${att.note || 'حصة تدريبية'}
+                      ${(att.note && att.note.trim() && !att.note.includes('حصة تدريبية') && att.note !== 'الحصة الافتتاحية الأولى') ? att.note : '<span style="color:#64748B;">—</span>'}
                     </td>
                     <td style="padding:6px 8px; text-align:center;">
                       ${paymentMarkerHtml}
@@ -2348,7 +2348,7 @@ document.addEventListener('DOMContentLoaded', () => {
       paidMarker: paidMarker || null,
       paidMarkerLabel: paidMarker === 'paid_next' ? 'دفع في الحصة التالية' : (paidMarker === 'paid_this' ? 'سدد في هذه الحصة' : null),
       paidAt: paidAtValue,
-      note: topic || (sessionStatus === 'present' ? 'حصة تدريبية مكتملة' : (sessionStatus === 'late' ? 'حضور متأخر' : 'غياب'))
+      note: topic || ''
     };
 
     allAttendance.unshift(newRecord);
@@ -4126,7 +4126,7 @@ document.addEventListener('DOMContentLoaded', () => {
         studentId: studentId,
         studentName: stu ? stu.name : 'Unknown',
         status: data.status,
-        note: data.note || (selectedType === 'makeup' ? 'حصة تعويضية' : '')
+        note: data.note || ''
       });
       savedCount++;
 
@@ -5552,7 +5552,7 @@ document.addEventListener('DOMContentLoaded', () => {
         studentName: name,
         status: 'present',
         paidMarker: payInitial ? 'paid_this' : null,
-        note: 'الحصة الافتتاحية الأولى'
+        note: ''
       });
       saveData('brainova_attendance', allAttendance);
       newStudent.lastAttendance = `${startDate} (${sessionTime})`;
