@@ -3367,6 +3367,20 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- 1-CLICK WHATSAPP DISPATCH SYSTEM ---
   let currentWaStudent = null;
 
+  function formatAlgerianPhoneForWhatsApp(phone) {
+    if (!phone) return '';
+    let cleaned = String(phone).replace(/[^\d]/g, '');
+    if (cleaned.startsWith('00213')) cleaned = cleaned.substring(5);
+    else if (cleaned.startsWith('00')) cleaned = cleaned.substring(2);
+    else if (cleaned.startsWith('213')) cleaned = cleaned.substring(3);
+    if (cleaned.startsWith('0')) cleaned = cleaned.substring(1);
+    if (cleaned.length === 9) {
+      return '213' + cleaned;
+    }
+    return cleaned;
+  }
+  window.formatAlgerianPhoneForWhatsApp = formatAlgerianPhoneForWhatsApp;
+
   window.openWhatsAppDispatchModal = function(studentId, templateType = 'reminder') {
     const stu = getData('brainova_students').find(s => s.id === studentId);
     if (!stu) {
@@ -3376,7 +3390,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     currentWaStudent = stu;
     document.getElementById('waStudentNameDisplay').textContent = `الطالب: ${stu.name} (${stu.group || 'بدون فوج'})`;
-    document.getElementById('waParentPhoneDisplay').textContent = stu.parentPhone || '0791 19 46 33';
+    document.getElementById('waParentPhoneDisplay').textContent = (stu.parentPhone && stu.parentPhone !== '—') ? stu.parentPhone : 'غير مسجل';
 
     selectWaTemplate(templateType);
     document.getElementById('whatsappDispatchModal').classList.add('active');
@@ -3412,18 +3426,23 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     if (!currentWaStudent) return;
 
-    let phone = (currentWaStudent.parentPhone || '0791194633').replace(/\s+/g, '').replace(/[^0-9]/g, '');
-    if (phone.startsWith('0')) {
-      phone = '213' + phone.substring(1);
-    } else if (!phone.startsWith('213')) {
-      phone = '213' + phone;
+    const rawPhone = currentWaStudent.parentPhone;
+    if (!rawPhone || rawPhone === '—' || rawPhone.trim() === '') {
+      showToast('⚠️ لا يوجد رقم هاتف مسجل لولي أمر هذا الطالب! يرجى إضافته أولاً في ملف التلميذ.', 'warning');
+      return;
+    }
+
+    const phone = formatAlgerianPhoneForWhatsApp(rawPhone);
+    if (!phone || phone.length < 8) {
+      showToast('⚠️ رقم هاتف ولي الأمر غير صالح أو غير مكتمل!', 'error');
+      return;
     }
 
     const message = encodeURIComponent(document.getElementById('waMessageContent').value);
     const url = `https://wa.me/${phone}?text=${message}`;
     window.open(url, '_blank');
     closeWhatsAppDispatchModal();
-    showToast('تم فتح محادثة الواتساب بنجاح!', 'success');
+    showToast(`✅ تم فتح محادثة الواتساب لولي أمر الطالب (${currentWaStudent.name}) بنجاح!`, 'success');
   };
 
   // --- REGISTRATIONS LOGIC ---

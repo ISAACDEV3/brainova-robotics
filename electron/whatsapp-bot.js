@@ -78,20 +78,29 @@ class WhatsAppBot {
   formatPhoneToJid(phone) {
     if (!phone) return null;
     let cleaned = String(phone).replace(/[^\d]/g, '');
-    if (cleaned.startsWith('00')) cleaned = cleaned.substring(2);
-    if (cleaned.startsWith('0') && cleaned.length === 10) {
-      cleaned = '213' + cleaned.substring(1);
+    if (cleaned.startsWith('00213')) cleaned = cleaned.substring(5);
+    else if (cleaned.startsWith('00')) cleaned = cleaned.substring(2);
+    else if (cleaned.startsWith('213')) cleaned = cleaned.substring(3);
+
+    if (cleaned.startsWith('0')) cleaned = cleaned.substring(1);
+
+    if (cleaned.length === 9) {
+      cleaned = '213' + cleaned;
+    } else if (cleaned.length < 8) {
+      return null;
     }
-    if (cleaned.length < 8) return null;
     return `${cleaned}@s.whatsapp.net`;
   }
 
   cleanPhone(phone) {
     if (!phone) return '';
     let cleaned = String(phone).replace(/[^\d]/g, '');
-    if (cleaned.startsWith('00')) cleaned = cleaned.substring(2);
-    if (cleaned.startsWith('213') && cleaned.length >= 11) {
-      cleaned = '0' + cleaned.substring(3);
+    if (cleaned.startsWith('00213')) cleaned = cleaned.substring(5);
+    else if (cleaned.startsWith('00')) cleaned = cleaned.substring(2);
+    else if (cleaned.startsWith('213')) cleaned = cleaned.substring(3);
+    if (cleaned.startsWith('0')) cleaned = cleaned.substring(1);
+    if (cleaned.length === 9) {
+      cleaned = '0' + cleaned;
     }
     return cleaned;
   }
@@ -100,11 +109,13 @@ class WhatsAppBot {
     if (!students || !Array.isArray(students)) return null;
     const rawDigits = String(senderJid).split('@')[0].replace(/[^\d]/g, '');
     const cleanSender = this.cleanPhone(rawDigits);
+    const senderLast8 = rawDigits.slice(-8);
 
     return students.find(s => {
       const p = this.cleanPhone(s.parentPhone);
-      if (!p) return false;
-      return p === cleanSender || p.endsWith(cleanSender.slice(-8)) || cleanSender.endsWith(p.slice(-8));
+      if (!p || p === '—') return false;
+      const pRaw = String(s.parentPhone).replace(/[^\d]/g, '');
+      return p === cleanSender || pRaw.slice(-8) === senderLast8;
     }) || null;
   }
 
