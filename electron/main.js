@@ -794,6 +794,56 @@ ipcMain.handle('backup-import', async () => {
   }
 });
 
+ipcMain.handle('backup-list', async () => {
+  try {
+    const backupDir = getBackupDirectory();
+    if (!fs.existsSync(backupDir)) return { ok: true, files: [] };
+    const files = fs.readdirSync(backupDir)
+      .filter(f => f.endsWith('.brainova') || f.endsWith('.json'))
+      .map(f => {
+        const fullPath = path.join(backupDir, f);
+        const stat = fs.statSync(fullPath);
+        return {
+          name: f,
+          path: fullPath,
+          size: stat.size,
+          sizeFormatted: (stat.size / 1024).toFixed(1) + ' KB',
+          createdAt: stat.mtime.toISOString(),
+          createdDateStr: stat.mtime.toLocaleDateString('ar-DZ') + ' ' + stat.mtime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+        };
+      })
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return { ok: true, files };
+  } catch (err) {
+    return { ok: false, error: err.message, files: [] };
+  }
+});
+
+ipcMain.handle('backup-restore-file', async (event, filePath) => {
+  try {
+    if (!filePath || !fs.existsSync(filePath)) return { ok: false, error: 'ملف النسخة الاحتياطية غير موجود' };
+    const raw = fs.readFileSync(filePath, 'utf8');
+    const data = JSON.parse(raw);
+    Object.entries(data).forEach(([k, v]) => store.set(k, v));
+    performAutoBackup();
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('backup-delete-file', async (event, filePath) => {
+  try {
+    if (filePath && fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      return { ok: true };
+    }
+    return { ok: false, error: 'الملف غير موجود' };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
 // ── IPC: PARENT PORTAL INFO + QR CODE ────────────────────────────────────────
 ipcMain.handle('get-portal-info', async () => {
   const ip = getLocalIP();

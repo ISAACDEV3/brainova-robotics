@@ -35,6 +35,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     export: () => ipcRenderer.invoke('backup-export'),
     import: () => ipcRenderer.invoke('backup-import'),
     openFolder: () => ipcRenderer.send('open-backup-folder'),
+    list: () => ipcRenderer.invoke('backup-list'),
+    restoreFile: (filePath) => ipcRenderer.invoke('backup-restore-file', filePath),
+    deleteFile: (filePath) => ipcRenderer.invoke('backup-delete-file', filePath),
   },
 
   // ── Parent Portal
