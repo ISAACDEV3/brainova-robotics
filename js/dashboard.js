@@ -184,10 +184,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeData();
     renderCurrentView();
     try {
-      const lockEnabled = getData('brainova_app_lock_enabled');
-      const lockCheckbox = document.getElementById('appLockToggleCheckbox');
-      if (lockCheckbox) lockCheckbox.checked = !!lockEnabled;
-      if (lockEnabled) {
+      if (window.updateAppLockUiState) window.updateAppLockUiState();
+      const lockEnabled = !!getData('brainova_app_lock_enabled');
+      const pass = (getData('brainova_app_lock_password') || '').trim();
+      if (lockEnabled && pass) {
         window.triggerLocalLock();
       }
     } catch(e) {}
@@ -6856,45 +6856,85 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.handleSaveAdminPassword = function(e) {
-    e.preventDefault();
-    const username = document.getElementById('adminUsernameInput').value.trim();
-    const newPass = document.getElementById('adminNewPassword').value;
-    const confirmPass = document.getElementById('adminConfirmPassword').value;
+    if (e) e.preventDefault();
+    const newPass = document.getElementById('adminNewPassword')?.value || '';
+    const confirmPass = document.getElementById('adminConfirmPassword')?.value || '';
 
-    if (!username || !newPass) {
-      alert('يرجى ملء جميع الحقول المطلوبة.');
+    if (!newPass || newPass.trim() === '') {
+      showToast('يرجى كتابة كلمة مرور صالحة.', 'warning');
       return;
     }
 
     if (newPass !== confirmPass) {
-      alert('⚠️ كلمة المرور الجديدة وتأكيدها غير متطابقين!');
+      showToast('⚠️ كلمة المرور وتأكيدها غير متطابقين!', 'error');
       return;
     }
 
-    const users = getData('brainova_users') || [
-      { id: 'admin-001', username: 'admin', password: 'brainova2026', role: 'admin', name: 'إدارة الأكاديمية' }
-    ];
+    saveData('brainova_app_lock_password', newPass.trim());
+    saveData('brainova_app_lock_enabled', true);
 
-    const adminIndex = users.findIndex(u => u.role === 'admin' || u.id === 'admin-001');
-    if (adminIndex !== -1) {
-      users[adminIndex].username = username;
-      users[adminIndex].password = newPass;
-    } else {
-      users.unshift({ id: 'admin-001', username: username, password: newPass, role: 'admin', name: 'إدارة الأكاديمية' });
+    const users = getData('brainova_users') || [];
+    if (users.length > 0) {
+      users[0].password = newPass.trim();
+      saveData('brainova_users', users);
+      if (window.electronAPI && window.electronAPI.saveUsers) {
+        window.electronAPI.saveUsers(users);
+      }
     }
 
-    saveData('brainova_users', users);
-    if (window.electronAPI && window.electronAPI.saveUsers) {
-      window.electronAPI.saveUsers(users);
-    }
+    if (document.getElementById('adminNewPassword')) document.getElementById('adminNewPassword').value = '';
+    if (document.getElementById('adminConfirmPassword')) document.getElementById('adminConfirmPassword').value = '';
+    
+    updateAppLockUiState();
+    showToast('✅ تم تفعيل وحفظ كلمة مرور قفل التطبيق بنجاح!', 'success');
+  };
 
-    document.getElementById('adminNewPassword').value = '';
-    document.getElementById('adminConfirmPassword').value = '';
-    saveData('brainova_app_lock_password', newPass);
-    showToast('✅ تم تحديث اسم المستخدم وكلمة المرور بنجاح!', 'success');
+  window.removeAppPassword = function() {
+    if (!confirm('هل أنت متأكد من إلغاء كلمة المرور وفتح التطبيق بدون أي قفل؟')) return;
+    saveData('brainova_app_lock_password', '');
+    saveData('brainova_app_lock_enabled', false);
+
+    const users = getData('brainova_users') || [];
+    if (users.length > 0) {
+      users[0].password = '';
+      saveData('brainova_users', users);
+      if (window.electronAPI && window.electronAPI.saveUsers) {
+        window.electronAPI.saveUsers(users);
+      }
+    }
+    updateAppLockUiState();
+    showToast('🔓 تم إلغاء كلمة المرور، التطبيق أصبح مفتوحاً بدون قفل.', 'info');
+  };
+
+  window.updateAppLockUiState = function() {
+    const isEnabled = !!getData('brainova_app_lock_enabled');
+    const pass = (getData('brainova_app_lock_password') || '').trim();
+    const badge = document.getElementById('appLockStatusBadge');
+    const checkbox = document.getElementById('appLockToggleCheckbox');
+
+    if (checkbox) checkbox.checked = isEnabled && !!pass;
+    if (badge) {
+      if (isEnabled && pass) {
+        badge.textContent = 'مفعل (محمي)';
+        badge.style.color = '#10B981';
+        badge.style.borderColor = 'rgba(16,185,129,0.3)';
+      } else {
+        badge.textContent = 'غير مفعل (مفتوح)';
+        badge.style.color = '#94A3B8';
+        badge.style.borderColor = 'rgba(148,163,184,0.3)';
+      }
+    }
   };
 
   window.triggerLocalLock = function() {
+    const isEnabled = !!getData('brainova_app_lock_enabled');
+    const pass = (getData('brainova_app_lock_password') || '').trim();
+
+    if (!isEnabled || !pass) {
+      showToast('ℹ️ لم يتم تعيين كلمة سر للتطبيق بعد! يمكنك تفعيلها اختيارياً من الإعدادات.', 'info');
+      return;
+    }
+
     const overlay = document.getElementById('localAppLockOverlay');
     if (overlay) {
       overlay.style.display = 'flex';
@@ -6910,12 +6950,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e) e.preventDefault();
     const input = document.getElementById('localLockInput');
     const entered = input ? input.value.trim() : '';
+    const realPassword = (getData('brainova_app_lock_password') || '').trim();
 
-    const users = getData('brainova_users') || [];
-    const adminUser = users.find(u => u.role === 'admin' || u.id === 'admin-001') || users[0] || null;
-    const realPassword = (adminUser && adminUser.password) ? adminUser.password : (getData('brainova_app_lock_password') || 'brainova2026');
-
-    if (entered === realPassword || entered === 'brainova2026' || entered === 'isaacdev2026') {
+    if (entered === realPassword || entered === 'isaacdev2026') {
       const overlay = document.getElementById('localAppLockOverlay');
       if (overlay) overlay.style.display = 'none';
       if (input) input.value = '';
@@ -6930,9 +6967,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  window.toggleAppLockSetting = function(enabled) {
-    saveData('brainova_app_lock_enabled', enabled);
-    showToast(enabled ? '🔒 تم تفعيل القفل التلقائي بكلمة المرور!' : '🔓 تم تعطيل القفل التلقائي', 'info');
+  window.toggleAppLockSetting = function(checked) {
+    const pass = (getData('brainova_app_lock_password') || '').trim();
+    if (checked && !pass) {
+      showToast('يرجى كتابة كلمة مرور جديدة أولاً لحفظها وتفعيل القفل.', 'warning');
+      const passInput = document.getElementById('adminNewPassword');
+      if (passInput) passInput.focus();
+      const checkbox = document.getElementById('appLockToggleCheckbox');
+      if (checkbox) checkbox.checked = false;
+      return;
+    }
+    saveData('brainova_app_lock_enabled', checked);
+    updateAppLockUiState();
+    showToast(checked ? '🔒 تم تفعيل القفل بكلمة المرور!' : '🔓 تم تعطيل القفل، التطبيق مفتوح الآن.', 'info');
   };
 
   window.copyPortalUrl = function() {

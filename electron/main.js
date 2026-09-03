@@ -15,7 +15,7 @@ const store = new Store({ name: 'brainova-data' });
 // ── DEFAULT USERS ─────────────────────────────────────────────────────────────
 if (!store.has('brainova_users')) {
   store.set('brainova_users', [
-    { id: 'admin-001', username: 'admin', password: 'brainova2026', role: 'admin', name: 'إدارة الأكاديمية' }
+    { id: 'admin-001', username: 'admin', password: '', role: 'admin', name: 'إدارة الأكاديمية' }
   ]);
 }
 

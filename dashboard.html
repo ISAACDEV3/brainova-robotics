@@ -798,44 +798,47 @@
             <!-- Right Column -->
             <div style="display:flex; flex-direction:column; gap:20px;">
 
-              <!-- Security & Password Management -->
+              <!-- Security & Password Management (Optional) -->
               <div class="table-container" style="padding:20px;">
                 <div class="table-header" style="margin-bottom:16px;">
-                  <h3 class="table-title">أمان النظام وكلمة المرور</h3>
-                  <span class="dash-pill-muted" style="color:#10B981; border-color:rgba(16,185,129,0.3);">المدير العام</span>
+                  <h3 class="table-title">حماية وقفل التطبيق بكلمة سر (اختياري)</h3>
+                  <span class="dash-pill-muted" id="appLockStatusBadge" style="color:#94A3B8; border-color:rgba(148,163,184,0.3);">غير مفعل (مفتوح)</span>
                 </div>
                 <p style="font-size:0.82rem; color:var(--color-text-dim); margin-bottom:14px; line-height:1.6;">
-                  يمكن لمدير المركز تغيير اسم المستخدم وكلمة المرور لحماية بيانات المركز والطلاب.
+                  افتراضياً، التطبيق يفتح مباشرة بدون أي كلمة سر. يمكنك تفعيل القفل وإضافة كلمة سر خاصة بك لحماية بيانات المركز والطلاب إذا رغبت في ذلك.
                 </p>
-                <form onsubmit="handleSaveAdminPassword(event)" style="display:flex; flex-direction:column; gap:12px;">
-                  <div class="form-group" style="margin-bottom:0;">
-                    <label style="font-size:0.78rem; font-weight:700; color:#94A3B8;">اسم المستخدم</label>
-                    <input type="text" id="adminUsernameInput" class="form-input" value="admin" required style="height:36px; font-size:0.85rem;">
-                  </div>
-                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                    <div class="form-group" style="margin-bottom:0;">
-                      <label style="font-size:0.78rem; font-weight:700; color:#94A3B8;">كلمة المرور الجديدة</label>
-                      <input type="password" id="adminNewPassword" class="form-input" placeholder="••••••••" required minlength="4" style="height:36px; font-size:0.85rem;">
-                    </div>
-                    <div class="form-group" style="margin-bottom:0;">
-                      <label style="font-size:0.78rem; font-weight:700; color:#94A3B8;">تأكيد كلمة المرور</label>
-                      <input type="password" id="adminConfirmPassword" class="form-input" placeholder="••••••••" required minlength="4" style="height:36px; font-size:0.85rem;">
-                    </div>
-                  </div>
-                  <button type="submit" class="btn btn--primary btn--small" style="margin-top:6px; justify-content:center;">
-                    حفظ وتحديث كلمة المرور
-                  </button>
-                </form>
 
-                <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--color-border); display:flex; align-items:center; justify-content:space-between;">
+                <div style="margin-bottom:16px; padding:12px 14px; background:rgba(15,23,42,0.6); border:1px solid var(--color-border); border-radius:10px; display:flex; align-items:center; justify-content:space-between;">
                   <div>
-                    <strong style="display:block; font-size:0.85rem; color:#F8FAFC;">قفل التطبيق بكلمة المرور عند التشغيل</strong>
-                    <span style="font-size:0.75rem; color:#94A3B8;">يمنع الدخول للتطبيق إلا بإدخال كلمة المرور</span>
+                    <strong style="display:block; font-size:0.88rem; color:#F8FAFC;">تفعيل قفل التطبيق بكلمة مرور</strong>
+                    <span style="font-size:0.75rem; color:#94A3B8;">يمنع الدخول للبرنامج إلا بإدخال كلمة المرور</span>
                   </div>
                   <label style="position:relative; display:inline-block; width:44px; height:24px; cursor:pointer;">
                     <input type="checkbox" id="appLockToggleCheckbox" onchange="toggleAppLockSetting(this.checked)" style="width:18px; height:18px; accent-color:#0284C7; cursor:pointer;">
                   </label>
                 </div>
+
+                <!-- Password Setup Form -->
+                <form id="appPasswordForm" onsubmit="handleSaveAdminPassword(event)" style="display:flex; flex-direction:column; gap:12px;">
+                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                      <label style="font-size:0.78rem; font-weight:700; color:#94A3B8;">كلمة المرور الجديدة</label>
+                      <input type="password" id="adminNewPassword" class="form-input" placeholder="اكتب كلمة السر هنا..." minlength="3" style="height:36px; font-size:0.85rem;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                      <label style="font-size:0.78rem; font-weight:700; color:#94A3B8;">تأكيد كلمة المرور</label>
+                      <input type="password" id="adminConfirmPassword" class="form-input" placeholder="تأكيد كلمة السر..." minlength="3" style="height:36px; font-size:0.85rem;">
+                    </div>
+                  </div>
+                  <div style="display:flex; gap:10px; margin-top:4px;">
+                    <button type="submit" class="btn btn--primary btn--small" style="flex:1; justify-content:center;">
+                      حفظ وتفعيل كلمة المرور
+                    </button>
+                    <button type="button" class="btn btn--outline btn--small" style="color:#EF4444; border-color:rgba(239,68,68,0.3);" onclick="removeAppPassword()">
+                      إلغاء وإزالة كلمة السر
+                    </button>
+                  </div>
+                </form>
               </div>
 
               <!-- Auto-Updates Card -->
