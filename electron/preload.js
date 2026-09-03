@@ -69,4 +69,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // ── Remote License Fleet Control
   onRemoteLicenseStatus: (callback) => ipcRenderer.on('remote-license-status', (_, data) => callback(data)),
   checkRemoteLicenseNow: () => ipcRenderer.invoke('check-remote-license-now'),
+  getRemoteLicenseSync: () => ipcRenderer.sendSync('get-remote-license-sync'),
 });

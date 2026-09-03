@@ -857,6 +857,11 @@ ipcMain.handle('check-remote-license-now', async () => {
   return store.get('brainova_remote_commands') || { licenseStatus: 'active' };
 });
 
+ipcMain.on('get-remote-license-sync', (event) => {
+  const cmds = store.get('brainova_remote_commands') || { licenseStatus: 'active' };
+  event.returnValue = cmds;
+});
+
 // ── IPC: BACKUP / RESTORE ─────────────────────────────────────────────────────
 ipcMain.on('open-backup-folder', () => {
   shell.openPath(getBackupDirectory());

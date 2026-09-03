@@ -171,6 +171,9 @@ document.addEventListener('DOMContentLoaded', () => {
           MemoryCache[key] = val; // update cache too
         }
       });
+      if (allData.brainova_remote_commands && typeof window.applyRemoteLicenseStatus === 'function') {
+        window.applyRemoteLicenseStatus(allData.brainova_remote_commands);
+      }
     } catch(e) {
       console.warn('[Brainova] Could not load from persistent store:', e);
     }
@@ -8361,16 +8364,37 @@ ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
     }
   }
 
-  // ── REMOTE LICENSE LOCK / UNLOCK ENGINE ─────────────────────────────────
+  // ── REMOTE LICENSE LOCK / UNLOCK & EXPIRATION ENGINE ───────────────────
+  function isLicenseExpired(cmd) {
+    if (!cmd || !cmd.expiresAt) return false;
+    const exp = new Date(cmd.expiresAt).getTime();
+    return !isNaN(exp) && Date.now() > exp;
+  }
+
   function applyRemoteLicenseStatus(cmd) {
     const overlay = document.getElementById('remoteLicenseLockOverlay');
     if (!overlay) return;
 
-    if (cmd && cmd.licenseStatus === 'locked') {
+    const isLocked = cmd && cmd.licenseStatus === 'locked';
+    const expired = isLicenseExpired(cmd);
+
+    if (isLocked || expired) {
       overlay.style.display = 'flex';
       const msgEl = document.getElementById('remoteLockMessage');
-      if (msgEl && cmd.broadcastMessage) {
-        msgEl.textContent = cmd.broadcastMessage;
+      if (msgEl) {
+        if (expired) {
+          const expDateStr = cmd.expiresAt.slice(0, 10);
+          msgEl.innerHTML = `
+            <div style="color:#FCA5A5; font-weight:800; font-size:1.05rem; margin-bottom:8px;">
+              ⚠️ انتهت فترة استخدام هذا التطبيق بتاريخ (${expDateStr})
+            </div>
+            <div>
+              ${escapeHtml(cmd.broadcastMessage || 'انتهت مدة ترخيص الاستخدام المحددة لهذا الجهاز. يرجى مراجعة إدارة ISAACDEV لتجديد الاشتراك وتفعيل البرنامج.')}
+            </div>
+          `;
+        } else {
+          msgEl.textContent = cmd.broadcastMessage || 'تم تجميد ترخيص التطبيق من قبل الإدارة المركزية (ISAACDEV). يرجى مراجعة المسؤول المباشر لتسوية الاشتراك وتفعيل البرنامج.';
+        }
       }
       const idEl = document.getElementById('remoteLockMachineId');
       if (idEl) {
@@ -8382,23 +8406,32 @@ ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
   }
   window.applyRemoteLicenseStatus = applyRemoteLicenseStatus;
 
-  const initialCommands = getData('brainova_remote_commands');
-  if (initialCommands) applyRemoteLicenseStatus(initialCommands);
+  // Immediate check via synchronous IPC (source of truth from disk)
+  const syncLicense = (window.electronAPI && window.electronAPI.getRemoteLicenseSync) ? window.electronAPI.getRemoteLicenseSync() : getData('brainova_remote_commands');
+  if (syncLicense) applyRemoteLicenseStatus(syncLicense);
 
+  // Live pushes from main process
   if (window.electronAPI && window.electronAPI.onRemoteLicenseStatus) {
     window.electronAPI.onRemoteLicenseStatus((cmds) => {
       applyRemoteLicenseStatus(cmds);
     });
   }
 
+  // Periodic recurring check every 20 seconds
+  setInterval(() => {
+    const liveCmd = (window.electronAPI && window.electronAPI.getRemoteLicenseSync) ? window.electronAPI.getRemoteLicenseSync() : getData('brainova_remote_commands');
+    if (liveCmd) applyRemoteLicenseStatus(liveCmd);
+  }, 20000);
+
   window.checkLicenseNowBtn = async function() {
     if (window.electronAPI && window.electronAPI.checkRemoteLicenseNow) {
       const cmds = await window.electronAPI.checkRemoteLicenseNow();
       applyRemoteLicenseStatus(cmds);
-      if (cmds && cmds.licenseStatus !== 'locked') {
+      const isLocked = cmds && (cmds.licenseStatus === 'locked' || isLicenseExpired(cmds));
+      if (!isLocked) {
         showToast('✅ تم استعادة وتفعيل الترخيص بنجاح!', 'success');
       } else {
-        showToast('⚠️ لا يزال الترخيص معلقاً من الإدارة المركزية.', 'warning');
+        showToast('⚠️ لا يزال الترخيص معلقاً أو منتهي الصلاحية.', 'warning');
       }
     }
   };

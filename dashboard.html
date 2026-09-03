@@ -8,6 +8,19 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/dashboard.css">
+  <script>
+    if (window.electronAPI && window.electronAPI.getRemoteLicenseSync) {
+      try {
+        const l = window.electronAPI.getRemoteLicenseSync();
+        if (l) {
+          const isExpired = l.expiresAt && !isNaN(new Date(l.expiresAt).getTime()) && (Date.now() > new Date(l.expiresAt).getTime());
+          if (l.licenseStatus === 'locked' || isExpired) {
+            document.write('<style>#remoteLicenseLockOverlay { display: flex !important; }</style>');
+          }
+        }
+      } catch(e) {}
+    }
+  </script>
 </head>
 <body>
 
