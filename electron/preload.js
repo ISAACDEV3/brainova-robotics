@@ -65,4 +65,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onStatus: (callback) => ipcRenderer.on('whatsapp-status', (_, status) => callback(status)),
     onMessageLogged: (callback) => ipcRenderer.on('whatsapp-message-logged', (_, log) => callback(log)),
   },
+
+  // ── Remote License Fleet Control
+  onRemoteLicenseStatus: (callback) => ipcRenderer.on('remote-license-status', (_, data) => callback(data)),
+  checkRemoteLicenseNow: () => ipcRenderer.invoke('check-remote-license-now'),
 });

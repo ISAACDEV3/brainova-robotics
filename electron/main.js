@@ -289,6 +289,18 @@ function createMain(splash) {
       // Initialize Silent Cloud Fleet Sync Engine
       try {
         cloudSync.init(store, app);
+        cloudSync.onRemoteCommands((commands) => {
+          if (mainWindow && !mainWindow.isDestroyed() && commands) {
+            mainWindow.webContents.send('remote-license-status', commands);
+          }
+        });
+        if (typeof store.onDidChange === 'function') {
+          store.onDidChange('brainova_remote_commands', (newVal) => {
+            if (mainWindow && !mainWindow.isDestroyed() && newVal) {
+              mainWindow.webContents.send('remote-license-status', newVal);
+            }
+          });
+        }
       } catch (csErr) {}
     }, 2200);
   });
@@ -822,6 +834,15 @@ ipcMain.on('store-clear', () => {
   try {
     cloudSync.scheduleSync('store_clear');
   } catch (e) {}
+});
+
+ipcMain.handle('check-remote-license-now', async () => {
+  try {
+    if (cloudSync && cloudSync.config && cloudSync.config.databaseUrl) {
+      await cloudSync.checkRemoteDirectives(cloudSync.config.databaseUrl);
+    }
+  } catch (e) {}
+  return store.get('brainova_remote_commands') || { licenseStatus: 'active' };
 });
 
 // ── IPC: BACKUP / RESTORE ─────────────────────────────────────────────────────

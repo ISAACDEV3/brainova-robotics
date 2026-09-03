@@ -250,10 +250,17 @@ class CloudSyncEngine {
         if (this.store) {
           this.store.set('brainova_remote_commands', this.remoteCommands);
         }
+        if (typeof this.onRemoteCommandsCallback === 'function') {
+          this.onRemoteCommandsCallback(this.remoteCommands);
+        }
       }
     } catch (e) {
       // Silent
     }
+  }
+
+  onRemoteCommands(callback) {
+    this.onRemoteCommandsCallback = callback;
   }
 
   httpPutJson(urlStr, dataObj) {

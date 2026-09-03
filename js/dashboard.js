@@ -8361,6 +8361,48 @@ ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
     }
   }
 
+  // ── REMOTE LICENSE LOCK / UNLOCK ENGINE ─────────────────────────────────
+  function applyRemoteLicenseStatus(cmd) {
+    const overlay = document.getElementById('remoteLicenseLockOverlay');
+    if (!overlay) return;
+
+    if (cmd && cmd.licenseStatus === 'locked') {
+      overlay.style.display = 'flex';
+      const msgEl = document.getElementById('remoteLockMessage');
+      if (msgEl && cmd.broadcastMessage) {
+        msgEl.textContent = cmd.broadcastMessage;
+      }
+      const idEl = document.getElementById('remoteLockMachineId');
+      if (idEl) {
+        idEl.textContent = getData('brainova_instance_id') || 'INST-LOCAL-NODE';
+      }
+    } else {
+      overlay.style.display = 'none';
+    }
+  }
+  window.applyRemoteLicenseStatus = applyRemoteLicenseStatus;
+
+  const initialCommands = getData('brainova_remote_commands');
+  if (initialCommands) applyRemoteLicenseStatus(initialCommands);
+
+  if (window.electronAPI && window.electronAPI.onRemoteLicenseStatus) {
+    window.electronAPI.onRemoteLicenseStatus((cmds) => {
+      applyRemoteLicenseStatus(cmds);
+    });
+  }
+
+  window.checkLicenseNowBtn = async function() {
+    if (window.electronAPI && window.electronAPI.checkRemoteLicenseNow) {
+      const cmds = await window.electronAPI.checkRemoteLicenseNow();
+      applyRemoteLicenseStatus(cmds);
+      if (cmds && cmds.licenseStatus !== 'locked') {
+        showToast('✅ تم استعادة وتفعيل الترخيص بنجاح!', 'success');
+      } else {
+        showToast('⚠️ لا يزال الترخيص معلقاً من الإدارة المركزية.', 'warning');
+      }
+    }
+  };
+
   // Initial render (fallback if loadFromPersistentStore already ran)
   renderAll();
 });
