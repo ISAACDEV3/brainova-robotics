@@ -306,21 +306,76 @@ document.addEventListener('DOMContentLoaded', () => {
     searchInput.addEventListener('input', (e) => {
       clearTimeout(searchDebounceTimer);
       searchDebounceTimer = setTimeout(() => {
-        searchQuery = e.target.value.toLowerCase().trim();
+        searchQuery = e.target.value.trim();
         renderActiveView();
       }, 120);
     });
   }
 
-  function filterData(dataArray, query) {
-    if (!query) return dataArray;
-    return dataArray.filter(item => {
-      for (const val of Object.values(item)) {
-        if (val && String(val).toLowerCase().includes(query)) return true;
-      }
-      return false;
+  function normalizeSearchText(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/[\u064B-\u065F\u0670]/g, '')
+      .replace(/\u0640/g, '')
+      .replace(/[إأآٱ]/g, 'ا')
+      .replace(/ة/g, 'ه')
+      .replace(/[ىئ]/g, 'ي')
+      .replace(/[٠-٩]/g, d => '0123456789'['٠١٢٣٤٥٦٧٨٩'.indexOf(d)])
+      .replace(/[\u200E\u200F\u202A-\u202E]/g, '')
+      .toLowerCase()
+      .trim();
+  }
+  window.normalizeSearchText = normalizeSearchText;
+
+  function matchesSmartSearch(item, rawQuery, customFields = null) {
+    if (!rawQuery || !String(rawQuery).trim()) return true;
+    const qClean = String(rawQuery).trim();
+    const qNorm = normalizeSearchText(qClean);
+    const qTokens = qNorm.split(/\s+/).filter(Boolean);
+    const qDigits = qClean.replace(/\D/g, '');
+
+    let values = [];
+    if (customFields && Array.isArray(customFields)) {
+      values = customFields.map(f => item[f]);
+    } else if (typeof item === 'object' && item !== null) {
+      values = Object.values(item);
+    } else {
+      values = [item];
+    }
+
+    const rawJoined = values
+      .filter(Boolean)
+      .map(v => (typeof v === 'object' ? JSON.stringify(v) : String(v)))
+      .join(' ');
+
+    const normJoined = normalizeSearchText(rawJoined);
+    const noSpaceNormJoined = normJoined.replace(/\s+/g, '');
+    const digitsJoined = rawJoined.replace(/\D/g, '');
+
+    // Check 1: Digits matching (phones, amounts, student IDs, receipt numbers)
+    if (qDigits.length >= 2 && digitsJoined.includes(qDigits)) {
+      return true;
+    }
+
+    // Check 2: Compound names / no-space match (e.g. "عبد الرحمن" vs "عبدالرحمن")
+    const qNoSpace = qNorm.replace(/\s+/g, '');
+    if (qNoSpace.length >= 3 && noSpaceNormJoined.includes(qNoSpace)) {
+      return true;
+    }
+
+    // Check 3: All tokens must match in the item
+    return qTokens.every(token => {
+      return normJoined.includes(token) || noSpaceNormJoined.includes(token);
     });
   }
+  window.matchesSmartSearch = matchesSmartSearch;
+
+  function filterData(dataArray, query, customFields = null) {
+    if (!Array.isArray(dataArray)) return [];
+    if (!query || !String(query).trim()) return dataArray;
+    return dataArray.filter(item => matchesSmartSearch(item, query, customFields));
+  }
+  window.filterData = filterData;
 
   // ==========================================
   // 4. SELECTIVE VIEW RENDERING
@@ -1173,14 +1228,29 @@ document.addEventListener('DOMContentLoaded', () => {
   window.getStudentPaymentTimeline = getStudentPaymentTimeline;
 
   // --- STUDENTS ---
+  window.onStudentsSearchInput = function(val) {
+    const clearBtn = document.getElementById('studentsSearchClearBtn');
+    if (clearBtn) clearBtn.style.display = val && val.trim() ? 'block' : 'none';
+    renderStudents();
+  };
+
+  window.clearStudentsSearch = function() {
+    const input = document.getElementById('studentsLocalSearch');
+    if (input) input.value = '';
+    const clearBtn = document.getElementById('studentsSearchClearBtn');
+    if (clearBtn) clearBtn.style.display = 'none';
+    renderStudents();
+  };
+
   function renderStudents() {
     const rawStudents = getData('brainova_students');
     const allPayments = getData('brainova_payments');
     const subFilter = document.getElementById('studentSubFilter')?.value || 'all';
+    const localQuery = document.getElementById('studentsLocalSearch')?.value.trim() || searchQuery;
     const tbody = document.getElementById('studentsTableBody');
     if (!tbody) return;
 
-    let students = filterData(rawStudents, searchQuery);
+    let students = filterData(rawStudents, localQuery);
 
     if (subFilter !== 'all') {
       students = students.filter(stu => {
@@ -1293,6 +1363,20 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- ATTENDANCE SYSTEM ---
+  window.onAttSearchInput = function(val) {
+    const clearBtn = document.getElementById('attSearchClearBtn');
+    if (clearBtn) clearBtn.style.display = val && val.trim() ? 'block' : 'none';
+    renderAttendance();
+  };
+
+  window.clearAttSearch = function() {
+    const input = document.getElementById('attStudentFilterInput');
+    if (input) input.value = '';
+    const clearBtn = document.getElementById('attSearchClearBtn');
+    if (clearBtn) clearBtn.style.display = 'none';
+    renderAttendance();
+  };
+
   let activeAttendanceDraft = {};
 
   function renderAttendance() {
@@ -1359,7 +1443,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedTime = timeSelect ? timeSelect.value : '09:00 - 11:00';
 
     const allStudents = getData('brainova_students');
-    const groupStudents = allStudents.filter(s => isStudentInGroup(s, selectedGroup));
+    const rawGroupStudents = allStudents.filter(s => isStudentInGroup(s, selectedGroup));
+    const attFilterQuery = document.getElementById('attStudentFilterInput')?.value.trim() || searchQuery;
+    const groupStudents = attFilterQuery ? filterData(rawGroupStudents, attFilterQuery) : rawGroupStudents;
     const existingRecords = allAttendance.filter(a => a.date === selectedDate && isStudentInGroup({ group: a.groupName }, selectedGroup) && (!a.sessionTime || a.sessionTime === selectedTime));
 
     const typeSelect = document.getElementById('attSessionTypeSelect');
@@ -1633,8 +1719,23 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // --- PAYMENTS & RECEIPTS SYSTEM ---
+  window.onPaymentsSearchInput = function(val) {
+    const clearBtn = document.getElementById('paymentsSearchClearBtn');
+    if (clearBtn) clearBtn.style.display = val && val.trim() ? 'block' : 'none';
+    renderPayments();
+  };
+
+  window.clearPaymentsSearch = function() {
+    const input = document.getElementById('paymentsLocalSearch');
+    if (input) input.value = '';
+    const clearBtn = document.getElementById('paymentsSearchClearBtn');
+    if (clearBtn) clearBtn.style.display = 'none';
+    renderPayments();
+  };
+
   function renderPayments() {
-    const payments = filterData(getData('brainova_payments'), searchQuery);
+    const localQuery = document.getElementById('paymentsLocalSearch')?.value.trim() || searchQuery;
+    const payments = filterData(getData('brainova_payments'), localQuery);
     const filter = document.getElementById('paymentStatusFilter')?.value || 'all';
     const tbody = document.getElementById('paymentsTableBody');
     const statsGrid = document.getElementById('paymentStatsGrid');
@@ -2938,17 +3039,9 @@ document.addEventListener('DOMContentLoaded', () => {
       matchedStudents = students.slice(0, 4);
       matchedGroups = groups.slice(0, 3);
     } else {
-      matchedActions = staticActions.filter(a => a.label.toLowerCase().includes(q) || a.sub.toLowerCase().includes(q));
-      matchedStudents = students.filter(s =>
-        s.name.toLowerCase().includes(q) ||
-        (s.parentPhone && s.parentPhone.includes(q)) ||
-        (s.id && s.id.toLowerCase().includes(q)) ||
-        (s.parentName && s.parentName.toLowerCase().includes(q))
-      ).slice(0, 6);
-      matchedGroups = groups.filter(g =>
-        g.name.toLowerCase().includes(q) ||
-        (g.level && g.level.toLowerCase().includes(q))
-      ).slice(0, 4);
+      matchedActions = staticActions.filter(a => matchesSmartSearch(a, q, ['label', 'sub']));
+      matchedStudents = filterData(students, q).slice(0, 8);
+      matchedGroups = filterData(groups, q).slice(0, 5);
     }
 
     cmdPaletteCurrentItems = [];
@@ -3592,10 +3685,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const groups = getData('brainova_groups');
     const students = getData('brainova_students');
     const filter = document.getElementById('groupAgeFilter') ? document.getElementById('groupAgeFilter').value : 'all';
+    const localGroupQuery = document.getElementById('groupsSearchInput')?.value.trim() || searchQuery;
 
-    let filtered = groups;
+    let filtered = filterData(groups, localGroupQuery);
     if (filter !== 'all') {
-      filtered = groups.filter(g => (g.ageCategory || '').includes(filter));
+      filtered = filtered.filter(g => (g.ageCategory || '').includes(filter));
     }
 
     grid.innerHTML = filtered.map(g => {
@@ -5034,20 +5128,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   window.filterRoomStudentsList = function() {
-    const q = (document.getElementById('roomStudentsSearchInput')?.value || '').trim().toLowerCase();
+    const q = (document.getElementById('roomStudentsSearchInput')?.value || '').trim();
     if (!q) {
       renderRoomStudentsTable(currentActiveRoomStudents);
       return;
     }
 
-    const filtered = currentActiveRoomStudents.filter(stu => {
-      const n = (stu.name || '').toLowerCase();
-      const id = (stu.id || '').toLowerCase();
-      const p = (stu.parentPhone || '').toLowerCase();
-      const g = (stu.group || '').toLowerCase();
-      return n.includes(q) || id.includes(q) || p.includes(q) || g.includes(q);
-    });
-
+    const filtered = filterData(currentActiveRoomStudents, q);
     renderRoomStudentsTable(filtered);
   };
 

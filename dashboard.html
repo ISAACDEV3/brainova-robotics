@@ -272,17 +272,25 @@
           </div>
 
           <!-- Subscription & Payment Filter Toolbar -->
-          <div style="display:flex; gap:12px; align-items:center; margin-bottom:14px; flex-wrap:wrap; background:var(--color-bg-card); padding:10px 16px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">
-            <span style="font-size:0.84rem; color:var(--color-text-muted); font-weight:700;">📅 تصفية حسب تاريخ الدفع والشهر:</span>
-            <select id="studentSubFilter" onchange="renderStudents()" class="form-input" style="width:auto; padding:6px 14px; font-size:0.84rem; height:36px;">
-              <option value="all">جميع الحالات (عرض كل الطلاب)</option>
-              <option value="risk_high">⚠️ خطر انقطاع مرتفع (غيابات متتالية / نفاد الحصص)</option>
-              <option value="risk_medium">🟡 خطر انقطاع متوسط (غياب حديث / رصيد حصة واحدة)</option>
-              <option value="active">🟢 اشتراك ساري (دفع حديثاً - متبقي أيام)</option>
-              <option value="due_soon">⏳ اقترب موعد التجديد (خلال 5 أيام أو أقل)</option>
-              <option value="overdue">🔴 متأخر عن دفع الشهر (انتهت الـ 30 يوماً)</option>
-              <option value="unpaid">⚪ لم يسدد أي دفعة بعد</option>
-            </select>
+          <div style="display:flex; gap:12px; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; background:var(--color-bg-card); padding:10px 16px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+              <span style="font-size:0.84rem; color:var(--color-text-muted); font-weight:700;">📅 تصفية حسب تاريخ الدفع والشهر:</span>
+              <select id="studentSubFilter" onchange="renderStudents()" class="form-input" style="width:auto; padding:6px 14px; font-size:0.84rem; height:36px;">
+                <option value="all">جميع الحالات (عرض كل الطلاب)</option>
+                <option value="risk_high">⚠️ خطر انقطاع مرتفع (غيابات متتالية / نفاد الحصص)</option>
+                <option value="risk_medium">🟡 خطر انقطاع متوسط (غياب حديث / رصيد حصة واحدة)</option>
+                <option value="active">🟢 اشتراك ساري (دفع حديثاً - متبقي أيام)</option>
+                <option value="due_soon">⏳ اقترب موعد التجديد (خلال 5 أيام أو أقل)</option>
+                <option value="overdue">🔴 متأخر عن دفع الشهر (انتهت الـ 30 يوماً)</option>
+                <option value="unpaid">⚪ لم يسدد أي دفعة بعد</option>
+              </select>
+            </div>
+
+            <div style="flex:1; max-width:380px; min-width:240px; position:relative; display:flex; align-items:center;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute; right:10px; width:15px; height:15px; color:#94A3B8; pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="studentsLocalSearch" class="form-input" placeholder="بحث ذكي بالاسم، الهاتف، STU-001، الفوج..." style="padding-right:32px; padding-left:28px; height:36px; font-size:0.84rem; width:100%; border-color:rgba(56,189,248,0.25);" oninput="onStudentsSearchInput(this.value)">
+              <button type="button" id="studentsSearchClearBtn" onclick="clearStudentsSearch()" style="position:absolute; left:8px; background:none; border:none; color:#94A3B8; cursor:pointer; font-size:1.1rem; line-height:1; display:none;" title="مسح البحث">&times;</button>
+            </div>
           </div>
 
           <div class="table-container">
@@ -375,16 +383,23 @@
             </div>
           </div>
 
-          <!-- Age Filter Toolbar -->
-          <div style="display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap; background:var(--color-bg-card); padding:10px 16px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">
-            <span style="font-size:0.85rem; color:var(--color-text-muted); font-weight:700;">🎂 تصفية حسب الفئة العمرية:</span>
-            <select id="groupAgeFilter" onchange="renderGroups()" class="form-input" style="width:auto; padding:6px 12px; font-size:0.85rem;">
-              <option value="all">جميع الفئات العمرية</option>
-              <option value="6-8">👶 براعم الروبوتيك (6 - 8 سنوات)</option>
-              <option value="8-11">🚀 المبرمج الناشئ (8 - 11 سنة)</option>
-              <option value="11-15">🤖 المبتكر الصغير (11 - 15 سنة)</option>
-              <option value="15-18">⚡ مهندسو المستقبل (15 - 18 سنة)</option>
-            </select>
+          <!-- Age Filter & Search Toolbar -->
+          <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; margin-bottom:16px; flex-wrap:wrap; background:var(--color-bg-card); padding:10px 16px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">
+            <div style="display:flex; gap:10px; align-items:center;">
+              <span style="font-size:0.85rem; color:var(--color-text-muted); font-weight:700;">🎂 تصفية حسب الفئة العمرية:</span>
+              <select id="groupAgeFilter" onchange="renderGroups()" class="form-input" style="width:auto; padding:6px 12px; font-size:0.85rem;">
+                <option value="all">جميع الفئات العمرية</option>
+                <option value="6-8">👶 براعم الروبوتيك (6 - 8 سنوات)</option>
+                <option value="8-11">🚀 المبرمج الناشئ (8 - 11 سنة)</option>
+                <option value="11-15">🤖 المبتكر الصغير (11 - 15 سنة)</option>
+                <option value="15-18">⚡ مهندسو المستقبل (15 - 18 سنة)</option>
+              </select>
+            </div>
+
+            <div style="flex:1; max-width:320px; min-width:200px; position:relative; display:flex; align-items:center;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute; right:10px; width:14px; height:14px; color:#94A3B8; pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="groupsSearchInput" class="form-input" placeholder="بحث عن فوج أو مستوى..." style="padding-right:30px; height:34px; font-size:0.82rem; width:100%; border-color:rgba(56,189,248,0.25);" oninput="renderGroups()">
+            </div>
           </div>
 
           <div class="stats-grid" id="groupsGrid">
@@ -514,6 +529,14 @@
                   <option value="extra">استثنائية ⭐</option>
                 </select>
               </div>
+              <div style="flex:1; min-width:180px; max-width:240px;">
+                <label style="font-size:0.72rem; color:var(--color-text-dim); font-weight:700; display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">تصفية الطلاب</label>
+                <div style="position:relative; display:flex; align-items:center;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute; right:8px; width:13px; height:13px; color:#94A3B8; pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input type="text" id="attStudentFilterInput" oninput="onAttSearchInput(this.value)" class="form-input" placeholder="اسم التلميذ..." style="height:36px; padding-right:26px; padding-left:24px; font-size:0.82rem; width:100%; border-color:rgba(56,189,248,0.25);">
+                  <button type="button" id="attSearchClearBtn" onclick="clearAttSearch()" style="position:absolute; left:6px; background:none; border:none; color:#94A3B8; cursor:pointer; font-size:1.1rem; line-height:1; display:none;" title="مسح">&times;</button>
+                </div>
+              </div>
             </div>
 
             <!-- Live Session Metrics -->
@@ -572,6 +595,12 @@
                 <option value="partial">مسدد جزئياً</option>
                 <option value="overdue">متأخر عن السداد</option>
               </select>
+            </div>
+
+            <div style="flex:1; max-width:380px; min-width:240px; position:relative; display:flex; align-items:center;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute; right:10px; width:15px; height:15px; color:#94A3B8; pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="paymentsLocalSearch" class="form-input" placeholder="بحث برقم الوصل (REC-25267)، اسم التلميذ، أو الهاتف..." style="padding-right:32px; padding-left:28px; height:36px; font-size:0.84rem; width:100%; border-color:rgba(56,189,248,0.25);" oninput="onPaymentsSearchInput(this.value)">
+              <button type="button" id="paymentsSearchClearBtn" onclick="clearPaymentsSearch()" style="position:absolute; left:8px; background:none; border:none; color:#94A3B8; cursor:pointer; font-size:1.1rem; line-height:1; display:none;" title="مسح البحث">&times;</button>
             </div>
           </div>
 
