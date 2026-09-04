@@ -1086,8 +1086,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const now = new Date();
         const diffMs = now.getTime() - payDate.getTime();
         const diffDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
-        const renewalTimestamp = payDate.getTime() + (30 * 24 * 60 * 60 * 1000);
-        const renewalDate = new Date(renewalTimestamp);
+        let renewalDate = null;
+        if (stuObj.nextRenewalIso || stuObj.nextRenewalDate) {
+          renewalDate = parseBrainovaDate(stuObj.nextRenewalIso || stuObj.nextRenewalDate);
+        }
+        if (!renewalDate || isNaN(renewalDate.getTime())) {
+          const mCount = Number(stuObj.monthsPurchased) || Math.max(1, Math.round((Number(stuObj.sessionsRemaining) || 4) / 4));
+          renewalDate = new Date(payDate);
+          renewalDate.setMonth(renewalDate.getMonth() + mCount);
+        }
+        const renewalTimestamp = renewalDate.getTime();
         const renewalDateStr = `${String(renewalDate.getDate()).padStart(2, '0')}/${String(renewalDate.getMonth() + 1).padStart(2, '0')}/${renewalDate.getFullYear()}`;
         const daysRemaining = Math.ceil((renewalTimestamp - now.getTime()) / (1000 * 60 * 60 * 24));
         const remSessions = stuObj.sessionsRemaining !== undefined ? stuObj.sessionsRemaining : 4;
@@ -1174,9 +1182,17 @@ document.addEventListener('DOMContentLoaded', () => {
       elapsedText = `دفع منذ ${months} ${months === 1 ? 'شهر' : 'أشهر'} (${diffDays} يوماً)`;
     }
 
-    // Monthly Subscription Renewal (Cycle of 30 days)
-    const renewalTimestamp = payDate.getTime() + (30 * 24 * 60 * 60 * 1000);
-    const renewalDate = new Date(renewalTimestamp);
+    // Subscription Renewal Calculation (Supports Multi-Month Subscriptions accurately)
+    let renewalDate = null;
+    if (lastPayment.renewalIso || lastPayment.renewalDate) {
+      renewalDate = parseBrainovaDate(lastPayment.renewalIso || lastPayment.renewalDate);
+    }
+    if (!renewalDate || isNaN(renewalDate.getTime())) {
+      const monthsPurchased = Number(lastPayment.monthsPurchased) || Math.max(1, Math.round((Number(lastPayment.sessionsPurchased) || 4) / 4));
+      renewalDate = new Date(payDate);
+      renewalDate.setMonth(renewalDate.getMonth() + monthsPurchased);
+    }
+    const renewalTimestamp = renewalDate.getTime();
     const renewalDateStr = `${String(renewalDate.getDate()).padStart(2, '0')}/${String(renewalDate.getMonth() + 1).padStart(2, '0')}/${renewalDate.getFullYear()}`;
     const daysRemaining = Math.ceil((renewalTimestamp - now.getTime()) / (1000 * 60 * 60 * 24));
 
@@ -1322,9 +1338,18 @@ document.addEventListener('DOMContentLoaded', () => {
         <tr>
           <td><span style="font-family:monospace; font-weight:700; color:var(--color-primary);">${stu.id}</span></td>
           <td>
-            <a href="#" onclick="openStudentProfile('${stu.id}'); return false;" style="color:#fff; font-weight:700; text-decoration:underline;">
-              ${stu.name}
-            </a>
+            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+              <a href="#" onclick="openStudentProfile('${stu.id}'); return false;" style="color:#fff; font-weight:700; text-decoration:underline;">
+                ${stu.name}
+              </a>
+              ${(() => {
+                const isOverdue = (timeline.status === 'overdue') || (balance < 0) || (sessions <= 0 && !timeline.hasPayment);
+                if (isOverdue) {
+                  return `<span style="display:inline-flex; align-items:center; gap:3px; background:rgba(239,68,68,0.18); border:1px solid rgba(239,68,68,0.5); color:#F87171; padding:2px 7px; border-radius:12px; font-size:0.68rem; font-weight:800; white-space:nowrap;" title="متأخر عن سداد الاشتراك المالي المستحق">⚠️ متأخر في الدفع</span>`;
+                }
+                return '';
+              })()}
+            </div>
             ${(() => {
               const rk = calculateStudentRetentionRisk(stu);
               if (rk.level === 'high') {
@@ -1352,8 +1377,9 @@ document.addEventListener('DOMContentLoaded', () => {
           <td style="text-align: center;">
             <div style="display:inline-flex; gap:4px; flex-wrap:nowrap;">
               <button class="btn btn--outline" style="padding: 4px 6px; font-size: 0.75rem;" title="الملف الشامل" onclick="openStudentProfile('${stu.id}')"> الملف</button>
+              <button class="btn btn--outline btn--small" style="padding: 4px 6px; font-size: 0.75rem; border-color:rgba(56,189,248,0.4); color:#38BDF8;" title="نقل التلميذ من فوج إلى فوج آخر" onclick="openTransferGroupModal('${stu.id}')">🔄 نقل الفوج</button>
               <button class="btn btn--outline btn--small" style="padding: 4px 6px; font-size: 0.75rem; border-color:rgba(16,185,129,0.35); color:#10B981;" title="التقرير البيداغوجي والتقييم الشهري" onclick="openPedagogicalReportModal('${stu.id}')">تقييم</button>
-              <button class="btn btn--outline btn--small" style="padding: 4px 6px; font-size: 0.75rem; color:#F59E0B; border-color:rgba(245,158,11,0.35);" title="تعديل بيانات التلميذ والفوج" onclick="openEditStudentModal('${stu.id}')">✏️ تعديل</button>
+              <button class="btn btn--outline btn--small" style="padding: 4px 6px; font-size: 0.75rem; color:#F59E0B; border-color:rgba(245,158,11,0.35);" title="تعديل بيانات التلميذ" onclick="openEditStudentModal('${stu.id}')">✏️ تعديل</button>
               <button class="btn btn--outline btn--small" style="padding: 4px 6px; font-size: 0.75rem; border-color:rgba(56,189,248,0.35); color:#38BDF8;" title="بطاقة الطالب الذكية (CR80)" onclick="openStudentIdCard('${stu.id}')">بطاقة</button>
               <button class="btn btn--small" style="padding: 4px 6px; font-size: 0.75rem; background:#25D366; color:#fff;" title="إشعار واتساب للولي" onclick="openWhatsAppDispatchModal('${stu.id}')">واتساب</button>
               <button class="btn btn--primary" style="padding: 4px 6px; font-size: 0.75rem;" title="تسجيل دفعة" onclick="openRecordPaymentModal('${stu.id}')">🧾 وصل</button>
@@ -1841,11 +1867,39 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('recordPaymentModal').classList.remove('active');
   };
 
+  window.setPaymentMonths = function(months) {
+    const monthsInput = document.getElementById('payMonthsCount');
+    if (monthsInput) monthsInput.value = months;
+
+    const studentId = document.getElementById('payStudentSelect')?.value;
+    const stu = (getData('brainova_students') || []).find(s => s.id === studentId);
+    const feePerMonth = (stu && stu.monthlyFee) ? stu.monthlyFee : 5000;
+
+    const amountInput = document.getElementById('payAmount');
+    const sessionsInput = document.getElementById('paySessions');
+    if (amountInput) amountInput.value = months * feePerMonth;
+    if (sessionsInput) sessionsInput.value = months * 4;
+
+    [1, 2, 3, 6].forEach(m => {
+      const btn = document.getElementById(`btnMonthPreset${m}`);
+      if (btn) {
+        if (m === months) {
+          btn.style.borderColor = 'var(--color-primary)';
+          btn.style.color = 'var(--color-primary)';
+        } else {
+          btn.style.borderColor = '';
+          btn.style.color = '';
+        }
+      }
+    });
+  };
+
   window.onPaymentStudentSelected = function() {
     const studentId = document.getElementById('payStudentSelect').value;
     const stu = getData('brainova_students').find(s => s.id === studentId);
+    const months = parseInt(document.getElementById('payMonthsCount')?.value, 10) || 1;
     if (stu && stu.monthlyFee) {
-      document.getElementById('payAmount').value = stu.monthlyFee;
+      document.getElementById('payAmount').value = stu.monthlyFee * months;
     }
   };
 
@@ -1858,6 +1912,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const rawDateTime = document.getElementById('payDateTime').value;
     const notes = document.getElementById('payNotes').value;
     const autoPrint = document.getElementById('autoPrintReceiptCheck').checked;
+    const monthsCount = parseInt(document.getElementById('payMonthsCount')?.value, 10) || Math.max(1, Math.round(sessions / 4));
 
     const students = getData('brainova_students');
     const stu = students.find(s => s.id === studentId);
@@ -1876,6 +1931,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const isoDate = d.toISOString();
     const timestamp = d.getTime();
 
+    // Calendar exact next renewal date
+    // If student has an active subscription ending in the future, extend from that future date!
+    let baseDate = new Date(d);
+    if (stu.nextRenewalIso) {
+      const prevRenewal = new Date(stu.nextRenewalIso);
+      if (!isNaN(prevRenewal.getTime()) && prevRenewal.getTime() > d.getTime()) {
+        baseDate = prevRenewal;
+      }
+    }
+    const nextRenewalObj = new Date(baseDate);
+    nextRenewalObj.setMonth(nextRenewalObj.getMonth() + monthsCount);
+    const ry = nextRenewalObj.getFullYear();
+    const rm = String(nextRenewalObj.getMonth() + 1).padStart(2, '0');
+    const rday = String(nextRenewalObj.getDate()).padStart(2, '0');
+    const nextRenewalDateStr = `${rday}/${rm}/${ry}`;
+    const nextRenewalIso = nextRenewalObj.toISOString();
+
     const opNumber = String(Math.floor(10000 + Math.random() * 90000));
     const prevBalance = stu.balance || 0;
     const currentBalance = prevBalance + amount;
@@ -1887,6 +1959,9 @@ document.addEventListener('DOMContentLoaded', () => {
     stu.lastPaymentIso = isoDate;
     stu.lastPaymentTimestamp = timestamp;
     stu.lastPaymentAmount = amount;
+    stu.nextRenewalDate = nextRenewalDateStr;
+    stu.nextRenewalIso = nextRenewalIso;
+    stu.monthsPurchased = monthsCount;
     saveData('brainova_students', students);
 
     const newPayment = {
@@ -1903,6 +1978,9 @@ document.addEventListener('DOMContentLoaded', () => {
       amountPaid: amount,
       prevBalance,
       currentBalance,
+      monthsPurchased: monthsCount,
+      renewalDate: nextRenewalDateStr,
+      renewalIso: nextRenewalIso,
       sessionsPurchased: sessions,
       sessionsRemaining: currentSessions,
       lastAttendance: stu.lastAttendance || formattedDate,
@@ -2022,11 +2100,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const elRenewal = document.getElementById('rcptRenewalDate');
     if (elRenewal) {
-      const renewalDateObj = new Date(payBaseDate.getTime() + (30 * 24 * 60 * 60 * 1000));
+      let renewalDateObj = null;
+      if (payment.renewalIso || payment.renewalDate) {
+        renewalDateObj = parseBrainovaDate(payment.renewalIso || payment.renewalDate);
+      }
+      if (!renewalDateObj || isNaN(renewalDateObj.getTime())) {
+        const mCount = Number(payment.monthsPurchased) || Math.max(1, Math.round((Number(payment.sessionsPurchased) || 4) / 4));
+        renewalDateObj = new Date(payBaseDate);
+        renewalDateObj.setMonth(renewalDateObj.getMonth() + mCount);
+      }
       const ry = renewalDateObj.getFullYear();
       const rm = String(renewalDateObj.getMonth() + 1).padStart(2, '0');
       const rday = String(renewalDateObj.getDate()).padStart(2, '0');
       elRenewal.textContent = `${rday}/${rm}/${ry}`;
+    }
+
+    const elWaQr = document.getElementById('rcptWhatsAppQrCode');
+    if (elWaQr) {
+      const settings = getData('brainova_settings') || {};
+      const waPhone = (settings.adminPhone ? settings.adminPhone.replace(/^0/, '213') : '213791194633').replace(/\D/g, '');
+      elWaQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=1&data=https://wa.me/${waPhone || '213791194633'}`;
     }
 
     const elDateTime = document.getElementById('rcptDateTime');
@@ -2377,9 +2470,10 @@ document.addEventListener('DOMContentLoaded', () => {
       <!-- Actions Footer -->
       <div class="modal__actions">
         <button type="button" class="btn btn--outline" onclick="closeStudentProfileModal()">إغلاق</button>
-        <button type="button" class="btn btn--outline" style="color:#F59E0B; border-color:rgba(245,158,11,0.35);" onclick="closeStudentProfileModal(); openEditStudentModal('${stu.id}');">✏️ تعديل الفوج والبيانات</button>
+        <button type="button" class="btn btn--outline" style="color:#38BDF8; border-color:rgba(56,189,248,0.35);" onclick="closeStudentProfileModal(); openTransferGroupModal('${stu.id}');">🔄 نقل الفوج</button>
+        <button type="button" class="btn btn--outline" style="color:#F59E0B; border-color:rgba(245,158,11,0.35);" onclick="closeStudentProfileModal(); openEditStudentModal('${stu.id}');">✏️ تعديل البيانات</button>
         <button type="button" class="btn btn--outline" onclick="closeStudentProfileModal(); openStudentIdCard('${stu.id}');">🪪 بطاقة التلميذ</button>
-        <button type="button" class="btn btn--outline" style="color:#25D366; border-color:rgba(37,211,102,0.3);" onclick="closeStudentProfileModal(); openWhatsAppDispatchModal('${stu.id}');"> واتساب الولي</button>
+        <button type="button" class="btn btn--outline" style="color:#25D366; border-color:rgba(37,211,102,0.3);" onclick="closeStudentProfileModal(); openWhatsAppDispatchModal('${stu.id}');">📲 واتساب الولي</button>
         <button type="button" class="btn btn--primary" onclick="closeStudentProfileModal(); openRecordPaymentModal('${stu.id}');">+ تسجيل دفعة</button>
       </div>
     `;
@@ -3406,7 +3500,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const txtArea = document.getElementById('waMessageContent');
     const stu = currentWaStudent;
 
-    if (type === 'reminder') {
+    if (type === 'lesson') {
+      txtArea.value = `السلام عليكم ورحمة الله، ولي أمر التلميذ(ة) المبدع(ة) (${stu.name}) 📚
+يسعدنا إعلامكم بما تعلّمه وأنجزه ابنكم اليوم في ورشة الروبوتيك والذكاء الاصطناعي:
+• درس اليوم: [اكتب هنا عنوان الدرس أو المشروع]
+• الإنجاز: [أتم بنجاح تركيب الدارة والبرمجة والتطبيق العملي]
+نحيي شغفه واجتهاده الرائع ونتمنى له دوام التألق والتميز! 🤖👏
+أكاديمية Brainova Robotics`;
+    } else if (type === 'reminder') {
       txtArea.value = `السلام عليكم ورحمة الله، ولي أمر الطالب (${stu.name}) المحترم 
 نود تذكيركم بموعد حصة الروبوتيك القادمة لفوج (${stu.group || 'الروبوتيك'}) في مقر مدرسة Brainova Robotics.
 نتمنى لبطلنا الصغير دوام التألق والنشاط! 🚀`;
@@ -5865,6 +5966,119 @@ document.addEventListener('DOMContentLoaded', () => {
     renderActiveView();
   };
 
+  // --- TRANSFER STUDENT GROUP MODAL LOGIC ---
+  window.openTransferGroupModal = function(studentId) {
+    const students = getData('brainova_students') || [];
+    const stu = students.find(s => s.id === studentId);
+    if (!stu) {
+      showToast('لم يتم العثور على التلميذ!', 'error');
+      return;
+    }
+
+    const groups = getData('brainova_groups') || [];
+    if (groups.length === 0) {
+      showToast('لا توجد أفواج مسجلة حالياً! يرجى إنشاء فوج أولاً.', 'error');
+      return;
+    }
+
+    const idInput = document.getElementById('transferStudentId');
+    const nameEl = document.getElementById('transferStudentName');
+    const curGrpEl = document.getElementById('transferCurrentGroup');
+    if (idInput) idInput.value = stu.id;
+    if (nameEl) nameEl.textContent = stu.name;
+    if (curGrpEl) curGrpEl.textContent = stu.group || 'غير محدد';
+
+    const groupSelect = document.getElementById('transferNewGroupSelect');
+    if (groupSelect) {
+      groupSelect.innerHTML = groups.map(g => `
+        <option value="${g.name}" ${g.name === stu.group ? 'selected' : ''}>
+          ${g.name} (${g.level || 'المستوى الأول'} • ${g.day || 'السبت'} • ${g.timeSlot || '14:00 - 16:00'})
+        </option>
+      `).join('');
+    }
+
+    onTransferGroupSelectChange();
+
+    const modal = document.getElementById('transferGroupModal');
+    if (modal) modal.classList.add('active');
+  };
+
+  window.closeTransferGroupModal = function() {
+    const modal = document.getElementById('transferGroupModal');
+    if (modal) modal.classList.remove('active');
+  };
+
+  window.onTransferGroupSelectChange = function() {
+    const groupSelect = document.getElementById('transferNewGroupSelect');
+    const preview = document.getElementById('transferGroupDetailsPreview');
+    if (!groupSelect || !preview) return;
+
+    const selectedGroupName = groupSelect.value;
+    const groups = getData('brainova_groups') || [];
+    const grp = groups.find(g => g.name === selectedGroupName);
+    const educators = getData('brainova_educators') || [];
+    const rooms = getData('brainova_rooms') || [];
+
+    if (!grp) {
+      preview.innerHTML = 'يرجى اختيار فوج';
+      return;
+    }
+
+    const edu = educators.find(e => e.id === grp.educatorId);
+    const room = rooms.find(r => r.id === grp.roomId);
+
+    preview.innerHTML = `
+      <div style="color:#F8FAFC; font-weight:800; margin-bottom:4px;">تفاصيل الفوج المختار: ${grp.name}</div>
+      <div>📅 يوم الحصة: <strong style="color:#FBBF24;">${grp.day || 'السبت'}</strong></div>
+      <div>🕒 التوقيت: <strong style="color:#38BDF8;">${grp.timeSlot || '14:00 - 16:00'}</strong></div>
+      <div>🏫 القاعة: <strong>${room ? room.name : 'القاعة الرئيسية'}</strong></div>
+      <div>👨‍🏫 الأستاذ المؤطر: <strong>${edu ? edu.name : 'إدارة الأكاديمية'}</strong></div>
+    `;
+  };
+
+  window.submitTransferGroup = function(e) {
+    e.preventDefault();
+    const studentId = document.getElementById('transferStudentId')?.value;
+    const targetGroupName = document.getElementById('transferNewGroupSelect')?.value;
+
+    const students = getData('brainova_students') || [];
+    const stu = students.find(s => s.id === studentId);
+    if (!stu) {
+      showToast('لم يتم العثور على التلميذ!', 'error');
+      return;
+    }
+
+    const groups = getData('brainova_groups') || [];
+    const newGroup = groups.find(g => g.name === targetGroupName);
+    if (!newGroup) {
+      showToast('الفوج المختار غير صالح!', 'error');
+      return;
+    }
+
+    const oldGroupName = stu.group || 'غير محدد';
+    if (oldGroupName === targetGroupName) {
+      showToast(`التلميذ مقيد بالفعل في فوج (${targetGroupName})!`, 'info');
+      closeTransferGroupModal();
+      return;
+    }
+
+    stu.group = newGroup.name;
+    stu.level = newGroup.level || stu.level;
+    stu.day = newGroup.day || stu.day || 'السبت';
+
+    if (newGroup.timeSlot && newGroup.timeSlot.includes('-')) {
+      const [st, et] = newGroup.timeSlot.split('-').map(t => t.trim());
+      stu.startTime = st;
+      stu.endTime = et;
+      stu.sessionTime = newGroup.timeSlot;
+    }
+
+    saveData('brainova_students', students);
+    closeTransferGroupModal();
+    showToast(`✅ تم نقل التلميذ (${stu.name}) من فوج (${oldGroupName}) إلى فوج (${targetGroupName}) بنجاح! 🚀`, 'success');
+    renderActiveView();
+  };
+
   window.deleteStudent = function(id) {
     if (confirm('هل أنت متأكد من حذف هذا الطالب؟')) {
       const students = getData('brainova_students').filter(s => s.id !== id);
@@ -7143,6 +7357,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (gOverdue) gOverdue.checked = settings.guardianOverdue !== false;
 
     populateWaStudentAutoSelect();
+    populateWaLessonStudentSelect();
     renderWaQueues();
     renderWaGuardianLogs();
     loadWaAiSettings();
@@ -7353,6 +7568,111 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast(`تم تجهيز الرسالة لولي أمر (${stu.name}) أوتوماتيكياً!`, 'success');
   }
   window.loadAutoTemplateForSelected = loadAutoTemplateForSelected;
+
+  // --- LESSON PROGRESS REPORT TO GUARDIAN DISPATCH ---
+  function populateWaLessonStudentSelect() {
+    const select = document.getElementById('waLessonStudentSelect');
+    if (!select) return;
+    const students = getData('brainova_students') || [];
+    const currentVal = select.value;
+
+    select.innerHTML = '<option value="">-- اضغط هنا لاختيار التلميذ لجلب بيانات الولي تلقائياً --</option>' +
+      students.map(s => {
+        const pName = s.parentName && s.parentName.trim() ? s.parentName.trim() : 'غير مسجل';
+        const phone = s.parentPhone || 'بدون هاتف';
+        return `<option value="${s.id}">${s.name} (فوج ${s.group || 'أ'}) | الولي: ${pName} (${phone})</option>`;
+      }).join('');
+
+    if (currentVal) select.value = currentVal;
+  }
+  window.populateWaLessonStudentSelect = populateWaLessonStudentSelect;
+
+  window.onWaLessonStudentChange = function() {
+    generateLessonReportMessage();
+  };
+
+  window.generateLessonReportMessage = function() {
+    const select = document.getElementById('waLessonStudentSelect');
+    const msgEl = document.getElementById('waLessonFinalMessage');
+    const titleInput = document.getElementById('waLessonTitleInput');
+    const achieveInput = document.getElementById('waLessonAchievementInput');
+    if (!select || !msgEl) return;
+
+    const studentId = select.value;
+    if (!studentId) {
+      msgEl.value = '';
+      return;
+    }
+
+    const students = getData('brainova_students') || [];
+    const stu = students.find(s => s.id === studentId);
+    if (!stu) return;
+
+    const pName = (stu.parentName && stu.parentName.trim() && stu.parentName !== '—') ? `حضرة الولي الفاضل ${stu.parentName}` : `ولي أمر بطلنا العزيز ${stu.name}`;
+    const lessonTitle = (titleInput?.value || '').trim() || 'ورشة الروبوتيك والذكاء الاصطناعي التطبيقي';
+    const achievement = (achieveInput?.value || '').trim() || 'إكمال المشروع والتطبيق العملي بنجاح 🤖';
+
+    const text = `السلام عليكم ورحمة الله وبركاته،\n${pName} المحترم،\n\nيسعدنا في أكاديمية Brainova Robotics أن نشارككم ما تعلّمه وأنجزه ابنكم المبدع *${stu.name}* في حصة اليوم:\n\n📚 *عنوان الدرس:* ${lessonTitle}\n⚙️ *مستوى الإنجاز:* ${achievement}\n\nنحيي شغفه واجتهاده الرائع، ونتمنى له دوام التألق والتميز في عالم البرمجة والابتكار! 🚀👏\n\n*إدارة أكاديمية Brainova Robotics*`;
+
+    msgEl.value = text;
+  };
+
+  window.dispatchLessonReportWhatsApp = async function() {
+    const select = document.getElementById('waLessonStudentSelect');
+    const msgEl = document.getElementById('waLessonFinalMessage');
+    if (!select || !msgEl) return;
+
+    const studentId = select.value;
+    if (!studentId) {
+      showToast('يرجى اختيار التلميذ أولاً!', 'error');
+      return;
+    }
+
+    const students = getData('brainova_students') || [];
+    const stu = students.find(s => s.id === studentId);
+    if (!stu) return;
+
+    if (!stu.parentPhone || stu.parentPhone === '—') {
+      showToast('⚠️ لا يوجد رقم هاتف مسجل لولي أمر هذا الطالب! يرجى إضافته أولاً.', 'error');
+      return;
+    }
+
+    const rawMsg = msgEl.value.trim();
+    if (!rawMsg) {
+      showToast('يرجى كتابة نص الرسالة أو تقرير الدرس!', 'error');
+      return;
+    }
+
+    const cleanPhone = formatAlgerianPhoneForWhatsApp(stu.parentPhone);
+    if (!cleanPhone || cleanPhone.length < 8) {
+      showToast('رقم هاتف الولي غير صالح!', 'error');
+      return;
+    }
+
+    showToast(`جاري إرسال تقرير الدرس لولي أمر (${stu.name})...`, 'info');
+
+    // Send via WhatsApp Bot if connected, otherwise open WhatsApp link
+    if (window.electronAPI && window.electronAPI.whatsapp && window.electronAPI.whatsapp.sendMessage) {
+      try {
+        const res = await window.electronAPI.whatsapp.sendMessage(cleanPhone, rawMsg);
+        if (res && res.success) {
+          showToast(`✅ تم إرسال تقرير الدرس لولي أمر (${stu.name}) بنجاح عبر البوت! 🚀`, 'success');
+          return;
+        }
+      } catch (err) {
+        console.warn('Bot sendMessage failed, falling back to wa.me link:', err);
+      }
+    }
+
+    // Fallback: Open WhatsApp direct Web / App chat
+    const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(rawMsg)}`;
+    if (window.electronAPI && window.electronAPI.openExternal) {
+      window.electronAPI.openExternal(waUrl);
+    } else {
+      window.open(waUrl, '_blank');
+    }
+    showToast(`✅ تم فتح محادثة ولي أمر (${stu.name}) لإرسال تقرير الدرس! 📲`, 'success');
+  };
 
   // --- LIVE QUEUES: AUTOMATICALLY DETECTED PARENTS & STUDENTS ---
   function renderWaQueues() {

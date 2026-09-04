@@ -293,10 +293,6 @@
         <td id="rcptSubscriptionValidity" style="font-weight:800; color:#0284c7;">4 حصص (اشتراك شهري)</td>
       </tr>
       <tr>
-        <th>موعد أول حصة قادمة</th>
-        <td id="rcptFirstSessionDate" style="font-weight:800; color:#059669;">السبت 05/09/2026 (14:00 - 16:00)</td>
-      </tr>
-      <tr>
         <th>تاريخ استحقاق التجديد</th>
         <td id="rcptRenewalDate" style="font-weight:800; color:#d97706; font-family:'JetBrains Mono', monospace;">03/10/2026</td>
       </tr>
@@ -313,14 +309,20 @@
         <td class="highlight-amount" id="rcptAmount">5,000 دج</td>
       </tr>
       <tr>
-        <th>المبلغ بالحروف</th>
-        <td class="highlight-words" id="rcptAmountWords">فقط خمسة آلاف دينار جزائري لا غير</td>
-      </tr>
-      <tr>
         <th>الرصيد والحصص</th>
         <td id="rcptBalance">4 حصص متبقية / 5,000 دج</td>
       </tr>
     </table>
+
+    <!-- WhatsApp Official QR Code Box -->
+    <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin: 10px 0 6px 0; padding:8px; border:1px dashed #cbd5e1; border-radius:6px; background:#f8fafc;">
+      <img id="rcptWhatsAppQrCode" src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=1&data=https://wa.me/213791194633" style="width:56px; height:56px; border-radius:4px; border:1px solid #e2e8f0;" alt="WhatsApp QR">
+      <div style="text-align:right; font-size:9px; color:#334155; line-height:1.4;">
+        <strong style="color:#25d366; font-size:10px; display:block;">📲 واتساب الأكاديمية الرسمي</strong>
+        <span>امسح الرمز بكاميرا هاتفك</span><br>
+        <span>للتواصل والمتابعة المباشرة معنا</span>
+      </div>
+    </div>
 
     <div class="receipt-footer">
       <div>الهاتف: <strong style="font-family:'JetBrains Mono', monospace;" dir="ltr">0791 19 46 33</strong> • البريد: <strong>brainovarobotics@gmail.com</strong></div>
@@ -420,11 +422,26 @@
 
         const elRenewal = document.getElementById('rcptRenewalDate');
         if (elRenewal) {
-          const renewalDateObj = new Date(payBaseDate.getTime() + (30 * 24 * 60 * 60 * 1000));
+          let renewalDateObj = null;
+          if (payment.renewalIso || payment.renewalDate) {
+            renewalDateObj = new Date(payment.renewalIso || payment.renewalDate);
+          }
+          if (!renewalDateObj || isNaN(renewalDateObj.getTime())) {
+            const mCount = Number(payment.monthsPurchased) || Math.max(1, Math.round((Number(payment.sessionsPurchased) || 4) / 4));
+            renewalDateObj = new Date(payBaseDate);
+            renewalDateObj.setMonth(renewalDateObj.getMonth() + mCount);
+          }
           const ry = renewalDateObj.getFullYear();
           const rm = String(renewalDateObj.getMonth() + 1).padStart(2, '0');
           const rday = String(renewalDateObj.getDate()).padStart(2, '0');
           elRenewal.textContent = rday + '/' + rm + '/' + ry;
+        }
+
+        const elWaQr = document.getElementById('rcptWhatsAppQrCode');
+        if (elWaQr) {
+          const settings = JSON.parse(localStorage.getItem('brainova_settings') || '{}');
+          const waPhone = (settings.adminPhone ? settings.adminPhone.replace(/^0/, '213') : '213791194633').replace(/\D/g, '');
+          elWaQr.src = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=1&data=https://wa.me/' + (waPhone || '213791194633');
         }
 
         function convert12hTo24hString(str) {

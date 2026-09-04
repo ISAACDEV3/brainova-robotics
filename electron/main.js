@@ -594,7 +594,15 @@ ipcMain.on('print-receipt', (event, payload) => {
       firstSessionStr = (stu && stu.startDate) ? `${stu.startDate} (${timeStr})` : `الحصة القادمة (${timeStr})`;
     }
 
-    const renewalDateObj = new Date(payBaseDate.getTime() + (30 * 24 * 60 * 60 * 1000));
+    let renewalDateObj = null;
+    if (targetPayment.renewalIso || targetPayment.renewalDate) {
+      renewalDateObj = new Date(targetPayment.renewalIso || targetPayment.renewalDate);
+    }
+    if (!renewalDateObj || isNaN(renewalDateObj.getTime())) {
+      const mCount = Number(targetPayment.monthsPurchased) || Math.max(1, Math.round((Number(targetPayment.sessionsPurchased) || 4) / 4));
+      renewalDateObj = new Date(payBaseDate);
+      renewalDateObj.setMonth(renewalDateObj.getMonth() + mCount);
+    }
     const ry = renewalDateObj.getFullYear();
     const rm = String(renewalDateObj.getMonth() + 1).padStart(2, '0');
     const rday = String(renewalDateObj.getDate()).padStart(2, '0');
@@ -763,14 +771,22 @@ ipcMain.on('print-receipt', (event, payload) => {
       <tr><th>ولي الأمر</th><td>${parentName}</td></tr>
       <tr><th>المستوى والفوج</th><td>${levelGroup}</td></tr>
       <tr><th>صلاحية الاشتراك</th><td style="color:#0284c7; font-weight:800;">${validityStr}</td></tr>
-      <tr><th>موعد أول حصة قادمة</th><td style="color:#059669; font-weight:800;">${firstSessionStr}</td></tr>
       <tr><th>تاريخ استحقاق التجديد</th><td style="color:#d97706; font-weight:800; font-family:'JetBrains Mono', monospace;">${renewalDateStr}</td></tr>
       <tr><th>تاريخ الدفع</th><td style="font-family:'JetBrains Mono', monospace;">${dateStr}</td></tr>
       <tr><th>طريقة الدفع</th><td style="color:#0284c7; font-weight:800;">${payMethod}</td></tr>
       <tr><th>المبلغ المدفوع</th><td class="highlight-amount">${amountStr}</td></tr>
-      <tr><th>المبلغ بالحروف</th><td class="highlight-words">${wordsTafqeet}</td></tr>
       <tr><th>الرصيد والحصص</th><td>${balanceStr}</td></tr>
     </table>
+
+    <!-- WhatsApp Official QR Code Box -->
+    <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin: 10px 0 6px 0; padding:8px; border:1px dashed #cbd5e1; border-radius:6px; background:#f8fafc;">
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=1&data=https://wa.me/213791194633" style="width:56px; height:56px; border-radius:4px; border:1px solid #e2e8f0;" alt="WhatsApp QR">
+      <div style="text-align:right; font-size:9px; color:#334155; line-height:1.4;">
+        <strong style="color:#25d366; font-size:10px; display:block;">📲 واتساب الأكاديمية الرسمي</strong>
+        <span>امسح الرمز بكاميرا هاتفك</span><br>
+        <span>للتواصل والمتابعة المباشرة معنا</span>
+      </div>
+    </div>
 
     <div class="receipt-footer">
       <div>الهاتف: <strong style="font-family:'JetBrains Mono', monospace;" dir="ltr">0791 19 46 33</strong> • البريد: <strong>brainovarobotics@gmail.com</strong></div>
