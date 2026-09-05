@@ -202,7 +202,7 @@
           parentPhone: parentPhone,
           level: studentLevel,
           group: "الفوج أ (صباحي)",
-          educator: "عابد اسحاق تقي الدين",
+          educator: "",
           balance: 2000,
           sessionsRemaining: 4,
           joinDate: new Date().toISOString().split('T')[0],
@@ -294,7 +294,7 @@
     const studentName = stu.name || stu.studentName || 'الطالب';
     const levelName = stu.level || 'المستوى الثاني: Builder';
     const groupName = stu.group || 'الفوج أ (صباحي)';
-    const educatorName = stu.educator || 'عابد اسحاق تقي الدين';
+    const educatorName = stu.educator || '—';
     const studentId = stu.id || 'BR-2026';
 
     // Top Header & Hero details
@@ -539,7 +539,7 @@
     const waBtn = document.getElementById('pWhatsAppBtn');
     if (waBtn) {
       const msg = encodeURIComponent(`السلام عليكم إدارة Brainova Robotics، أنا ولي أمر الطالب (${studentName}) - ${groupName}. أود الاستفسار حول...`);
-      waBtn.href = `https://wa.me/213791194633?text=${msg}`;
+      waBtn.href = `https://wa.me/213799966563?text=${msg}`;
     }
   }
 

@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   isMaximized:    () => ipcRenderer.invoke('win-is-maximized'),
   openParentPortal: () => ipcRenderer.send('open-parent-portal'),
   openMainSite:   () => ipcRenderer.send('open-main-site'),
+  openExternal:   (url) => ipcRenderer.invoke('open-external', url),
   platform:       process.platform,
 
   // ── Printing (Native Windows Print Dialog & Receipt Preview)

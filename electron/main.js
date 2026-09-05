@@ -248,6 +248,14 @@ function createMain(splash) {
 
   mainWindow.loadFile(path.join(__dirname, '..', 'dashboard.html'));
 
+  // Ensure external links open in user's default browser (WhatsApp Web, wa.me, etc.)
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('http:') || url.startsWith('https:') || url.startsWith('mailto:') || url.startsWith('tel:')) {
+      shell.openExternal(url);
+    }
+    return { action: 'deny' };
+  });
+
   mainWindow.once('ready-to-show', () => {
     setTimeout(() => {
       if (splash && !splash.isDestroyed()) splash.close();
@@ -473,6 +481,17 @@ ipcMain.on('win-close',     () => mainWindow && mainWindow.close());
 ipcMain.on('win-hide',      () => mainWindow && mainWindow.hide());
 ipcMain.on('open-main-site',     () => openWindow('index.html', 1300, 800));
 ipcMain.handle('win-is-maximized', () => mainWindow ? mainWindow.isMaximized() : false);
+ipcMain.handle('open-external', async (_, url) => {
+  try {
+    if (url && (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('mailto:') || url.startsWith('tel:'))) {
+      await shell.openExternal(url);
+      return { success: true };
+    }
+  } catch(e) {
+    return { success: false, error: e.message };
+  }
+  return { success: false, error: 'Invalid URL' };
+});
 
 // ── IPC: PRINT DIALOG & RECEIPT PRINTING ──────────────────────────────────────
 ipcMain.on('print-window', (event) => {
@@ -780,7 +799,7 @@ ipcMain.on('print-receipt', (event, payload) => {
 
     <!-- WhatsApp Official QR Code Box -->
     <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin: 10px 0 6px 0; padding:8px; border:1px dashed #cbd5e1; border-radius:6px; background:#f8fafc;">
-      <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=1&data=https://wa.me/213791194633" style="width:56px; height:56px; border-radius:4px; border:1px solid #e2e8f0;" alt="WhatsApp QR">
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=1&data=https://wa.me/213799966563" style="width:56px; height:56px; border-radius:4px; border:1px solid #e2e8f0;" alt="WhatsApp QR">
       <div style="text-align:right; font-size:9px; color:#334155; line-height:1.4;">
         <strong style="color:#25d366; font-size:10px; display:block;">📲 واتساب الأكاديمية الرسمي</strong>
         <span>امسح الرمز بكاميرا هاتفك</span><br>
@@ -789,7 +808,7 @@ ipcMain.on('print-receipt', (event, payload) => {
     </div>
 
     <div class="receipt-footer">
-      <div>الهاتف: <strong style="font-family:'JetBrains Mono', monospace;" dir="ltr">0791 19 46 33</strong> • البريد: <strong>brainovarobotics@gmail.com</strong></div>
+      <div>الهاتف: <strong style="font-family:'JetBrains Mono', monospace;" dir="ltr">0799 96 65 63</strong> • البريد: <strong>brainovarobotics@gmail.com</strong></div>
       <div style="font-weight:800; color:#0f172a; margin-top:2px;">يرجى الاحتفاظ بهذا الوصل كإثبات رسمي لعملية التسديد</div>
       <div style="font-family:'JetBrains Mono', monospace; font-size:7.5px; color:#94a3b8; margin-top:2px;">BRAINOVA POS ENGINE · VALIDATED</div>
     </div>

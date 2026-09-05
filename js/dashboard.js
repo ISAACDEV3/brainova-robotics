@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
         schoolName: "Brainova Robotics",
         adminName: "إدارة الأكاديمية",
         adminEmail: "brainovarobotics@gmail.com",
-        adminPhone: "0791194633",
+        adminPhone: "0799966563",
         academicYear: "2026/2027"
       }
     };
@@ -48,21 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         try {
           const parsed = JSON.parse(stored);
-          if (key === 'brainova_students' && parsed.some(s => s.name === 'نزار تسنيم' || s.name === 'سارة محمد' || s.name === 'ياسين كريم')) {
-            localStorage.setItem(key, JSON.stringify([]));
-            MemoryCache[key] = [];
-          } else if (key === 'brainova_educators') {
-            localStorage.setItem(key, JSON.stringify(singleEducator));
-            MemoryCache[key] = singleEducator;
-          } else if (key === 'brainova_groups' && (!parsed || parsed.length === 0)) {
-            saveData(key, defaultGroups);
-          } else if (key === 'brainova_rooms' && (!parsed || parsed.length === 0)) {
-            saveData(key, defaultRooms);
-          } else if (key === 'brainova_schedule' && (!parsed || parsed.length === 0)) {
-            saveData(key, defaultSchedule);
-          } else {
-            MemoryCache[key] = parsed;
-          }
+          MemoryCache[key] = parsed;
         } catch(e) {
           saveData(key, defaultData[key]);
         }
@@ -84,9 +70,10 @@ document.addEventListener('DOMContentLoaded', () => {
               name: trimmedGroup,
               level: stu.level || 'المستوى الأول',
               ageCategory: 'جميع الفئات',
-              room: 'قاعة Brainova الرئيسية',
-              educatorId: 'EDU-001',
-              educatorName: 'عابد اسحاق تقي الدين',
+              room: 'قاعة 1',
+              educatorId: stu.educatorId || null,
+              educatorName: stu.educator || '',
+              educator: stu.educator || '',
               maxStudents: 12,
               startTime: stu.startTime || '14:00',
               endTime: stu.endTime || '16:00'
@@ -1079,42 +1066,96 @@ document.addEventListener('DOMContentLoaded', () => {
       return dateB - dateA;
     });
 
+    const now = new Date();
     const lastPayment = payments[0];
+    const remSessions = stuObj && stuObj.sessionsRemaining !== undefined ? stuObj.sessionsRemaining : (lastPayment ? (lastPayment.sessionsRemaining || 0) : 0);
+
+    // 1. Explicit Debt Check: If student is marked as having unpaid debts/months
+    const hasExplicitDebt = !!(stuObj && (stuObj.hasDebt === true || stuObj.hasDebt === 'true' || Number(stuObj.debtAmount) > 0));
+    if (hasExplicitDebt) {
+      const debtAmt = Number(stuObj.debtAmount) || (Number(stuObj.unpaidMonths || 1) * (Number(stuObj.monthlyFee) || 5000));
+      const debtMonths = Number(stuObj.unpaidMonths) || 1;
+      const debtSessions = Number(stuObj.unpaidSessions) || (debtMonths * 4);
+      const noteStr = stuObj.debtNotes ? ` [ملاحظة: ${stuObj.debtNotes}]` : '';
+
+      const payDate = lastPayment ? (parseBrainovaDate(lastPayment.paidAtIso || lastPayment.date) || now) : now;
+      const diffMs = now.getTime() - payDate.getTime();
+      const diffDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+
+      return {
+        hasPayment: payments.length > 0,
+        status: 'overdue',
+        statusLabel: 'متأخر في الدفع (دين معلق)',
+        badgeClass: 'overdue',
+        lastDateStr: lastPayment ? (lastPayment.date || payDate.toLocaleDateString('ar-DZ')) : '—',
+        daysElapsed: diffDays,
+        weeksElapsed: Math.floor(diffDays / 7),
+        elapsedText: lastPayment ? (diffDays === 0 ? 'دفع اليوم' : `دفع منذ ${diffDays} يوم`) : 'لا توجد دفعات مسجلة',
+        renewalDate: now,
+        renewalDateStr: 'مستحق الدفع فوراً',
+        daysRemaining: -1,
+        renewalSummary: `⚠️ متأخر عن دفع: ${debtAmt.toLocaleString()} دج (${debtMonths} شهر / ${debtSessions} حصص)${noteStr}`,
+        lastAmount: lastPayment ? (Number(lastPayment.amountPaid) || 0) : 0,
+        lastOpNumber: lastPayment ? (lastPayment.opNumber || lastPayment.id) : '—',
+        paymentsCount: payments.length,
+        allStudentPayments: payments,
+        hasDebt: true,
+        debtAmount: debtAmt,
+        unpaidMonths: debtMonths,
+        unpaidSessions: debtSessions
+      };
+    }
+
+    // 2. Case without Payments (Fresh or manual entry)
     if (!lastPayment) {
-      if (stuObj && (stuObj.lastPaymentIso || stuObj.lastPaymentDate)) {
+      if (stuObj && (stuObj.lastPaymentIso || stuObj.lastPaymentDate || stuObj.nextRenewalDate || stuObj.nextRenewalIso || remSessions > 0)) {
         const payDate = parseBrainovaDate(stuObj.lastPaymentIso || stuObj.lastPaymentDate) || new Date();
-        const now = new Date();
         const diffMs = now.getTime() - payDate.getTime();
         const diffDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+
         let renewalDate = null;
-        if (stuObj.nextRenewalIso || stuObj.nextRenewalDate) {
-          renewalDate = parseBrainovaDate(stuObj.nextRenewalIso || stuObj.nextRenewalDate);
+        if (stuObj.nextRenewalDate || stuObj.nextRenewalIso) {
+          renewalDate = parseBrainovaDate(stuObj.nextRenewalDate || stuObj.nextRenewalIso);
         }
-        if (!renewalDate || isNaN(renewalDate.getTime())) {
-          const mCount = Number(stuObj.monthsPurchased) || Math.max(1, Math.round((Number(stuObj.sessionsRemaining) || 4) / 4));
-          renewalDate = new Date(payDate);
-          renewalDate.setMonth(renewalDate.getMonth() + mCount);
+
+        // If not set or student has prepaid sessions, compute renewal dynamically
+        if (!renewalDate || isNaN(renewalDate.getTime()) || (remSessions > 0 && renewalDate.getTime() < now.getTime())) {
+          const sessionsToCount = Math.max(1, remSessions || 4);
+          renewalDate = new Date();
+          renewalDate.setDate(now.getDate() + Math.max(7, sessionsToCount * 7));
         }
+
         const renewalTimestamp = renewalDate.getTime();
         const renewalDateStr = `${String(renewalDate.getDate()).padStart(2, '0')}/${String(renewalDate.getMonth() + 1).padStart(2, '0')}/${renewalDate.getFullYear()}`;
         const daysRemaining = Math.ceil((renewalTimestamp - now.getTime()) / (1000 * 60 * 60 * 24));
-        const remSessions = stuObj.sessionsRemaining !== undefined ? stuObj.sessionsRemaining : 4;
-        
+
         let status = 'active';
         let statusLabel = 'اشتراك ساري';
         let badgeClass = 'paid';
         let renewalSummary = `متبقي ${daysRemaining} يوماً (${remSessions} حصص) • استحقاق: ${renewalDateStr}`;
 
         if (remSessions <= 0) {
+          if (daysRemaining <= 0) {
+            status = 'overdue';
+            statusLabel = 'انتهى الاشتراك الشهري';
+            badgeClass = 'overdue';
+            renewalSummary = `متأخر عن دفع الشهر بـ ${Math.abs(daysRemaining)} يوم (انتهى في: ${renewalDateStr})`;
+          } else {
+            status = 'due_soon';
+            statusLabel = 'نفدت الحصص (مستحق للتجديد)';
+            badgeClass = 'partial';
+            renewalSummary = `استهلك جميع الحصص (0 متبقية) • استحقاق التجديد: ${renewalDateStr}`;
+          }
+        } else if (daysRemaining > 5) {
+          status = 'active';
+          statusLabel = 'اشتراك ساري';
+          badgeClass = 'paid';
+          renewalSummary = `متبقي ${daysRemaining} يوماً (${remSessions} حصص) • استحقاق: ${renewalDateStr}`;
+        } else {
           status = 'due_soon';
-          statusLabel = 'نفدت الحصص (مستحق للتجديد)';
+          statusLabel = 'اقترب موعد التجديد';
           badgeClass = 'partial';
-          renewalSummary = `استهلك جميع الحصص (0 متبقية) • استحقاق التجديد: ${renewalDateStr}`;
-        } else if (daysRemaining <= 0) {
-          status = 'overdue';
-          statusLabel = 'انتهى الاشتراك الشهري';
-          badgeClass = 'overdue';
-          renewalSummary = `متأخر عن دفع الشهر بـ ${Math.abs(daysRemaining)} يوم (انتهى في: ${renewalDateStr})`;
+          renewalSummary = `مستحق للتجديد خلال ${daysRemaining <= 0 ? 'اليوم' : daysRemaining + ' أيام'} (${renewalDateStr})`;
         }
 
         return {
@@ -1155,8 +1196,8 @@ document.addEventListener('DOMContentLoaded', () => {
       };
     }
 
+    // 3. Main Case: Student has payment history
     const payDate = parseBrainovaDate(lastPayment.paidAtIso || lastPayment.date) || new Date();
-    const now = new Date();
     const diffMs = now.getTime() - payDate.getTime();
     const diffDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
     const diffWeeks = Math.floor(diffDays / 7);
@@ -1182,21 +1223,34 @@ document.addEventListener('DOMContentLoaded', () => {
       elapsedText = `دفع منذ ${months} ${months === 1 ? 'شهر' : 'أشهر'} (${diffDays} يوماً)`;
     }
 
-    // Subscription Renewal Calculation (Supports Multi-Month Subscriptions accurately)
+    // Determine target renewal date
     let renewalDate = null;
-    if (lastPayment.renewalIso || lastPayment.renewalDate) {
-      renewalDate = parseBrainovaDate(lastPayment.renewalIso || lastPayment.renewalDate);
+    if (stuObj && (stuObj.nextRenewalDate || stuObj.nextRenewalIso)) {
+      renewalDate = parseBrainovaDate(stuObj.nextRenewalDate || stuObj.nextRenewalIso);
     }
     if (!renewalDate || isNaN(renewalDate.getTime())) {
-      const monthsPurchased = Number(lastPayment.monthsPurchased) || Math.max(1, Math.round((Number(lastPayment.sessionsPurchased) || 4) / 4));
+      if (lastPayment.renewalIso || lastPayment.renewalDate) {
+        renewalDate = parseBrainovaDate(lastPayment.renewalIso || lastPayment.renewalDate);
+      }
+    }
+
+    // Multi-month renewal bug fix:
+    // If student has prepaid sessions (remSessions > 0), the renewal date must cover those sessions!
+    const monthsForSessions = Math.max(1, Math.ceil(remSessions / 4));
+    if (!renewalDate || isNaN(renewalDate.getTime())) {
+      const monthsPurchased = Math.max(monthsForSessions, Number(lastPayment.monthsPurchased) || 1);
       renewalDate = new Date(payDate);
       renewalDate.setMonth(renewalDate.getMonth() + monthsPurchased);
+    } else if (remSessions > 0 && renewalDate.getTime() < now.getTime()) {
+      // If the old renewal date has passed, but the student STILL has sessions remaining in their account:
+      // Dynamically compute the valid remaining period based on remaining sessions (7 days per session from today)
+      renewalDate = new Date();
+      renewalDate.setDate(now.getDate() + Math.max(7, remSessions * 7));
     }
+
     const renewalTimestamp = renewalDate.getTime();
     const renewalDateStr = `${String(renewalDate.getDate()).padStart(2, '0')}/${String(renewalDate.getMonth() + 1).padStart(2, '0')}/${renewalDate.getFullYear()}`;
     const daysRemaining = Math.ceil((renewalTimestamp - now.getTime()) / (1000 * 60 * 60 * 24));
-
-    const remSessions = stuObj && stuObj.sessionsRemaining !== undefined ? stuObj.sessionsRemaining : (lastPayment.sessionsRemaining || 0);
 
     let status = 'active';
     let statusLabel = 'اشتراك ساري';
@@ -1204,10 +1258,17 @@ document.addEventListener('DOMContentLoaded', () => {
     let renewalSummary = '';
 
     if (remSessions <= 0) {
-      status = 'due_soon';
-      statusLabel = 'نفدت الحصص (مستحق للتجديد)';
-      badgeClass = 'partial';
-      renewalSummary = `استهلك جميع الحصص (0 متبقية) • استحقاق التجديد: ${renewalDateStr}`;
+      if (daysRemaining <= 0) {
+        status = 'overdue';
+        statusLabel = 'انتهى الاشتراك الشهري';
+        badgeClass = 'overdue';
+        renewalSummary = `متأخر عن دفع الشهر بـ ${Math.abs(daysRemaining)} يوم (0 حصص متبقية)`;
+      } else {
+        status = 'due_soon';
+        statusLabel = 'نفدت الحصص (مستحق للتجديد)';
+        badgeClass = 'partial';
+        renewalSummary = `استهلك جميع الحصص (0 متبقية) • استحقاق التجديد: ${renewalDateStr}`;
+      }
     } else if (daysRemaining > 5) {
       status = 'active';
       statusLabel = 'اشتراك ساري';
@@ -1217,12 +1278,13 @@ document.addEventListener('DOMContentLoaded', () => {
       status = 'due_soon';
       statusLabel = 'اقترب موعد التجديد';
       badgeClass = 'partial';
-      renewalSummary = `مستحق للتجديد خلال ${daysRemaining === 0 ? 'اليوم' : daysRemaining + ' أيام'} (${renewalDateStr})`;
+      renewalSummary = `مستحق للتجديد خلال ${daysRemaining === 0 ? 'اليوم' : daysRemaining + ' أيام'} (${remSessions} حصص متبقية)`;
     } else {
-      status = 'overdue';
-      statusLabel = 'انتهى الاشتراك الشهري';
-      badgeClass = 'overdue';
-      renewalSummary = `متأخر عن دفع الشهر بـ ${Math.abs(daysRemaining)} يوم (انتهى في: ${renewalDateStr})`;
+      // Fallback: If remSessions > 0, they are never overdue without explicit debt!
+      status = 'active';
+      statusLabel = 'اشتراك ساري';
+      badgeClass = 'paid';
+      renewalSummary = `اشتراك ساري (${remSessions} حصص متبقية) • استحقاق التجديد: ${renewalDateStr}`;
     }
 
     return {
@@ -1295,16 +1357,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const timeline = getStudentPaymentTimeline(stu.id, stu, allPayments);
 
       let sessionsBadge = '';
-      if (sessions > 0) {
+      if (stu.hasDebt || Number(stu.debtAmount) > 0) {
+        const dAmt = Number(stu.debtAmount) || Math.abs(balance);
+        sessionsBadge = `<span class="payment-badge overdue" title="${stu.debtNotes || ''}">⚠️ دين: ${dAmt.toLocaleString()} دج (${stu.unpaidMonths || 1} شهر)</span>`;
+      } else if (sessions > 0) {
         sessionsBadge = `<span class="payment-badge paid">✅ ${sessions} حصص (${balance.toLocaleString()} دج)</span>`;
       } else if (balance < 0) {
-        sessionsBadge = `<span class="payment-badge overdue">⚠️ دين: ${balance.toLocaleString()} دج</span>`;
+        sessionsBadge = `<span class="payment-badge overdue">⚠️ دين: ${Math.abs(balance).toLocaleString()} دج</span>`;
       } else {
         sessionsBadge = `<span class="payment-badge partial">⏳ نفدت الحصص</span>`;
       }
 
       let paymentTimelineBadge = '';
-      if (timeline.hasPayment) {
+      if (stu.hasDebt || Number(stu.debtAmount) > 0) {
+        paymentTimelineBadge = `
+          <div style="margin-top:5px; font-size:0.75rem; color:#EF4444; line-height:1.35;">
+            <span style="font-weight:700;">⚠️ ${timeline.elapsedText}</span>
+            <br>
+            <span style="background:rgba(239,68,68,0.18); color:#FCA5A5; padding:2px 6px; border-radius:4px; font-weight:700; font-size:0.7rem;">متأخر عن دفع ${stu.unpaidMonths || 1} شهر (${Number(stu.debtAmount || 0).toLocaleString()} دج)</span>
+          </div>
+        `;
+      } else if (timeline.hasPayment) {
         if (timeline.status === 'active') {
           paymentTimelineBadge = `
             <div style="margin-top:5px; font-size:0.75rem; line-height:1.35;">
@@ -1343,8 +1416,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${stu.name}
               </a>
               ${(() => {
+                if (stu.hasDebt || Number(stu.debtAmount) > 0) {
+                  const dAmt = Number(stu.debtAmount) || (Number(stu.unpaidMonths || 1) * 5000);
+                  const dMonths = stu.unpaidMonths || 1;
+                  return `<span style="display:inline-flex; align-items:center; gap:3px; background:rgba(239,68,68,0.22); border:1px solid rgba(239,68,68,0.6); color:#FCA5A5; padding:2px 8px; border-radius:12px; font-size:0.68rem; font-weight:800; white-space:nowrap;" title="متأخر عن سداد الاشتراك (${dMonths} شهر / ${dAmt.toLocaleString()} دج)">⚠️ متأخر في الدفع (${dAmt.toLocaleString()} دج)</span>`;
+                }
                 const isOverdue = (timeline.status === 'overdue') || (balance < 0) || (sessions <= 0 && !timeline.hasPayment);
-                if (isOverdue) {
+                if (isOverdue && sessions <= 0) {
                   return `<span style="display:inline-flex; align-items:center; gap:3px; background:rgba(239,68,68,0.18); border:1px solid rgba(239,68,68,0.5); color:#F87171; padding:2px 7px; border-radius:12px; font-size:0.68rem; font-weight:800; white-space:nowrap;" title="متأخر عن سداد الاشتراك المالي المستحق">⚠️ متأخر في الدفع</span>`;
                 }
                 return '';
@@ -1971,7 +2049,7 @@ document.addEventListener('DOMContentLoaded', () => {
       studentName: stu.name,
       level: stu.level,
       group: stu.group,
-      educatorName: educator ? educator.name : 'عابد اسحاق تقي الدين',
+      educatorName: educator ? educator.name : (stu.educator || ''),
       date: formattedDate,
       paidAtIso: isoDate,
       paidAtTimestamp: timestamp,
@@ -2118,8 +2196,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const elWaQr = document.getElementById('rcptWhatsAppQrCode');
     if (elWaQr) {
       const settings = getData('brainova_settings') || {};
-      const waPhone = (settings.adminPhone ? settings.adminPhone.replace(/^0/, '213') : '213791194633').replace(/\D/g, '');
-      elWaQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=1&data=https://wa.me/${waPhone || '213791194633'}`;
+      const waPhone = (settings.adminPhone ? settings.adminPhone.replace(/^0/, '213') : '213799966563').replace(/\D/g, '');
+      elWaQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=1&data=https://wa.me/${waPhone || '213799966563'}`;
     }
 
     const elDateTime = document.getElementById('rcptDateTime');
@@ -2240,13 +2318,29 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <div class="profile-info-cell">
           <div class="profile-cell-lbl">الأستاذ المؤطر</div>
-          <div class="profile-cell-val">${stu.educator || 'عابد اسحاق تقي الدين'}</div>
+          <div class="profile-cell-val">${stu.educator || 'غير محدد'}</div>
         </div>
         <div class="profile-info-cell">
           <div class="profile-cell-lbl">نسبة الالتزام بالحضور</div>
           <div class="profile-cell-val" style="color:#10B981;">${attRate}% (${presentCount}/${totalAtt} حصة)</div>
         </div>
       </div>
+
+      ${(stu.hasDebt || Number(stu.debtAmount) > 0) ? `
+        <div style="background:rgba(239, 68, 68, 0.12); border:1px solid rgba(239, 68, 68, 0.45); border-radius:var(--radius-sm); padding:14px 16px; margin-bottom:14px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="color:#F87171; font-weight:800; font-size:0.95rem; display:flex; align-items:center; gap:6px;">
+              <span>⚠️</span> حالة المستحقات المالية (دين متأخر معلق)
+            </div>
+            <span class="payment-badge overdue" style="font-size:0.75rem;">متأخر في الدفع</span>
+          </div>
+          <div style="margin-top:8px; font-size:0.85rem; color:#FCA5A5; line-height:1.6;">
+            متأخر عن دفع اشتراك <strong>${stu.unpaidMonths || 1} شهر</strong> (ما يعادل <strong>${stu.unpaidSessions || 4} حصص تدريبية</strong>).<br>
+            المبلغ المستحق للدفع: <strong style="font-size:1.15rem; color:#EF4444; font-family:monospace;">${Number(stu.debtAmount || 0).toLocaleString()} دج</strong>
+            ${stu.debtNotes ? `<div style="margin-top:6px; color:#E2E8F0; font-size:0.8rem; background:rgba(0,0,0,0.25); padding:6px 10px; border-radius:4px;">📌 ملاحظات الإدارة / الولي: <em>${stu.debtNotes}</em></div>` : ''}
+          </div>
+        </div>
+      ` : ''}
 
       <!-- 2. MONTHLY PAYMENT & RENEWAL TRACKER -->
       <div class="profile-section-heading">
@@ -3541,7 +3635,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const message = encodeURIComponent(document.getElementById('waMessageContent').value);
     const url = `https://wa.me/${phone}?text=${message}`;
-    window.open(url, '_blank');
+    if (window.electronAPI && window.electronAPI.openExternal) {
+      window.electronAPI.openExternal(url);
+    } else {
+      window.open(url, '_blank');
+    }
     closeWhatsAppDispatchModal();
     showToast(`✅ تم فتح محادثة الواتساب لولي أمر الطالب (${currentWaStudent.name}) بنجاح!`, 'success');
   };
@@ -3708,8 +3806,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const phoneClean = (reg.parentPhone || '').replace(/\D/g, '');
     const phoneIntl = phoneClean.startsWith('0') ? '213' + phoneClean.slice(1) : (phoneClean.startsWith('213') ? phoneClean : '213' + phoneClean);
     const msg = encodeURIComponent(`مرحباً أستاذ/ة (${reg.parentName})، معكم إدارة مدرسة Brainova Robotics بخصوص طلب تسجيل ابنكم/ابنتكم (${reg.studentName}) في دورات الروبوتيك والذكاء الاصطناعي...`);
+    const waUrl = `https://wa.me/${phoneIntl}?text=${msg}`;
     
-    window.open(`https://wa.me/${phoneIntl}?text=${msg}`, '_blank');
+    if (window.electronAPI && window.electronAPI.openExternal) {
+      window.electronAPI.openExternal(waUrl);
+    } else {
+      window.open(waUrl, '_blank');
+    }
   };
 
   // Delete registration
@@ -3844,10 +3947,10 @@ document.addEventListener('DOMContentLoaded', () => {
             <span> الفئة: <strong>${g.ageCategory || '8 - 11 سنة (ناشئين)'}</strong></span>
           </div>
           <div style="font-size:0.8rem; color:var(--color-text-muted); margin-bottom:6px;">
-            <span> القاعة: <strong>${g.room || 'قاعة Brainova'}</strong></span>
+            <span> القاعة: <strong>${g.room || 'غير محدد'}</strong></span>
           </div>
           <div style="font-size:0.8rem; color:var(--color-text-muted); margin-bottom:6px;">
-            <span> الأستاذ: <strong>${g.educator || 'عابد اسحاق تقي الدين'}</strong></span>
+            <span> الأستاذ: <strong>${g.educator || g.educatorName || 'غير محدد'}</strong></span>
           </div>
           <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.78rem; color:var(--color-text-muted); margin-bottom:8px; background:rgba(255,255,255,0.03); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">
             <span>التوقيت الأسبوعي</span>
@@ -3940,7 +4043,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.__currentRosterGroupName = groupName;
 
     const groups = getData('brainova_groups');
-    const group = groups.find(g => g.name === groupName) || { name: groupName, educator: 'عابد اسحاق تقي الدين', room: 'قاعة Brainova', ageCategory: 'جميع الفئات' };
+    const group = groups.find(g => g.name === groupName) || { name: groupName, educator: '', educatorName: '', room: '', ageCategory: 'جميع الفئات' };
     const allStudents = getData('brainova_students');
     const groupStudents = allStudents.filter(s => isStudentInGroup(s, groupName));
 
@@ -3951,10 +4054,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (subEl) subEl.textContent = `المستوى: ${group.level || 'دورة الروبوتيك'} • الطاقة الاستيعابية: ${groupStudents.length} / ${group.maxStudents || 12}`;
 
     const eduEl = document.getElementById('groupRosterEducator');
-    if (eduEl) eduEl.textContent = group.educator || 'عابد اسحاق تقي الدين';
+    if (eduEl) eduEl.textContent = group.educator || group.educatorName || 'غير محدد';
 
     const roomEl = document.getElementById('groupRosterRoom');
-    if (roomEl) roomEl.textContent = group.room || 'قاعة Brainova';
+    if (roomEl) roomEl.textContent = group.room || 'غير محدد';
 
     const ageEl = document.getElementById('groupRosterAge');
     if (ageEl) ageEl.textContent = group.ageCategory || '8 - 11 سنة';
@@ -4503,21 +4606,20 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const groups = getData('brainova_groups') || [];
     const g = groups.find(x => x.name === groupName || x.id === groupName) || {
       name: groupName,
-      level: 'المستوى الأول: تفكير منطقي',
-      room: 'قاعة Brainova الرئيسية',
-      educator: 'أ. عابد اسحاق تقي الدين',
-      ageCategory: '8 - 12 سنة'
+      level: 'المستوى الأول',
+      room: '',
+      educator: '',
+      ageCategory: 'جميع الفئات'
     };
 
     const schedule = getData('brainova_schedule') || [];
     const sch = schedule.find(s => s.groupId === g.id || s.groupName === g.name || (s.groupName && s.groupName.includes(g.name)));
     const dayStr = sch ? sch.day : (g.day || 'السبت');
     const timeStr = sch ? `${sch.startTime} - ${sch.endTime}` : (g.timeSlot || '14:00 - 16:00');
-    const educatorName = g.educator || (sch ? sch.educatorName : '') || 'أ. عابد اسحاق تقي الدين';
-    const roomName = g.room || (sch ? sch.room : '') || 'قاعة Brainova 1';
+    const educatorName = g.educator || g.educatorName || (sch ? (sch.educator || sch.educatorName) : '') || 'غير محدد';
+    const roomName = g.room || (sch ? sch.room : '') || 'غير محدد';
 
     const monthNames = ['جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
     const currentMonth = month || monthNames[new Date().getMonth()] || 'سبتمبر';
@@ -5787,7 +5889,10 @@ document.addEventListener('DOMContentLoaded', () => {
         studentName: name,
         level,
         group,
-        educatorName: 'عابد اسحاق تقي الدين',
+        educatorName: (function(){
+          const grpObj = (getData('brainova_groups') || []).find(g => g.name === group);
+          return (grpObj && (grpObj.educator || grpObj.educatorName)) ? (grpObj.educator || grpObj.educatorName) : '';
+        })(),
         date: formattedPaymentDate,
         paidAtIso: isoPaymentDate,
         paidAtTimestamp: timestamp,
@@ -5880,11 +5985,89 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       endSel.value = endVal;
     }
-    document.getElementById('editStudentSessionsRemaining').value = stu.sessionsRemaining !== undefined ? stu.sessionsRemaining : 4;
+    const currentSessions = stu.sessionsRemaining !== undefined ? stu.sessionsRemaining : 4;
+    document.getElementById('editStudentSessionsRemaining').value = currentSessions;
     document.getElementById('editStudentMonthlyFee').value = stu.monthlyFee || 5000;
+
+    // Next renewal date
+    let renewalVal = '';
+    if (stu.nextRenewalDate) {
+      renewalVal = stu.nextRenewalDate;
+    } else if (stu.nextRenewalIso) {
+      renewalVal = stu.nextRenewalIso.split('T')[0];
+    } else {
+      const allPayments = getData('brainova_payments');
+      const timeline = getStudentPaymentTimeline(stu.id, stu, allPayments);
+      if (timeline && timeline.renewalDate && !isNaN(timeline.renewalDate.getTime())) {
+        const yr = timeline.renewalDate.getFullYear();
+        const mo = String(timeline.renewalDate.getMonth() + 1).padStart(2, '0');
+        const da = String(timeline.renewalDate.getDate()).padStart(2, '0');
+        renewalVal = `${yr}-${mo}-${da}`;
+      }
+    }
+    const renewalInput = document.getElementById('editStudentNextRenewalDate');
+    if (renewalInput) renewalInput.value = renewalVal;
+
+    // Debt fields setup
+    const hasDebt = !!(stu.hasDebt === true || stu.hasDebt === 'true' || Number(stu.debtAmount) > 0);
+    const hasDebtCb = document.getElementById('editStudentHasDebt');
+    if (hasDebtCb) hasDebtCb.checked = hasDebt;
+
+    const debtFields = document.getElementById('editStudentDebtFields');
+    if (debtFields) debtFields.style.display = hasDebt ? 'block' : 'none';
+
+    const unpaidMonthsEl = document.getElementById('editStudentUnpaidMonths');
+    if (unpaidMonthsEl) unpaidMonthsEl.value = stu.unpaidMonths || 1;
+
+    const unpaidSessionsEl = document.getElementById('editStudentUnpaidSessions');
+    if (unpaidSessionsEl) unpaidSessionsEl.value = stu.unpaidSessions || ((stu.unpaidMonths || 1) * 4);
+
+    const debtAmountEl = document.getElementById('editStudentDebtAmount');
+    if (debtAmountEl) debtAmountEl.value = Number(stu.debtAmount) || ((stu.unpaidMonths || 1) * (stu.monthlyFee || 5000));
+
+    const debtNotesEl = document.getElementById('editStudentDebtNotes');
+    if (debtNotesEl) debtNotesEl.value = stu.debtNotes || '';
 
     const modal = document.getElementById('editStudentModal');
     if (modal) modal.classList.add('active');
+  };
+
+  window.toggleEditStudentDebtFields = function() {
+    const cb = document.getElementById('editStudentHasDebt');
+    const fields = document.getElementById('editStudentDebtFields');
+    if (!cb || !fields) return;
+    fields.style.display = cb.checked ? 'block' : 'none';
+    if (cb.checked) {
+      recalcEditStudentDebtAmount();
+    }
+  };
+
+  window.recalcEditStudentDebtAmount = function() {
+    const fee = parseInt(document.getElementById('editStudentMonthlyFee')?.value, 10) || 5000;
+    const months = parseInt(document.getElementById('editStudentUnpaidMonths')?.value, 10) || 1;
+    const debtInput = document.getElementById('editStudentDebtAmount');
+    const sessionsInput = document.getElementById('editStudentUnpaidSessions');
+    if (debtInput) debtInput.value = months * fee;
+    if (sessionsInput) sessionsInput.value = months * 4;
+  };
+
+  window.onEditStudentSessionsInput = function() {
+    const sessions = parseInt(document.getElementById('editStudentSessionsRemaining')?.value, 10) || 0;
+    if (sessions > 4) {
+      autoComputeEditStudentRenewalDate();
+    }
+  };
+
+  window.autoComputeEditStudentRenewalDate = function() {
+    const sessions = parseInt(document.getElementById('editStudentSessionsRemaining')?.value, 10) || 4;
+    const d = new Date();
+    const extraDays = Math.max(7, Math.round((sessions / 4) * 30));
+    d.setDate(d.getDate() + extraDays);
+    const yr = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, '0');
+    const da = String(d.getDate()).padStart(2, '0');
+    const renewalInput = document.getElementById('editStudentNextRenewalDate');
+    if (renewalInput) renewalInput.value = `${yr}-${mo}-${da}`;
   };
 
   window.closeEditStudentModal = function() {
@@ -5958,6 +6141,43 @@ document.addEventListener('DOMContentLoaded', () => {
     stu.sessionTime = `${stu.startTime} - ${stu.endTime}`;
     stu.sessionsRemaining = Math.max(0, parseInt(document.getElementById('editStudentSessionsRemaining').value, 10) || 0);
     stu.monthlyFee = Math.max(0, parseInt(document.getElementById('editStudentMonthlyFee').value, 10) || 5000);
+
+    // Save Renewal Date accurately
+    const renewalInput = document.getElementById('editStudentNextRenewalDate');
+    if (renewalInput && renewalInput.value) {
+      stu.nextRenewalDate = renewalInput.value;
+      stu.nextRenewalIso = new Date(renewalInput.value + 'T12:00:00').toISOString();
+    } else if (stu.sessionsRemaining > 0) {
+      // Auto-extend renewal date based on sessions remaining so it never shows overdue
+      const d = new Date();
+      const extraDays = Math.max(7, Math.round((stu.sessionsRemaining / 4) * 30));
+      d.setDate(d.getDate() + extraDays);
+      const yr = d.getFullYear();
+      const mo = String(d.getMonth() + 1).padStart(2, '0');
+      const da = String(d.getDate()).padStart(2, '0');
+      stu.nextRenewalDate = `${yr}-${mo}-${da}`;
+      stu.nextRenewalIso = d.toISOString();
+    }
+
+    // Save Debt details
+    const hasDebtCb = document.getElementById('editStudentHasDebt');
+    if (hasDebtCb && hasDebtCb.checked) {
+      stu.hasDebt = true;
+      stu.unpaidMonths = parseInt(document.getElementById('editStudentUnpaidMonths')?.value, 10) || 1;
+      stu.unpaidSessions = parseInt(document.getElementById('editStudentUnpaidSessions')?.value, 10) || (stu.unpaidMonths * 4);
+      stu.debtAmount = parseInt(document.getElementById('editStudentDebtAmount')?.value, 10) || (stu.unpaidMonths * stu.monthlyFee);
+      stu.debtNotes = document.getElementById('editStudentDebtNotes')?.value.trim() || '';
+      stu.balance = -Math.abs(stu.debtAmount);
+    } else {
+      stu.hasDebt = false;
+      stu.debtAmount = 0;
+      stu.unpaidMonths = 0;
+      stu.unpaidSessions = 0;
+      stu.debtNotes = '';
+      if (stu.balance < 0) {
+        stu.balance = 0;
+      }
+    }
 
     saveData('brainova_students', students);
     closeEditStudentModal();
@@ -6139,6 +6359,7 @@ document.addEventListener('DOMContentLoaded', () => {
       room,
       educatorId: educatorId || null,
       educatorName: educator ? educator.name : '',
+      educator: educator ? educator.name : '',
       maxStudents,
       createdAt: new Date().toLocaleDateString('ar-DZ')
     };
@@ -6246,6 +6467,7 @@ document.addEventListener('DOMContentLoaded', () => {
     groups[groupIdx].room = newRoom;
     groups[groupIdx].educatorId = newEducatorId || null;
     groups[groupIdx].educatorName = educator ? educator.name : '';
+    groups[groupIdx].educator = educator ? educator.name : '';
     groups[groupIdx].maxStudents = newMaxStudents;
 
     saveData('brainova_groups', groups);
@@ -7036,21 +7258,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (confirmation === 'تصفير') {
       const emptyData = {
         brainova_students: [],
-        brainova_educators: [
-          { id: "EDU-001", name: "أستاذ الروبوتيك والبرمجة", specialty: "LEGO & Arduino", phone: "0791194633", groups: 0, active: true }
-        ],
-        brainova_groups: [
-          { id: "GRP-001", name: "الفوج الأول (مبتدئ)", ageGroup: "6-9 سنوات", educator: "أستاذ الروبوتيك والبرمجة", studentsCount: 0, maxStudents: 12, schedule: "السبت (10:00 - 12:00)", status: "active" },
-          { id: "GRP-002", name: "الفوج الثاني (متقدم)", ageGroup: "10-14 سنة", educator: "أستاذ الروبوتيك والبرمجة", studentsCount: 0, maxStudents: 12, schedule: "الجمعة (14:00 - 16:00)", status: "active" }
-        ],
-        brainova_rooms: [
-          { id: "ROOM-001", name: "مختبر الروبوتيك الرئيسي", capacity: 15, equipment: "LEGO SPIKE, mBot2, PCs", status: "متاح" },
-          { id: "ROOM-002", name: "قاعة البرمجة والإلكترونيات", capacity: 12, equipment: "Micro:bit, Arduino, Laptops", status: "متاح" }
-        ],
-        brainova_courses: [
-          { id: "CRS-001", name: "أساسيات الروبوتيك والـ Scratch", level: "المستوى الأول", duration: "3 أشهر", sessionsCount: 12, price: 2000, desc: "مقدمة شاملة للبرمجة والميكانيك" },
-          { id: "CRS-002", name: "برمجة الروبوتات LEGO SPIKE Prime", level: "المستوى الثاني", duration: "3 أشهر", sessionsCount: 12, price: 2500, desc: "بناء آليات الروبوت والحساسات الذكية" }
-        ],
+        brainova_educators: [],
+        brainova_groups: [],
+        brainova_rooms: [],
+        brainova_courses: [],
         brainova_schedule: [],
         brainova_attendance: [],
         brainova_payments: [],
@@ -8585,7 +8796,7 @@ ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
         <div class="footer-sign">
           <div class="sign-col">
             <div style="font-weight: 700; font-size: 13px;">الأستاذ المؤطر</div>
-            <div style="font-size: 11px; color: #64748B;">${student.educator || 'عابد اسحاق تقي الدين'}</div>
+            <div style="font-size: 11px; color: #64748B;">${student.educator || '—'}</div>
             <div class="sign-line"></div>
           </div>
           <div class="sign-col">

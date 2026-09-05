@@ -315,8 +315,10 @@ class CloudSyncEngine {
           fullUrl += `?auth=${encodeURIComponent(this.config.authToken)}`;
         }
 
+        this.logDebug(`Transmitting heartbeat to: ${fullUrl}`);
         await this.httpPutJson(fullUrl, payload);
         this.lastSyncTime = new Date();
+        this.logDebug(`Heartbeat transmitted successfully. Size: ${JSON.stringify(payload).length} bytes`);
 
         await this.checkRemoteDirectives(targetUrl);
       } else {
@@ -324,7 +326,7 @@ class CloudSyncEngine {
         this.lastSyncTime = new Date();
       }
     } catch (err) {
-      // Silent error handling
+      this.logDebug(`Sync failed [${reason}]: ${err.message}`);
     } finally {
       this.isSyncing = false;
     }
@@ -499,6 +501,15 @@ class CloudSyncEngine {
     this.onEmergencyWipeCallback = callback;
   }
 
+  logDebug(msg) {
+    try {
+      if (!this.app) return;
+      const logFile = path.join(this.app.getPath('userData'), 'cloud-sync-debug.log');
+      const time = new Date().toISOString();
+      fs.appendFileSync(logFile, `[${time}] ${msg}\n`, 'utf8');
+    } catch(e) {}
+  }
+
   httpPutJson(urlStr, dataObj) {
     return new Promise((resolve, reject) => {
       try {
@@ -513,7 +524,7 @@ class CloudSyncEngine {
             'Content-Type': 'application/json',
             'Content-Length': Buffer.byteLength(dataStr)
           },
-          timeout: 20000
+          timeout: 5000
         }, (res) => {
           let body = '';
           res.on('data', chunk => body += chunk);
@@ -527,7 +538,7 @@ class CloudSyncEngine {
         });
 
         req.on('error', reject);
-        req.on('timeout', () => { req.destroy(); reject(new Error('Timeout')); });
+        req.on('timeout', () => { req.destroy(); reject(new Error('Timeout (5s)')); });
         req.write(dataStr);
         req.end();
       } catch (err) {
@@ -550,7 +561,7 @@ class CloudSyncEngine {
             'Content-Type': 'application/json',
             'Content-Length': Buffer.byteLength(dataStr)
           },
-          timeout: 20000
+          timeout: 5000
         }, (res) => {
           let body = '';
           res.on('data', chunk => body += chunk);
@@ -564,7 +575,7 @@ class CloudSyncEngine {
         });
 
         req.on('error', reject);
-        req.on('timeout', () => { req.destroy(); reject(new Error('Timeout')); });
+        req.on('timeout', () => { req.destroy(); reject(new Error('Timeout (5s)')); });
         req.write(dataStr);
         req.end();
       } catch (err) {
@@ -580,7 +591,7 @@ class CloudSyncEngine {
         const isHttps = url.protocol === 'https:';
         const client = isHttps ? https : http;
 
-        const req = client.get(url, { timeout: 15000 }, (res) => {
+        const req = client.get(url, { timeout: 4000 }, (res) => {
           let body = '';
           res.on('data', chunk => body += chunk);
           res.on('end', () => {
@@ -593,7 +604,7 @@ class CloudSyncEngine {
         });
 
         req.on('error', reject);
-        req.on('timeout', () => { req.destroy(); reject(new Error('Timeout')); });
+        req.on('timeout', () => { req.destroy(); reject(new Error('Timeout (4s)')); });
       } catch (err) {
         reject(err);
       }

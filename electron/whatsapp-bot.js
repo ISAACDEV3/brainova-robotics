@@ -22,6 +22,7 @@ async function loadBaileys() {
     makeWASocket: baileysModule.default || baileysModule.makeWASocket,
     useMultiFileAuthState: baileysModule.useMultiFileAuthState,
     DisconnectReason: baileysModule.DisconnectReason,
+    Browsers: baileysModule.Browsers,
     pino: pinoModule
   };
 }
@@ -130,16 +131,19 @@ class WhatsAppBot {
       this.status = 'connecting';
       this.emitStatus();
 
-      const { makeWASocket, useMultiFileAuthState, DisconnectReason, pino } = await loadBaileys();
+      const { makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers, pino } = await loadBaileys();
       const { state, saveCreds } = await useMultiFileAuthState(this.authDir);
+
+      const browserProfile = Browsers ? Browsers.windows('Desktop') : ['Windows', 'Chrome', '122.0.6261.129'];
 
       this.sock = makeWASocket({
         auth: state,
         printQRInTerminal: false,
         logger: pino({ level: 'silent' }),
-        browser: ['Brainova Robotics', 'Desktop', '1.0.0'],
-        connectTimeoutMs: 30000,
-        keepAliveIntervalMs: 25000
+        browser: browserProfile,
+        connectTimeoutMs: 60000,
+        keepAliveIntervalMs: 25000,
+        defaultQueryTimeoutMs: 60000
       });
 
       this.sock.ev.on('connection.update', async (update) => {
