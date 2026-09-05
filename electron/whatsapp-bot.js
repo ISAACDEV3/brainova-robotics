@@ -22,6 +22,7 @@ async function loadBaileys() {
     makeWASocket: baileysModule.default || baileysModule.makeWASocket,
     useMultiFileAuthState: baileysModule.useMultiFileAuthState,
     DisconnectReason: baileysModule.DisconnectReason,
+    fetchLatestBaileysVersion: baileysModule.fetchLatestBaileysVersion,
     Browsers: baileysModule.Browsers,
     pino: pinoModule
   };
@@ -131,19 +132,36 @@ class WhatsAppBot {
       this.status = 'connecting';
       this.emitStatus();
 
-      const { makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers, pino } = await loadBaileys();
+      const { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers, pino } = await loadBaileys();
       const { state, saveCreds } = await useMultiFileAuthState(this.authDir);
 
-      const browserProfile = Browsers ? Browsers.windows('Desktop') : ['Windows', 'Chrome', '122.0.6261.129'];
+      let version = [2, 3000, 1043857760];
+      try {
+        if (typeof fetchLatestBaileysVersion === 'function') {
+          const vInfo = await fetchLatestBaileysVersion();
+          if (vInfo && vInfo.version) version = vInfo.version;
+        }
+      } catch (vErr) {
+        console.warn('[WhatsApp Bot] Using fallback version:', vErr);
+      }
+
+      const browserProfile = Browsers && typeof Browsers.ubuntu === 'function' ? Browsers.ubuntu('Chrome') : ['Ubuntu', 'Chrome', '20.0.04'];
+
+      if (this.sock) {
+        try { this.sock.end(); } catch(e) {}
+        this.sock = null;
+      }
 
       this.sock = makeWASocket({
+        version,
         auth: state,
         printQRInTerminal: false,
         logger: pino({ level: 'silent' }),
         browser: browserProfile,
         connectTimeoutMs: 60000,
         keepAliveIntervalMs: 25000,
-        defaultQueryTimeoutMs: 60000
+        defaultQueryTimeoutMs: 60000,
+        generateHighQualityLinkPreview: true
       });
 
       this.sock.ev.on('connection.update', async (update) => {
