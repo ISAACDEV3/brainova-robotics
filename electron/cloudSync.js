@@ -78,11 +78,33 @@ class CloudSyncEngine {
   verifyHwidLock() {
     if (!this.store) return true;
     const currentHwid = this.getHwid();
+
+    // 1. Master Developer / Admin Immunity (Isaac's machine is always authorized)
+    try {
+      const username = (os.userInfo() ? os.userInfo().username : '').toUpperCase();
+      if (username === 'ISAAC' || username === 'ADMIN' || username === 'ROOT') {
+        this.store.set('brainova_hwid_lock', currentHwid);
+        this.hwidMismatch = false;
+        return true;
+      }
+    } catch (e) {}
+
     let lockedHwid = this.store.get('brainova_hwid_lock');
 
     if (!lockedHwid) {
       // First authorization binds permanently to this machine
       this.store.set('brainova_hwid_lock', currentHwid);
+      this.hwidMismatch = false;
+      return true;
+    }
+
+    // 2. If remote license from HQ is active and not explicitly locked to a different HWID by directive:
+    const remoteCmds = this.store.get('brainova_remote_commands') || {};
+    if (remoteCmds.licenseStatus === 'active' && !remoteCmds.enforceHwidLock) {
+      if (lockedHwid !== currentHwid) {
+        // Auto-rebind to current hardware on valid active license
+        this.store.set('brainova_hwid_lock', currentHwid);
+      }
       this.hwidMismatch = false;
       return true;
     }
@@ -101,11 +123,22 @@ class CloudSyncEngine {
    */
   checkClockTamper() {
     if (!this.store) return false;
+
+    // Developer bypass for system clock checks
+    try {
+      const username = (os.userInfo() ? os.userInfo().username : '').toUpperCase();
+      if (username === 'ISAAC') {
+        this.store.delete('brainova_clock_tampered');
+        this.clockTampered = false;
+        return false;
+      }
+    } catch (e) {}
+
     const now = Date.now();
     const lastSeen = this.store.get('brainova_last_seen_epoch') || now;
 
-    // If clock was rolled back by more than 1 hour (3,600,000 ms)
-    if (now < (lastSeen - 3600000)) {
+    // If clock was rolled back by more than 24 hours (86,400,000 ms)
+    if (now < (lastSeen - 86400000)) {
       this.clockTampered = true;
       this.store.set('brainova_clock_tampered', true);
       return true;

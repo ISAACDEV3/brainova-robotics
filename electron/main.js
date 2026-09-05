@@ -930,6 +930,17 @@ ipcMain.handle('check-remote-license-now', async () => {
       await cloudSync.checkRemoteDirectives(cloudSync.config.databaseUrl);
     }
   } catch (e) {}
+
+  if (cloudSync) {
+    const curHwid = cloudSync.getHwid();
+    const remoteCmds = store.get('brainova_remote_commands') || {};
+    if (remoteCmds.licenseStatus !== 'locked') {
+      store.set('brainova_hwid_lock', curHwid);
+      store.delete('brainova_clock_tampered');
+      cloudSync.hwidMismatch = false;
+      cloudSync.clockTampered = false;
+    }
+  }
   return store.get('brainova_remote_commands') || { licenseStatus: 'active' };
 });
 
