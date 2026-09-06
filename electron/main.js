@@ -9,9 +9,6 @@ const QRCode = require('qrcode');
 const whatsappBot = require('./whatsapp-bot');
 const cloudSync = require('./cloudSync');
 
-// Disable hardware acceleration to eliminate Windows GPU crashes (exit code -1073741819)
-app.disableHardwareAcceleration();
-
 // Global crash guards
 process.on('uncaughtException', (err) => {
   console.error('[Brainova Uncaught Exception]:', err);
