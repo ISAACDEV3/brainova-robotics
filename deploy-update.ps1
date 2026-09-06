@@ -1,4 +1,4 @@
-﻿# ==============================================================================
+# ==============================================================================
 # Brainova Robotics - One-Click Cloud Auto-Update Publisher
 # ==============================================================================
 $ErrorActionPreference = "Stop"
@@ -30,7 +30,8 @@ Write-Host "🎯 Target Version to Deploy: v$newVer" -ForegroundColor Green
 
 $pkg.version = $newVer
 $newJson = $pkg | ConvertTo-Json -Depth 10
-[System.IO.File]::WriteAllText($pkgPath, $newJson, [System.Text.Encoding]::UTF8)
+$utf8NoBom = New-Object System.Text.UTF8Encoding $false
+[System.IO.File]::WriteAllText($pkgPath, $newJson, $utf8NoBom)
 Write-Host "✅ Updated package.json to v$newVer" -ForegroundColor Green
 
 Stop-Process -Name "Brainova Robotics" -Force -ErrorAction SilentlyContinue

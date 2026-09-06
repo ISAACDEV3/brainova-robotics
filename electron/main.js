@@ -131,6 +131,15 @@ function setupAutoUpdater() {
       });
     }
   }, 5000);
+
+  // Periodic silent check every 30 minutes while app is running
+  setInterval(() => {
+    if (app.isPackaged) {
+      autoUpdater.checkForUpdatesAndNotify().catch((e) => {
+        console.log('[Brainova AutoUpdate Background Check Error]:', e.message);
+      });
+    }
+  }, 30 * 60 * 1000);
 }
 
 // ── LOCAL IP ──────────────────────────────────────────────────────────────────
@@ -660,6 +669,7 @@ ipcMain.on('print-receipt', (event, payload) => {
       firstSessionStr = (stu && stu.startDate) ? `${stu.startDate} (${timeStr})` : `الحصة القادمة (${timeStr})`;
     }
 
+    const targetPayment = pay || {};
     let renewalDateObj = null;
     if (targetPayment.renewalIso || targetPayment.renewalDate) {
       renewalDateObj = new Date(targetPayment.renewalIso || targetPayment.renewalDate);

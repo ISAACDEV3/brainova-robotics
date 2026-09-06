@@ -417,11 +417,11 @@
         const elRenewal = document.getElementById('rcptRenewalDate');
         if (elRenewal) {
           let renewalDateObj = null;
-          if (payment.renewalIso || payment.renewalDate) {
-            renewalDateObj = new Date(payment.renewalIso || payment.renewalDate);
+          if (pay && (pay.renewalIso || pay.renewalDate)) {
+            renewalDateObj = new Date(pay.renewalIso || pay.renewalDate);
           }
           if (!renewalDateObj || isNaN(renewalDateObj.getTime())) {
-            const mCount = Number(payment.monthsPurchased) || Math.max(1, Math.round((Number(payment.sessionsPurchased) || 4) / 4));
+            const mCount = Number(pay && pay.monthsPurchased) || Math.max(1, Math.round((Number(pay && pay.sessionsPurchased) || 4) / 4));
             renewalDateObj = new Date(payBaseDate);
             renewalDateObj.setMonth(renewalDateObj.getMonth() + mCount);
           }
