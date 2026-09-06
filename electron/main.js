@@ -287,9 +287,9 @@ function createMain(splash) {
 
   mainWindow.loadFile(path.join(__dirname, '..', 'dashboard.html'));
 
-  // Ensure external links open in user's default browser (WhatsApp Web, wa.me, etc.)
+  // Ensure external links and print receipts open in user's default browser (Google Chrome, etc.)
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('http:') || url.startsWith('https:') || url.startsWith('mailto:') || url.startsWith('tel:')) {
+    if (url.includes('print-receipt.html') || url.startsWith('http:') || url.startsWith('https:') || url.startsWith('mailto:') || url.startsWith('tel:')) {
       shell.openExternal(url);
     }
     return { action: 'deny' };
@@ -614,7 +614,10 @@ ipcMain.on('print-receipt', (event, payload) => {
   try {
     const paymentId = (typeof payload === 'object' && payload && payload.id) ? payload.id : (typeof payload === 'string' ? payload : '');
     const payments = store.get('brainova_payments', []);
-    const pay = paymentId ? payments.find(p => p.id === paymentId || p.opNumber === paymentId || p.id === 'REC-' + paymentId) : payments[payments.length - 1];
+    let pay = (typeof payload === 'object' && payload && payload.payment) ? payload.payment : null;
+    if (!pay) {
+      pay = paymentId ? payments.find(p => p.id === paymentId || p.opNumber === paymentId || p.id === 'REC-' + paymentId) : payments[payments.length - 1];
+    }
     const students = store.get('brainova_students', []);
     const stu = pay ? students.find(s => s.id === pay.studentId) : null;
 
@@ -624,18 +627,25 @@ ipcMain.on('print-receipt', (event, payload) => {
     const levelGroup = `${(pay && pay.level) || 'المستوى الأول'} • ${(pay && pay.group) || 'الفوج أ'}`;
     const dateStr = format24hDateTime((pay && pay.date) || new Date());
     const payMethod = (pay && pay.method) || 'نقداً (Cash)';
-    const amountNum = Number((pay && pay.amountPaid) || 5000);
-    const amountStr = `${amountNum.toLocaleString()} دج`;
+    const isUnpaid = (pay && (pay.status === 'unpaid' || pay.isDebt)) || Number((pay && pay.amountPaid) || 0) === 0;
+    const debtAmountNum = Number((pay && pay.debtAmount) || (stu && stu.debtAmount) || 5000);
+    const unpaidSessionsNum = (pay && pay.unpaidSessions) || (stu && stu.unpaidSessions) || (stu && stu.unpaidAttendedSessions) || 4;
+    const unpaidPeriodText = (pay && pay.unpaidPeriodText) || (stu && stu.debtNotes) || `${unpaidSessionsNum} حصص غير مدفوعة (درسها الطالب)`;
 
-    let wordsTafqeet = `${amountNum.toLocaleString()} دينار جزائري فقط`;
-    if (amountNum === 2000) wordsTafqeet = 'ألفان دينار جزائري فقط';
-    else if (amountNum === 5000) wordsTafqeet = 'خمسة آلاف دينار جزائري فقط (5,000 دج)';
-    else if (amountNum === 8000) wordsTafqeet = 'ثمانية آلاف دينار جزائري فقط (باقة طفلين - 8,000 دج)';
-    else if (amountNum === 11000) wordsTafqeet = 'أحد عشر ألف دينار جزائري فقط (باقة 3 أطفال - 11,000 دج)';
+    const amountNum = isUnpaid ? 0 : Number((pay && pay.amountPaid) || 5000);
+    const amountStr = isUnpaid ? '0 دج (غير مدفوع)' : `${amountNum.toLocaleString()} دج`;
+
+    let wordsTafqeet = isUnpaid ? `المبلغ المطلوب: ${debtAmountNum.toLocaleString()} دينار جزائري (غير مسددة)` : `${amountNum.toLocaleString()} دينار جزائري فقط`;
+    if (!isUnpaid) {
+      if (amountNum === 2000) wordsTafqeet = 'ألفان دينار جزائري فقط';
+      else if (amountNum === 5000) wordsTafqeet = 'خمسة آلاف دينار جزائري فقط (5,000 دج)';
+      else if (amountNum === 8000) wordsTafqeet = 'ثمانية آلاف دينار جزائري فقط (باقة طفلين - 8,000 دج)';
+      else if (amountNum === 11000) wordsTafqeet = 'أحد عشر ألف دينار جزائري فقط (باقة 3 أطفال - 11,000 دج)';
+    }
 
     const remainingSessions = (stu && stu.sessionsRemaining !== undefined) ? stu.sessionsRemaining : ((pay && pay.sessionsPurchased) || 4);
     const balanceNum = (stu && stu.balance !== undefined) ? stu.balance : amountNum;
-    const balanceStr = `${remainingSessions} حصص متاحة / ${Number(balanceNum).toLocaleString()} دج`;
+    const balanceStr = isUnpaid ? `⚠️ دين معلق: ${debtAmountNum.toLocaleString()} دج` : `${remainingSessions} حصص متاحة / ${Number(balanceNum).toLocaleString()} دج`;
 
     // Subscription Validity, First Session Date, and Expected Renewal Date
     const daysMap = { 'الأحد': 0, 'الاحد': 0, 'الإثنين': 1, 'الاثنين': 1, 'الثلاثاء': 2, 'الأربعاء': 3, 'الاربعاء': 3, 'الخميس': 4, 'الجمعة': 5, 'السبت': 6 };
@@ -845,16 +855,29 @@ ipcMain.on('print-receipt', (event, payload) => {
       </div>
     </div>
 
+    <div style="text-align:center; margin-bottom:8px;">
+      ${isUnpaid 
+        ? `<div style="background:#fee2e2; border:1.5px solid #ef4444; color:#b91c1c; font-weight:900; font-size:11px; padding:3px 8px; border-radius:4px;">⚠️ إشعار دين وتأخر في الدفع — غير مدفوع</div>`
+        : `<div style="background:#f0fdf4; border:1.5px solid #22c55e; color:#15803d; font-weight:900; font-size:11px; padding:3px 8px; border-radius:4px;">وصل دفع رسمي — تم التسديد بنجاح ✅</div>`
+      }
+    </div>
+
     <table class="receipt-table">
       <tr><th>رقم العملية</th><td style="font-family:'JetBrains Mono', monospace; font-weight:900;">${opNum}</td></tr>
       <tr><th>اسم التلميذ</th><td style="font-size:12px; font-weight:900; color:#0f172a;">${stuName}</td></tr>
       <tr><th>ولي الأمر</th><td>${parentName}</td></tr>
       <tr><th>المستوى والفوج</th><td>${levelGroup}</td></tr>
-      <tr><th>صلاحية الاشتراك</th><td style="color:#0284c7; font-weight:800;">${validityStr}</td></tr>
+      <tr><th>حالة الدفع</th><td>${isUnpaid ? `<span style="background:#fee2e2; color:#dc2626; border:1px solid #f87171; padding:2px 6px; border-radius:4px; font-weight:900; font-size:10.5px;">متأخر عن الدفع (مستحق السداد) ⚠️</span>` : `<span style="background:#ecfdf5; color:#059669; border:1px solid #34d399; padding:2px 6px; border-radius:4px; font-weight:900; font-size:10.5px;">مدفوع بالكامل ✅</span>`}</td></tr>
+      ${isUnpaid ? `
+        <tr><th style="color:#dc2626;">الحصص / الفترة غير المدفوعة</th><td style="color:#dc2626; font-weight:800;">${unpaidPeriodText}</td></tr>
+        <tr><th style="color:#dc2626;">المبلغ المستحق للدفع</th><td style="color:#dc2626; font-size:13px; font-weight:900; font-family:'JetBrains Mono', monospace;">${debtAmountNum.toLocaleString()} دج</td></tr>
+      ` : ''}
+      <tr><th>صلاحية الاشتراك</th><td style="color:${isUnpaid ? '#dc2626' : '#0284c7'}; font-weight:800;">${isUnpaid ? unpaidPeriodText : validityStr}</td></tr>
       <tr><th>تاريخ استحقاق التجديد</th><td style="color:#d97706; font-weight:800; font-family:'JetBrains Mono', monospace;">${renewalDateStr}</td></tr>
-      <tr><th>تاريخ الدفع</th><td style="font-family:'JetBrains Mono', monospace;">${dateStr}</td></tr>
-      <tr><th>طريقة الدفع</th><td style="color:#0284c7; font-weight:800;">${payMethod}</td></tr>
-      <tr><th>المبلغ المدفوع</th><td class="highlight-amount">${amountStr}</td></tr>
+      <tr><th>تاريخ العملية</th><td style="font-family:'JetBrains Mono', monospace;">${dateStr}</td></tr>
+      <tr><th>طريقة الدفع</th><td style="color:#0284c7; font-weight:800;">${isUnpaid ? 'غير مدفوع (دين معلق)' : payMethod}</td></tr>
+      <tr><th>المبلغ المدفوع</th><td>${isUnpaid ? `<span style="color:#dc2626; font-weight:900; text-decoration:line-through;">0 دج (غير مدفوع)</span>` : `<span class="highlight-amount">${amountStr}</span>`}</td></tr>
+      <tr><th>المبلغ كتابة</th><td style="font-size:8.5px; color:#475569; font-weight:700;">${wordsTafqeet}</td></tr>
       <tr><th>الرصيد والحصص</th><td>${balanceStr}</td></tr>
     </table>
 

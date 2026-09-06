@@ -2479,12 +2479,25 @@
   </div>
 
   <!-- ===== RECORD PAYMENT MODAL ===== -->
+  <!-- ===== RECORD PAYMENT MODAL ===== -->
   <div class="modal-overlay" id="recordPaymentModal">
-    <div class="modal" style="max-width: 520px;">
+    <div class="modal" style="max-width: 530px;">
       <div class="modal__header">
-        <h2 class="modal__title">💳 تسجيل دفعة مالية وإصدار وصل</h2>
+        <h2 class="modal__title">💳 المعاملات المالية وإصدار الوصل</h2>
         <button class="modal__close" onclick="closeRecordPaymentModal()">×</button>
       </div>
+
+      <!-- Mode Selector Tabs: Paid vs Unpaid Debt -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px;">
+        <button type="button" class="btn btn--small" id="payTypeTabPaid" onclick="setPaymentModalMode('paid')" style="background:#10B981; color:#fff; font-weight:800; border:2px solid #10B981; padding:8px 4px; display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;">
+          <span>✅</span> وصل تسديد (مدفوع بالكامل)
+        </button>
+        <button type="button" class="btn btn--outline btn--small" id="payTypeTabDebt" onclick="setPaymentModalMode('debt')" style="background:transparent; color:#F87171; border:2px solid rgba(239,68,68,0.5); font-weight:800; padding:8px 4px; display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;">
+          <span>⚠️</span> وصل تأخر في الدفع (غير مدفوع)
+        </button>
+      </div>
+      <input type="hidden" id="payModalType" value="paid">
+
       <form id="recordPaymentForm" onsubmit="submitRecordPayment(event)">
         <div class="form-group">
           <label>اختر الطالب المسجل</label>
@@ -2493,51 +2506,106 @@
           </select>
         </div>
 
-        <!-- Pricing Presets -->
-        <div class="form-group" style="margin-bottom:12px;">
-          <label style="font-size:0.8rem; color:var(--color-text-muted); font-weight:700;">مدة وعدد أشهر الاشتراك المسددة:</label>
-          <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-top:4px;">
-            <button type="button" class="btn btn--outline btn--small" onclick="setPaymentMonths(1)" id="btnMonthPreset1" style="padding:6px; font-size:0.75rem; text-align:center; border-color:var(--color-primary); color:var(--color-primary);">
-              <strong>شهر (1)</strong><br><span style="font-size:0.7rem;">4 حصص</span>
-            </button>
-            <button type="button" class="btn btn--outline btn--small" onclick="setPaymentMonths(2)" id="btnMonthPreset2" style="padding:6px; font-size:0.75rem; text-align:center;">
-              <strong>شهران (2)</strong><br><span style="font-size:0.7rem; color:var(--color-text-dim);">8 حصص</span>
-            </button>
-            <button type="button" class="btn btn--outline btn--small" onclick="setPaymentMonths(3)" id="btnMonthPreset3" style="padding:6px; font-size:0.75rem; text-align:center;">
-              <strong>3 أشهر 🌟</strong><br><span style="font-size:0.7rem; color:var(--color-text-dim);">12 حصة</span>
-            </button>
-            <button type="button" class="btn btn--outline btn--small" onclick="setPaymentMonths(6)" id="btnMonthPreset6" style="padding:6px; font-size:0.75rem; text-align:center;">
-              <strong>6 أشهر</strong><br><span style="font-size:0.7rem; color:var(--color-text-dim);">24 حصة</span>
-            </button>
-          </div>
-          <input type="hidden" id="payMonthsCount" value="1">
+        <!-- Dynamic Notice for Existing Debt when paying -->
+        <div id="payDebtNoticeBanner" style="display:none; background:rgba(16,185,129,0.12); border:1px solid #10B981; border-radius:6px; padding:10px 12px; margin-bottom:12px; font-size:0.82rem; color:#A7F3D0; font-weight:700; line-height:1.5;">
+          <!-- Populated dynamically -->
         </div>
 
-        <div class="form-group" style="margin-bottom:12px;">
-          <label style="font-size:0.8rem; color:var(--color-text-muted); font-weight:700;">باقات الخصم السريع (إخوة وعائلات):</label>
-          <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; margin-top:4px;">
-            <button type="button" class="btn btn--outline btn--small" onclick="setPaymentPreset(8000, 8)" style="padding:6px; font-size:0.75rem; text-align:center;">
-              <strong>8,000 دج</strong> — <span style="font-size:0.7rem;">طفلين (خصم إخوة 8 حصص)</span>
-            </button>
-            <button type="button" class="btn btn--outline btn--small" onclick="setPaymentPreset(11000, 12)" style="padding:6px; font-size:0.75rem; text-align:center;">
-              <strong>11,000 دج</strong> — <span style="font-size:0.7rem;">3 أطفال (عائلي 12 حصة)</span>
-            </button>
+        <!-- 1. PAID MODE SECTION (PRESETS) -->
+        <div id="payPaidSection">
+          <!-- Pricing Presets -->
+          <div class="form-group" style="margin-bottom:12px;">
+            <label style="font-size:0.8rem; color:var(--color-text-muted); font-weight:700;">مدة وعدد أشهر الاشتراك المسددة:</label>
+            <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-top:4px;">
+              <button type="button" class="btn btn--outline btn--small" onclick="setPaymentMonths(1)" id="btnMonthPreset1" style="padding:6px; font-size:0.75rem; text-align:center; border-color:var(--color-primary); color:var(--color-primary);">
+                <strong>شهر (1)</strong><br><span style="font-size:0.7rem;">4 حصص</span>
+              </button>
+              <button type="button" class="btn btn--outline btn--small" onclick="setPaymentMonths(2)" id="btnMonthPreset2" style="padding:6px; font-size:0.75rem; text-align:center;">
+                <strong>شهران (2)</strong><br><span style="font-size:0.7rem; color:var(--color-text-dim);">8 حصص</span>
+              </button>
+              <button type="button" class="btn btn--outline btn--small" onclick="setPaymentMonths(3)" id="btnMonthPreset3" style="padding:6px; font-size:0.75rem; text-align:center;">
+                <strong>3 أشهر 🌟</strong><br><span style="font-size:0.7rem; color:var(--color-text-dim);">12 حصة</span>
+              </button>
+              <button type="button" class="btn btn--outline btn--small" onclick="setPaymentMonths(6)" id="btnMonthPreset6" style="padding:6px; font-size:0.75rem; text-align:center;">
+                <strong>6 أشهر</strong><br><span style="font-size:0.7rem; color:var(--color-text-dim);">24 حصة</span>
+              </button>
+            </div>
+            <input type="hidden" id="payMonthsCount" value="1">
+          </div>
+
+          <div class="form-group" style="margin-bottom:12px;">
+            <label style="font-size:0.8rem; color:var(--color-text-muted); font-weight:700;">باقات الخصم السريع (إخوة وعائلات):</label>
+            <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; margin-top:4px;">
+              <button type="button" class="btn btn--outline btn--small" onclick="setPaymentPreset(8000, 8)" style="padding:6px; font-size:0.75rem; text-align:center;">
+                <strong>8,000 دج</strong> — <span style="font-size:0.7rem;">طفلين (خصم إخوة 8 حصص)</span>
+              </button>
+              <button type="button" class="btn btn--outline btn--small" onclick="setPaymentPreset(11000, 12)" style="padding:6px; font-size:0.75rem; text-align:center;">
+                <strong>11,000 دج</strong> — <span style="font-size:0.7rem;">3 أطفال (عائلي 12 حصة)</span>
+              </button>
+            </div>
           </div>
         </div>
 
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <!-- 2. DEBT / UNPAID MODE SECTION -->
+        <div id="payDebtSection" style="display:none; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.35); border-radius:8px; padding:12px; margin-bottom:14px;">
+          <div style="font-size:0.82rem; font-weight:800; color:#F87171; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+            <span>⚠️</span> تفاصيل التأخر في الدفع والحصص غير المسددة (إشعار دين):
+          </div>
+
+          <div style="display:flex; gap:14px; margin-bottom:10px;">
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; color:#F8FAFC; font-size:0.82rem; font-weight:700;">
+              <input type="radio" name="payDebtTypeChoice" id="debtChoiceSessions" value="sessions" checked onchange="onDebtChoiceChange('sessions')">
+              حسب عدد الحصص غير المدفوعة
+            </label>
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; color:#F8FAFC; font-size:0.82rem; font-weight:700;">
+              <input type="radio" name="payDebtTypeChoice" id="debtChoiceMonths" value="months" onchange="onDebtChoiceChange('months')">
+              حسب عدد الأشهر
+            </label>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+            <div class="form-group" id="groupDebtSessions">
+              <label style="font-size:0.78rem;">عدد الحصص غير المدفوعة</label>
+              <input type="number" id="payDebtSessionsInput" min="1" max="48" value="4" class="form-input" oninput="recalcPaymentDebt('sessions')">
+            </div>
+            <div class="form-group" id="groupDebtMonths">
+              <label style="font-size:0.78rem;">عدد الأشهر غير المدفوعة</label>
+              <input type="number" id="payDebtMonthsInput" min="1" max="12" value="1" class="form-input" oninput="recalcPaymentDebt('months')">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:10px;">
+            <label style="font-size:0.78rem;">بيان وتحديد الحصص أو الأشهر المتأخرة</label>
+            <input type="text" id="payDebtPeriodDesc" placeholder="مثال: 4 حصص درسها الطالب ولم تسدد (شهر أكتوبر)" class="form-input">
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div class="form-group">
+              <label style="font-size:0.78rem; color:#EF4444; font-weight:800;">المبلغ المستحق للدفع (الدين دج)</label>
+              <input type="number" id="payDebtAmount" min="0" step="100" value="5000" class="form-input" style="border-color:#EF4444; color:#EF4444; font-weight:800;">
+            </div>
+            <div class="form-group">
+              <label style="font-size:0.78rem;">المبلغ المدفوع حالياً</label>
+              <div style="background:rgba(239,68,68,0.18); border:1px solid rgba(239,68,68,0.5); color:#FCA5A5; font-weight:900; padding:8px 10px; border-radius:6px; text-align:center; font-size:0.9rem;">
+                غير مدفوع (0 دج)
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;" id="payAmountGroup">
           <div class="form-group">
             <label>المبلغ المدفوع (دج)</label>
-            <input type="number" id="payAmount" required min="100" step="100" value="5000" class="form-input">
+            <input type="number" id="payAmount" min="0" step="100" value="5000" class="form-input">
           </div>
-          <div class="form-group">
+          <div class="form-group" id="paySessionsGroup">
             <label>عدد الحصص المشتراة</label>
-            <input type="number" id="paySessions" required min="1" max="50" value="4" class="form-input">
+            <input type="number" id="paySessions" min="1" max="50" value="4" class="form-input">
           </div>
         </div>
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-          <div class="form-group">
+          <div class="form-group" id="payMethodGroup">
             <label>طريقة الدفع</label>
             <select id="payMethod" class="form-input">
               <option value="نقداً (Cash)">نقداً (Cash)</option>
@@ -2559,12 +2627,12 @@
 
         <div style="display:flex; align-items:center; gap:8px; margin: 16px 0;">
           <input type="checkbox" id="autoPrintReceiptCheck" checked style="width:16px; height:16px; cursor:pointer;">
-          <label for="autoPrintReceiptCheck" style="cursor:pointer; font-weight:600; font-size:0.85rem; color:var(--color-text);">🖨️ فتح ومعاينة الوصل الحراري فوراً بعد الحفظ</label>
+          <label for="autoPrintReceiptCheck" style="cursor:pointer; font-weight:600; font-size:0.85rem; color:var(--color-text);">🖨️ فتح ومعاينة الوصل فوراً بعد الحفظ (Google Chrome / 80mm)</label>
         </div>
 
         <div class="modal__actions">
           <button type="button" class="btn btn--outline" onclick="closeRecordPaymentModal()">إلغاء</button>
-          <button type="submit" class="btn btn--primary">تسجيل الدفعة وإصدار الوصل</button>
+          <button type="submit" class="btn btn--primary" id="paySubmitBtn">تسجيل الدفعة وإصدار الوصل</button>
         </div>
       </form>
     </div>
@@ -2606,6 +2674,10 @@
           </div>
         </div>
 
+        <div id="rcptBadgeContainer" style="margin-bottom:8px; text-align:center;">
+          <!-- Dynamically filled: "وصل دفع رسمي — مدفوع بالكامل ✅" OR "⚠️ إشعار دين وتأخر في الدفع — غير مدفوع" -->
+        </div>
+
         <table class="receipt-slip-table">
           <tr>
             <th>رقم العملية</th>
@@ -2623,6 +2695,18 @@
             <th>المستوى والفوج</th>
             <td id="rcptLevelGroup">المستوى الثاني • الفوج ب</td>
           </tr>
+          <tr id="rcptStatusRow">
+            <th>حالة الدفع</th>
+            <td id="rcptPaymentStatus"><span style="color:#059669; font-weight:800;">مدفوع بالكامل ✅</span></td>
+          </tr>
+          <tr id="rcptUnpaidPeriodRow" style="display:none;">
+            <th style="color:#DC2626;">الحصص / الفترة غير المدفوعة</th>
+            <td id="rcptUnpaidPeriod" style="color:#DC2626; font-weight:800;">4 حصص (درسها الطالب ولم تسدد)</td>
+          </tr>
+          <tr id="rcptDebtAmountRow" style="display:none;">
+            <th style="color:#DC2626;">المبلغ المستحق للدفع</th>
+            <td id="rcptDebtAmount" style="color:#DC2626; font-size:1.15rem; font-weight:900; font-family:monospace;">5,000 دج</td>
+          </tr>
           <tr>
             <th>صلاحية الاشتراك</th>
             <td id="rcptSubscriptionValidity" style="font-weight:700; color:#0284C7;">4 حصص (اشتراك شهري)</td>
@@ -2632,7 +2716,7 @@
             <td id="rcptRenewalDate" style="font-weight:700; color:#D97706; font-family:monospace;">03/10/2026</td>
           </tr>
           <tr>
-            <th>تاريخ الدفع</th>
+            <th>تاريخ العملية</th>
             <td id="rcptDateTime" style="font-family:monospace;">18/08/2026 17:47</td>
           </tr>
           <tr>
@@ -2642,6 +2726,10 @@
           <tr>
             <th>المبلغ المدفوع</th>
             <td class="highlight-amount" id="rcptAmountPaid" style="font-size:1.15rem; font-weight:900; color:#059669;">5,000 دج</td>
+          </tr>
+          <tr>
+            <th>المبلغ كتابة</th>
+            <td id="rcptAmountWords" style="font-size:0.75rem; font-weight:700; color:#475569;">خمسة آلاف دينار جزائري فقط</td>
           </tr>
           <tr>
             <th>الرصيد والحصص</th>

@@ -1483,15 +1483,18 @@ document.addEventListener('DOMContentLoaded', () => {
       const sessions = Number(stu.sessionsRemaining) || 0;
       const timeline = getStudentPaymentTimeline(stu.id, stu, allPayments);
 
+      const hasDebtStatus = !!(stu.hasDebt || Number(stu.debtAmount) > 0 || Number(stu.unpaidMonths) > 0 || Number(stu.unpaidSessions) > 0 || (stu.unpaidAttendedSessions && stu.unpaidAttendedSessions > 0));
+      const attendedUnpaid = stu.unpaidAttendedSessions || stu.unpaidSessions || 4;
+      const dMonths = Number(stu.unpaidMonths) || 0;
+      const dSessions = Number(stu.unpaidSessions) || (dMonths > 0 ? dMonths * 4 : attendedUnpaid);
+      const fee = Number(stu.monthlyFee) || 5000;
+      const perSession = Math.round(fee / 4);
+      const dAmt = Number(stu.debtAmount) || (dMonths > 0 ? dMonths * fee : dSessions * perSession) || Math.abs(balance);
+      const dText = stu.debtNotes || (dMonths > 0 ? `${dMonths} شهر` : `${dSessions} حصص`);
+
       let sessionsBadge = '';
-      if (stu.hasDebt || Number(stu.debtAmount) > 0 || Number(stu.unpaidMonths) > 0 || Number(stu.unpaidSessions) > 0) {
-        const dMonths = Number(stu.unpaidMonths) || 0;
-        const dSessions = Number(stu.unpaidSessions) || (dMonths > 0 ? dMonths * 4 : 4);
-        const fee = Number(stu.monthlyFee) || 5000;
-        const perSession = Math.round(fee / 4);
-        const dAmt = Number(stu.debtAmount) || (dMonths > 0 ? dMonths * fee : dSessions * perSession) || Math.abs(balance);
-        const dText = dMonths > 0 ? `${dMonths} شهر` : `${dSessions} حصص`;
-        sessionsBadge = `<span class="payment-badge overdue" title="${stu.debtNotes || ''}">⚠️ دين: ${dAmt.toLocaleString()} دج (${dText})</span>`;
+      if (hasDebtStatus) {
+        sessionsBadge = `<span class="payment-badge overdue" title="${stu.debtNotes || ''}">⚠️ دين: ${dAmt.toLocaleString()} دج (درس ${attendedUnpaid} حصص غير مسددة)</span>`;
       } else if (sessions > 0) {
         sessionsBadge = `<span class="payment-badge paid">✅ ${sessions} حصص (${balance.toLocaleString()} دج)</span>`;
       } else if (balance < 0) {
@@ -1501,16 +1504,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       let paymentTimelineBadge = '';
-      if (stu.hasDebt || Number(stu.debtAmount) > 0 || Number(stu.unpaidMonths) > 0 || Number(stu.unpaidSessions) > 0) {
-        const dMonths = Number(stu.unpaidMonths) || 0;
-        const dSessions = Number(stu.unpaidSessions) || (dMonths > 0 ? dMonths * 4 : 4);
-        const fee = Number(stu.monthlyFee) || 5000;
-        const perSession = Math.round(fee / 4);
-        const dAmt = Number(stu.debtAmount) || (dMonths > 0 ? dMonths * fee : dSessions * perSession);
-        const dText = dMonths > 0 ? `${dMonths} شهر` : `${dSessions} حصص`;
+      if (hasDebtStatus) {
         paymentTimelineBadge = `
           <div style="margin-top:4px; font-size:0.75rem; color:#EF4444; font-weight:700; line-height:1.35;">
-            متأخر عن دفع ${dText} (${dAmt.toLocaleString()} دج)
+            متأخر عن دفع: ${dText} (${dAmt.toLocaleString()} دج) — درس ${attendedUnpaid} حصص
           </div>
         `;
       } else if (timeline.hasPayment) {
@@ -1552,14 +1549,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${stu.name}
               </a>
               ${(() => {
-                if (stu.hasDebt || Number(stu.debtAmount) > 0 || Number(stu.unpaidMonths) > 0 || Number(stu.unpaidSessions) > 0) {
-                  const dMonths = Number(stu.unpaidMonths) || 0;
-                  const dSessions = Number(stu.unpaidSessions) || (dMonths > 0 ? dMonths * 4 : 4);
-                  const fee = Number(stu.monthlyFee) || 5000;
-                  const perSession = Math.round(fee / 4);
-                  const dAmt = Number(stu.debtAmount) || (dMonths > 0 ? dMonths * fee : dSessions * perSession);
-                  const dPeriod = dMonths > 0 ? `${dMonths} شهر` : `${dSessions} حصص`;
-                  return `<span style="display:inline-flex; align-items:center; gap:3px; background:rgba(239,68,68,0.22); border:1px solid rgba(239,68,68,0.6); color:#FCA5A5; padding:2px 8px; border-radius:12px; font-size:0.68rem; font-weight:800; white-space:nowrap;" title="متأخر عن سداد الاشتراك (${dPeriod} / ${dAmt.toLocaleString()} دج)">⚠️ متأخر في الدفع (${dAmt.toLocaleString()} دج)</span>`;
+                if (hasDebtStatus) {
+                  return `<span style="display:inline-flex; align-items:center; gap:3px; background:rgba(239,68,68,0.22); border:1px solid rgba(239,68,68,0.6); color:#FCA5A5; padding:2px 8px; border-radius:12px; font-size:0.68rem; font-weight:800; white-space:nowrap;" title="درس الطالب ${attendedUnpaid} حصص غير مسددة (${dAmt.toLocaleString()} دج)">⚠️ متأخر في الدفع (درس ${attendedUnpaid} حصص)</span>`;
                 }
                 const isOverdue = (timeline.status === 'overdue') || (balance < 0) || (sessions <= 0 && !timeline.hasPayment);
                 if (isOverdue && sessions <= 0) {
@@ -1946,10 +1937,30 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isNowPresentOrLate && !wasDeducted) {
           if (stu.sessionsRemaining > 0) {
             stu.sessionsRemaining = Math.max(0, stu.sessionsRemaining - 1);
+          } else {
+            stu.unpaidAttendedSessions = (stu.unpaidAttendedSessions || 0) + 1;
+            stu.hasDebt = true;
+            stu.unpaidSessions = Math.max(stu.unpaidSessions || 0, stu.unpaidAttendedSessions);
+            const fee = Number(stu.monthlyFee) || 5000;
+            const perSession = Math.round(fee / 4);
+            stu.debtAmount = Math.max(Number(stu.debtAmount) || 0, stu.unpaidSessions * perSession);
+            stu.balance = -Math.abs(stu.debtAmount);
           }
           stu.lastAttendance = `${selectedDate} (${selectedTime})`;
         } else if (!isNowPresentOrLate && wasDeducted) {
-          stu.sessionsRemaining = (stu.sessionsRemaining || 0) + 1;
+          if (stu.unpaidAttendedSessions && stu.unpaidAttendedSessions > 0) {
+            stu.unpaidAttendedSessions = Math.max(0, stu.unpaidAttendedSessions - 1);
+            if (stu.unpaidSessions) stu.unpaidSessions = Math.max(0, stu.unpaidSessions - 1);
+            const fee = Number(stu.monthlyFee) || 5000;
+            const perSession = Math.round(fee / 4);
+            stu.debtAmount = Math.max(0, (stu.unpaidSessions || 0) * perSession);
+            stu.balance = -Math.abs(stu.debtAmount);
+            if (stu.unpaidSessions === 0 && stu.debtAmount === 0) {
+              stu.hasDebt = false;
+            }
+          } else {
+            stu.sessionsRemaining = (stu.sessionsRemaining || 0) + 1;
+          }
         }
       }
 
@@ -2036,36 +2047,150 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    tbody.innerHTML = filteredPayments.map(p => `
-      <tr>
-        <td>
-          <span style="display:inline-block; background:rgba(14, 165, 233, 0.1); border:1px solid var(--color-border); padding:2px 8px; border-radius:4px; font-family:monospace; font-weight:800; color:var(--color-primary);">
-            #${p.opNumber || p.id}
-          </span>
-        </td>
-        <td><small style="color:var(--color-text-muted);">${p.date}</small></td>
-        <td>
-          <a href="#" onclick="openStudentProfile('${p.studentId}'); return false;" style="color:#fff; font-weight:700; text-decoration:underline;">
-            ${p.studentName}
-          </a>
-        </td>
-        <td><span style="color:var(--color-text);">${p.group}</span><br><small style="color:var(--color-text-muted);">${p.educatorName || ''}</small></td>
-        <td><strong class="amount-display" style="color:#10b981;">${Number(p.amountPaid).toLocaleString()} دج</strong></td>
-        <td><span class="amount-display" style="color:${(p.currentBalance || 0) < 0 ? '#ef4444' : 'var(--color-text-muted)'};">${p.currentBalance || 0} دج</span></td>
-        <td><span style="font-weight:700; color:var(--color-primary);">${p.sessionsRemaining || p.sessionsPurchased || 4} حصص</span></td>
-        <td><span style="font-size:0.8rem; color:var(--color-text-muted);">${p.method || 'نقداً'}</span></td>
-        <td style="text-align: center;">
-          <div style="display:inline-flex; gap:6px;">
-            <button class="btn btn--primary" style="padding:4px 10px; font-size:0.75rem; background:#0284c7;" onclick="openReceiptModal('${p.id}')">🖨️ طباعة الوصل</button>
-            <button class="btn-icon" style="width:28px; height:28px; border:none; color:#ef4444;" onclick="deletePayment('${p.id}')">حذف</button>
-          </div>
-        </td>
-      </tr>
-    `).join('');
+    tbody.innerHTML = filteredPayments.map(p => {
+      const isUnpaid = p.status === 'unpaid' || p.isDebt || Number(p.amountPaid) === 0;
+      const debtAmt = Number(p.debtAmount || 0);
+      const amountCell = isUnpaid
+        ? `<strong class="amount-display" style="color:#ef4444;" title="${p.notes || ''}">غير مدفوع (${debtAmt.toLocaleString()} دج)</strong>`
+        : `<strong class="amount-display" style="color:#10b981;">${Number(p.amountPaid).toLocaleString()} دج</strong>`;
+      const balanceCell = isUnpaid
+        ? `<span class="amount-display" style="color:#ef4444; font-weight:700;">-${debtAmt.toLocaleString()} دج</span>`
+        : `<span class="amount-display" style="color:${(p.currentBalance || 0) < 0 ? '#ef4444' : 'var(--color-text-muted)'};">${(p.currentBalance || 0).toLocaleString()} دج</span>`;
+      const sessionsCell = isUnpaid
+        ? `<span style="font-weight:800; color:#ef4444;">${p.unpaidPeriodText || (p.unpaidSessions ? p.unpaidSessions + ' حصص مستحقة' : 'غير مدفوع')}</span>`
+        : `<span style="font-weight:700; color:var(--color-primary);">${p.sessionsRemaining || p.sessionsPurchased || 4} حصص</span>`;
+      const methodCell = isUnpaid
+        ? `<span style="font-size:0.75rem; background:rgba(239,68,68,0.15); color:#f87171; padding:2px 6px; border-radius:4px; font-weight:700;">⚠️ دين معلق</span>`
+        : `<span style="font-size:0.8rem; color:var(--color-text-muted);">${p.method || 'نقداً'}</span>`;
+      const printBtnText = isUnpaid ? '🖨️ وصل دين' : '🖨️ طباعة الوصل';
+
+      return `
+        <tr style="${isUnpaid ? 'background:rgba(239,68,68,0.03);' : ''}">
+          <td>
+            <span style="display:inline-block; background:${isUnpaid ? 'rgba(239,68,68,0.15)' : 'rgba(14, 165, 233, 0.1)'}; border:1px solid ${isUnpaid ? 'rgba(239,68,68,0.4)' : 'var(--color-border)'}; padding:2px 8px; border-radius:4px; font-family:monospace; font-weight:800; color:${isUnpaid ? '#ef4444' : 'var(--color-primary)'};">
+              #${p.opNumber || p.id}
+            </span>
+          </td>
+          <td><small style="color:var(--color-text-muted);">${p.date}</small></td>
+          <td>
+            <a href="#" onclick="openStudentProfile('${p.studentId}'); return false;" style="color:#fff; font-weight:700; text-decoration:underline;">
+              ${p.studentName}
+            </a>
+          </td>
+          <td><span style="color:var(--color-text);">${p.group}</span><br><small style="color:var(--color-text-muted);">${p.educatorName || ''}</small></td>
+          <td>${amountCell}</td>
+          <td>${balanceCell}</td>
+          <td>${sessionsCell}</td>
+          <td>${methodCell}</td>
+          <td style="text-align: center;">
+            <div style="display:inline-flex; gap:6px;">
+              <button class="btn btn--primary" style="padding:4px 10px; font-size:0.75rem; background:${isUnpaid ? '#ef4444' : '#0284c7'}; border-color:${isUnpaid ? '#ef4444' : '#0284c7'};" onclick="openReceiptModal('${p.id}')">${printBtnText}</button>
+              <button class="btn-icon" style="width:28px; height:28px; border:none; color:#ef4444;" onclick="deletePayment('${p.id}')">حذف</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
   }
 
   // --- RECORD PAYMENT MODAL ---
-  window.openRecordPaymentModal = function(presetStudentId = null) {
+  // --- RECORD PAYMENT MODAL & 2-CASE SYSTEM ---
+  window.setPaymentModalMode = function(mode) {
+    const hiddenType = document.getElementById('payModalType');
+    if (hiddenType) hiddenType.value = mode;
+
+    const tabPaid = document.getElementById('payTypeTabPaid');
+    const tabDebt = document.getElementById('payTypeTabDebt');
+    const paidSection = document.getElementById('payPaidSection');
+    const debtSection = document.getElementById('payDebtSection');
+    const payAmountGroup = document.getElementById('payAmountGroup');
+    const payMethodGroup = document.getElementById('payMethodGroup');
+    const submitBtn = document.getElementById('paySubmitBtn');
+
+    if (mode === 'debt') {
+      if (tabPaid) {
+        tabPaid.style.background = 'transparent';
+        tabPaid.style.color = 'var(--color-text-muted)';
+        tabPaid.style.borderColor = 'var(--color-border)';
+      }
+      if (tabDebt) {
+        tabDebt.style.background = '#EF4444';
+        tabDebt.style.color = '#fff';
+        tabDebt.style.borderColor = '#EF4444';
+      }
+      if (paidSection) paidSection.style.display = 'none';
+      if (debtSection) debtSection.style.display = 'block';
+      if (payAmountGroup) payAmountGroup.style.display = 'none';
+      if (payMethodGroup) payMethodGroup.style.display = 'none';
+      if (submitBtn) {
+        submitBtn.innerHTML = '⚠️ حفظ حالة التأخر وإصدار وصل دين (غير مدفوع)';
+        submitBtn.style.background = '#EF4444';
+        submitBtn.style.borderColor = '#EF4444';
+      }
+      recalcPaymentDebt('sessions');
+    } else {
+      if (tabPaid) {
+        tabPaid.style.background = '#10B981';
+        tabPaid.style.color = '#fff';
+        tabPaid.style.borderColor = '#10B981';
+      }
+      if (tabDebt) {
+        tabDebt.style.background = 'transparent';
+        tabDebt.style.color = '#F87171';
+        tabDebt.style.borderColor = 'rgba(239,68,68,0.5)';
+      }
+      if (paidSection) paidSection.style.display = 'block';
+      if (debtSection) debtSection.style.display = 'none';
+      if (payAmountGroup) payAmountGroup.style.display = 'grid';
+      if (payMethodGroup) payMethodGroup.style.display = 'block';
+      if (submitBtn) {
+        submitBtn.innerHTML = 'تسجيل الدفعة وإصدار الوصل';
+        submitBtn.style.background = 'var(--color-primary)';
+        submitBtn.style.borderColor = 'var(--color-primary)';
+      }
+    }
+  };
+
+  window.onDebtChoiceChange = function(choice) {
+    recalcPaymentDebt(choice);
+  };
+
+  window.recalcPaymentDebt = function(source = 'sessions') {
+    const studentId = document.getElementById('payStudentSelect')?.value;
+    const stu = (getData('brainova_students') || []).find(s => s.id === studentId);
+    const fee = Number(stu && stu.monthlyFee) || 5000;
+    const perSession = Math.round(fee / 4);
+
+    const isMonths = document.getElementById('debtChoiceMonths')?.checked;
+    const sInput = document.getElementById('payDebtSessionsInput');
+    const mInput = document.getElementById('payDebtMonthsInput');
+    const dAmtInput = document.getElementById('payDebtAmount');
+    const dDescInput = document.getElementById('payDebtPeriodDesc');
+
+    if (source === 'months' || isMonths) {
+      const months = parseInt(mInput?.value, 10) || 1;
+      const sessions = months * 4;
+      if (sInput && source === 'months') sInput.value = sessions;
+      if (dAmtInput) dAmtInput.value = months * fee;
+      if (dDescInput && (!dDescInput.value || dDescInput.value.includes('حصص') || dDescInput.value.includes('شهر'))) {
+        dDescInput.value = `اشتراك ${months} شهر (${sessions} حصص تدريبية غير مدفوعة)`;
+      }
+    } else {
+      const sessions = parseInt(sInput?.value, 10) || 4;
+      const months = Math.max(1, Math.floor(sessions / 4));
+      if (mInput && source === 'sessions') mInput.value = months;
+      if (dAmtInput) dAmtInput.value = sessions * perSession;
+      if (dDescInput && (!dDescInput.value || dDescInput.value.includes('حصص') || dDescInput.value.includes('شهر'))) {
+        dDescInput.value = `${sessions} حصص تدريبية درسها الطالب ولم تسدد`;
+      }
+    }
+  };
+
+  window.openPrintDebtNoticeModal = function(studentId) {
+    openRecordPaymentModal(studentId, 'debt');
+  };
+
+  window.openRecordPaymentModal = function(presetStudentId = null, presetMode = 'paid') {
     const select = document.getElementById('payStudentSelect');
     const dateInput = document.getElementById('payDateTime');
     const students = getData('brainova_students');
@@ -2077,6 +2202,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     dateInput.value = now.toISOString().slice(0, 16);
+
+    onPaymentStudentSelected();
+    setPaymentModalMode(presetMode);
 
     document.getElementById('recordPaymentModal').classList.add('active');
   };
@@ -2113,25 +2241,57 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.onPaymentStudentSelected = function() {
-    const studentId = document.getElementById('payStudentSelect').value;
-    const stu = getData('brainova_students').find(s => s.id === studentId);
+    const studentId = document.getElementById('payStudentSelect')?.value;
+    const stu = (getData('brainova_students') || []).find(s => s.id === studentId);
+    if (!stu) return;
+
     const months = parseInt(document.getElementById('payMonthsCount')?.value, 10) || 1;
-    if (stu && stu.monthlyFee) {
-      document.getElementById('payAmount').value = stu.monthlyFee * months;
+    const feePerMonth = Number(stu.monthlyFee) || 5000;
+    const perSession = Math.round(feePerMonth / 4);
+
+    const amountInput = document.getElementById('payAmount');
+    if (amountInput) amountInput.value = feePerMonth * months;
+
+    // Check debt status
+    const hasDebt = !!(stu.hasDebt || Number(stu.debtAmount) > 0 || Number(stu.unpaidSessions) > 0 || Number(stu.unpaidMonths) > 0 || (stu.unpaidAttendedSessions && stu.unpaidAttendedSessions > 0));
+    const banner = document.getElementById('payDebtNoticeBanner');
+    const attendedUnpaid = stu.unpaidAttendedSessions || stu.unpaidSessions || 4;
+    const dAmt = Number(stu.debtAmount) || (attendedUnpaid * perSession);
+    const dMonths = Number(stu.unpaidMonths) || Math.floor(attendedUnpaid / 4);
+
+    if (banner) {
+      if (hasDebt) {
+        banner.style.display = 'block';
+        banner.innerHTML = `
+          <div>⚠️ <strong>تنبيه:</strong> هذا الطالب مسجل عليه تأخر في الدفع (دين: <strong>${dAmt.toLocaleString()} دج</strong> / درس <strong>${attendedUnpaid}</strong> حصص غير مسددة).</div>
+          <div style="font-size:0.75rem; color:#A7F3D0; margin-top:3px;">
+            💡 عند تأكيد التسديد، سيتم شطب الدين فوراً وإلغاء حالة "متأخر في الدفع" تماماً ويصدر وصل رسمي مسدد.
+          </div>
+        `;
+      } else {
+        banner.style.display = 'none';
+        banner.innerHTML = '';
+      }
+    }
+
+    // Pre-populate debt fields for debt mode
+    const debtSessionsInput = document.getElementById('payDebtSessionsInput');
+    const debtMonthsInput = document.getElementById('payDebtMonthsInput');
+    const debtAmountInput = document.getElementById('payDebtAmount');
+    const debtDescInput = document.getElementById('payDebtPeriodDesc');
+
+    if (debtSessionsInput) debtSessionsInput.value = attendedUnpaid;
+    if (debtMonthsInput) debtMonthsInput.value = Math.max(1, dMonths || 1);
+    if (debtAmountInput) debtAmountInput.value = dAmt;
+    if (debtDescInput) {
+      debtDescInput.value = stu.debtNotes || `${attendedUnpaid} حصص روبوتيك درسها الطالب ولم تسدد`;
     }
   };
 
   window.submitRecordPayment = function(e) {
     e.preventDefault();
+    const mode = document.getElementById('payModalType')?.value || 'paid';
     const studentId = document.getElementById('payStudentSelect').value;
-    const amount = Number(document.getElementById('payAmount').value) || 0;
-    const sessions = Number(document.getElementById('paySessions').value) || 4;
-    const method = document.getElementById('payMethod').value;
-    const rawDateTime = document.getElementById('payDateTime').value;
-    const notes = document.getElementById('payNotes').value;
-    const autoPrint = document.getElementById('autoPrintReceiptCheck').checked;
-    const monthsCount = parseInt(document.getElementById('payMonthsCount')?.value, 10) || Math.max(1, Math.round(sessions / 4));
-
     const students = getData('brainova_students');
     const stu = students.find(s => s.id === studentId);
     if (!stu) {
@@ -2144,13 +2304,88 @@ document.addEventListener('DOMContentLoaded', () => {
     const studentGroup = groups.find(g => g.name === stu.group);
     const educator = studentGroup ? educators.find(e => e.id === studentGroup.educatorId) : educators[0];
 
+    const rawDateTime = document.getElementById('payDateTime').value;
+    const notes = document.getElementById('payNotes')?.value || '';
+    const autoPrint = document.getElementById('autoPrintReceiptCheck')?.checked;
+
     const d = rawDateTime ? new Date(rawDateTime) : new Date();
     const formattedDate = format24hDateTime(d);
     const isoDate = d.toISOString();
     const timestamp = d.getTime();
+    const opNumber = String(Math.floor(10000 + Math.random() * 90000));
+    const prevBalance = stu.balance || 0;
 
-    // Calendar exact next renewal date
-    // If student has an active subscription ending in the future, extend from that future date!
+    let newPayment = null;
+
+    if (mode === 'debt') {
+      // ⚠️ CASE 1: UNPAID / DEBT NOTICE RECEIPT
+      const debtSessions = parseInt(document.getElementById('payDebtSessionsInput')?.value, 10) || 4;
+      const debtMonths = parseInt(document.getElementById('payDebtMonthsInput')?.value, 10) || 1;
+      const debtAmount = parseInt(document.getElementById('payDebtAmount')?.value, 10) || (debtSessions * Math.round((Number(stu.monthlyFee) || 5000) / 4));
+      const periodDesc = document.getElementById('payDebtPeriodDesc')?.value.trim() || `${debtSessions} حصص درسها الطالب ولم تسدد`;
+
+      stu.hasDebt = true;
+      stu.unpaidSessions = debtSessions;
+      stu.unpaidMonths = debtMonths;
+      stu.debtAmount = debtAmount;
+      stu.unpaidAttendedSessions = debtSessions;
+      stu.debtNotes = periodDesc;
+      stu.balance = -Math.abs(debtAmount);
+
+      saveData('brainova_students', students);
+
+      newPayment = {
+        id: 'REC-' + opNumber,
+        opNumber,
+        studentId: stu.id,
+        studentName: stu.name,
+        level: stu.level,
+        group: stu.group,
+        educatorName: educator ? educator.name : (stu.educator || ''),
+        date: formattedDate,
+        paidAtIso: isoDate,
+        paidAtTimestamp: timestamp,
+        amountPaid: 0,
+        debtAmount: debtAmount,
+        unpaidSessions: debtSessions,
+        unpaidMonths: debtMonths,
+        unpaidPeriodText: periodDesc,
+        isDebt: true,
+        status: 'unpaid',
+        method: 'غير مدفوع (دين معلق)',
+        prevBalance,
+        currentBalance: stu.balance,
+        monthsPurchased: 0,
+        sessionsPurchased: 0,
+        sessionsRemaining: stu.sessionsRemaining || 0,
+        lastAttendance: stu.lastAttendance || formattedDate,
+        username: stu.username || generateRandomCode(8),
+        password: stu.password || generateRandomCode(8),
+        notes: periodDesc || notes || 'إشعار تأخر في الدفع ومستحقات غير مسددة'
+      };
+
+      const payments = getData('brainova_payments');
+      payments.unshift(newPayment);
+      saveData('brainova_payments', payments);
+
+      closeRecordPaymentModal();
+      showToast('⚠️ تم تسجيل تأخر الدفع وإصدار إشعار دين غير مدفوع بنجاح!', 'warning');
+      renderActiveView();
+
+      if (autoPrint) {
+        setTimeout(() => {
+          openReceiptModal(newPayment.id);
+        }, 200);
+      }
+      return;
+    }
+
+    // ✅ CASE 2: PAID RECEIPT (CLEARS DEBT COMPLETELY)
+    const amount = Number(document.getElementById('payAmount').value) || 0;
+    const sessions = Number(document.getElementById('paySessions').value) || 4;
+    const method = document.getElementById('payMethod').value;
+    const monthsCount = parseInt(document.getElementById('payMonthsCount')?.value, 10) || Math.max(1, Math.round(sessions / 4));
+
     let baseDate = new Date(d);
     if (stu.nextRenewalIso) {
       const prevRenewal = new Date(stu.nextRenewalIso);
@@ -2166,9 +2401,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const nextRenewalDateStr = `${rday}/${rm}/${ry}`;
     const nextRenewalIso = nextRenewalObj.toISOString();
 
-    const opNumber = String(Math.floor(10000 + Math.random() * 90000));
-    const prevBalance = stu.balance || 0;
-    const currentBalance = prevBalance + amount;
+    const currentBalance = Math.max(0, (stu.balance < 0 ? 0 : stu.balance) + amount);
     const currentSessions = (stu.sessionsRemaining || 0) + sessions;
 
     stu.balance = currentBalance;
@@ -2181,25 +2414,17 @@ document.addEventListener('DOMContentLoaded', () => {
     stu.nextRenewalIso = nextRenewalIso;
     stu.monthsPurchased = monthsCount;
 
-    // Settle or reduce debt if student had debt recorded
-    if (stu.hasDebt || Number(stu.debtAmount) > 0) {
-      const remainingDebt = Math.max(0, (Number(stu.debtAmount) || 0) - amount);
-      stu.debtAmount = remainingDebt;
-      if (remainingDebt === 0) {
-        stu.hasDebt = false;
-        stu.unpaidMonths = 0;
-        stu.unpaidSessions = 0;
-        stu.debtNotes = '';
-      } else {
-        const fee = Number(stu.monthlyFee) || 5000;
-        const perSession = Math.round(fee / 4);
-        stu.unpaidSessions = Math.max(0, Math.ceil(remainingDebt / perSession));
-        stu.unpaidMonths = Math.floor(stu.unpaidSessions / 4);
-      }
-    }
+    // Settle and completely clear debt - student becomes active & clean!
+    stu.hasDebt = false;
+    stu.debtAmount = 0;
+    stu.unpaidMonths = 0;
+    stu.unpaidSessions = 0;
+    stu.unpaidAttendedSessions = 0;
+    stu.debtNotes = '';
+
     saveData('brainova_students', students);
 
-    const newPayment = {
+    newPayment = {
       id: 'REC-' + opNumber,
       opNumber,
       studentId: stu.id,
@@ -2223,6 +2448,8 @@ document.addEventListener('DOMContentLoaded', () => {
       password: stu.password || generateRandomCode(8),
       method,
       status: 'paid',
+      isDebt: false,
+      wasDebtSettled: true,
       notes
     };
 
@@ -2231,7 +2458,7 @@ document.addEventListener('DOMContentLoaded', () => {
     saveData('brainova_payments', payments);
 
     closeRecordPaymentModal();
-    showToast('تم تسجيل الدفعة بنجاح!', 'success');
+    showToast('✅ تم تسجيل الدفعة بنجاح وشطب حالة التأخر تماماً!', 'success');
     renderActiveView();
 
     if (autoPrint) {
@@ -2281,12 +2508,15 @@ document.addEventListener('DOMContentLoaded', () => {
     currentActiveReceiptPaymentId = payment.id || paymentId;
 
     const students = getData('brainova_students');
-    const stu = students.find(s => s.id === payment.studentId) || students[0];
+    const stu = students.find(s => s.id === payment.studentId) || (payment.studentId ? { name: payment.studentName } : students[0]);
 
+    const isUnpaid = payment.status === 'unpaid' || payment.isDebt;
     const opNum = payment.opNumber || (payment.id ? payment.id.replace('REC-', '') : '94789');
     const username = (stu && stu.username) ? stu.username : (payment.username || 'user');
     const password = (stu && stu.password) ? stu.password : (payment.password || 'pass');
-    const exactAmount = Number(payment.amountPaid || 5000);
+    const exactAmount = Number(payment.amountPaid || 0);
+    const debtAmount = Number(payment.debtAmount || payment.amount || 5000);
+    const unpaidPeriodText = payment.unpaidPeriod || (payment.unpaidSessions ? `${payment.unpaidSessions} حصص درسها الطالب ولم تسدد` : 'حصص دراسية غير مسددة');
 
     const elOpNum = document.getElementById('rcptOpNumber');
     if (elOpNum) elOpNum.textContent = opNum;
@@ -2303,6 +2533,42 @@ document.addEventListener('DOMContentLoaded', () => {
     const elLevelGroup = document.getElementById('rcptLevelGroup');
     if (elLevelGroup) elLevelGroup.textContent = `${(stu && stu.level) || payment.level || 'المستوى الأول'} • ${(stu && stu.group) || payment.group || 'الفوج أ'}`;
 
+    // Dynamic Badge
+    const elBadge = document.getElementById('rcptBadgeContainer');
+    if (elBadge) {
+      if (isUnpaid) {
+        elBadge.innerHTML = `<div style="display:inline-block; padding:5px 12px; background:#FEF2F2; color:#DC2626; border:1.5px solid #FCA5A5; border-radius:9999px; font-weight:800; font-size:11.5px; letter-spacing:0.3px;">⚠️ إشعار دين وتأخر في الدفع — غير مدفوع</div>`;
+      } else {
+        elBadge.innerHTML = `<div style="display:inline-block; padding:5px 12px; background:#ECFDF5; color:#059669; border:1.5px solid #A7F3D0; border-radius:9999px; font-weight:800; font-size:11.5px; letter-spacing:0.3px;">وصل دفع رسمي — تم التسديد بنجاح ✅</div>`;
+      }
+    }
+
+    // Payment Status Row
+    const elStatus = document.getElementById('rcptPaymentStatus');
+    if (elStatus) {
+      if (isUnpaid) {
+        elStatus.innerHTML = `<span style="color:#DC2626; font-weight:900; background:#FEE2E2; padding:2px 8px; border-radius:4px;">غير مدفوع (متأخر في الدفع ⚠️)</span>`;
+      } else {
+        elStatus.innerHTML = `<span style="color:#059669; font-weight:900; background:#D1FAE5; padding:2px 8px; border-radius:4px;">مدفوع بالكامل ✅</span>`;
+      }
+    }
+
+    // Unpaid period row & Debt amount row
+    const elUnpaidPeriodRow = document.getElementById('rcptUnpaidPeriodRow');
+    const elUnpaidPeriod = document.getElementById('rcptUnpaidPeriod');
+    const elDebtAmountRow = document.getElementById('rcptDebtAmountRow');
+    const elDebtAmount = document.getElementById('rcptDebtAmount');
+
+    if (isUnpaid) {
+      if (elUnpaidPeriodRow) elUnpaidPeriodRow.style.display = 'table-row';
+      if (elUnpaidPeriod) elUnpaidPeriod.textContent = unpaidPeriodText;
+      if (elDebtAmountRow) elDebtAmountRow.style.display = 'table-row';
+      if (elDebtAmount) elDebtAmount.textContent = `${debtAmount.toLocaleString()} دج`;
+    } else {
+      if (elUnpaidPeriodRow) elUnpaidPeriodRow.style.display = 'none';
+      if (elDebtAmountRow) elDebtAmountRow.style.display = 'none';
+    }
+
     // Subscription Validity, First Session Date, and Expected Renewal Date
     const daysMap = { 'الأحد': 0, 'الاحد': 0, 'الإثنين': 1, 'الاثنين': 1, 'الثلاثاء': 2, 'الأربعاء': 3, 'الاربعاء': 3, 'الخميس': 4, 'الجمعة': 5, 'السبت': 6 };
     const payBaseDate = parseBrainovaDate(payment.paidAtIso || payment.date) || new Date();
@@ -2310,7 +2576,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const elValidity = document.getElementById('rcptSubscriptionValidity');
     if (elValidity) {
-      elValidity.textContent = `${purchasedSessions} حصص (${purchasedSessions === 4 ? 'اشتراك شهري' : 'باقة تدريبية'})`;
+      if (isUnpaid) {
+        elValidity.textContent = `${payment.unpaidSessions || payment.sessionsPurchased || 4} حصص (تنبيه تأخر التسديد)`;
+      } else {
+        elValidity.textContent = `${purchasedSessions} حصص (${purchasedSessions === 4 ? 'اشتراك شهري' : 'باقة تدريبية'})`;
+      }
     }
 
     const elFirstSession = document.getElementById('rcptFirstSessionDate');
@@ -2335,19 +2605,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const elRenewal = document.getElementById('rcptRenewalDate');
     if (elRenewal) {
-      let renewalDateObj = null;
-      if (payment.renewalIso || payment.renewalDate) {
-        renewalDateObj = parseBrainovaDate(payment.renewalIso || payment.renewalDate);
+      if (isUnpaid) {
+        elRenewal.textContent = 'مستحق الدفع فوراً (متأخر)';
+        elRenewal.style.color = '#DC2626';
+      } else {
+        elRenewal.style.color = '#D97706';
+        let renewalDateObj = null;
+        if (payment.renewalIso || payment.renewalDate) {
+          renewalDateObj = parseBrainovaDate(payment.renewalIso || payment.renewalDate);
+        }
+        if (!renewalDateObj || isNaN(renewalDateObj.getTime())) {
+          const mCount = Number(payment.monthsPurchased) || Math.max(1, Math.round((Number(payment.sessionsPurchased) || 4) / 4));
+          renewalDateObj = new Date(payBaseDate);
+          renewalDateObj.setMonth(renewalDateObj.getMonth() + mCount);
+        }
+        const ry = renewalDateObj.getFullYear();
+        const rm = String(renewalDateObj.getMonth() + 1).padStart(2, '0');
+        const rday = String(renewalDateObj.getDate()).padStart(2, '0');
+        elRenewal.textContent = `${rday}/${rm}/${ry}`;
       }
-      if (!renewalDateObj || isNaN(renewalDateObj.getTime())) {
-        const mCount = Number(payment.monthsPurchased) || Math.max(1, Math.round((Number(payment.sessionsPurchased) || 4) / 4));
-        renewalDateObj = new Date(payBaseDate);
-        renewalDateObj.setMonth(renewalDateObj.getMonth() + mCount);
-      }
-      const ry = renewalDateObj.getFullYear();
-      const rm = String(renewalDateObj.getMonth() + 1).padStart(2, '0');
-      const rday = String(renewalDateObj.getDate()).padStart(2, '0');
-      elRenewal.textContent = `${rday}/${rm}/${ry}`;
     }
 
     const elWaQr = document.getElementById('rcptWhatsAppQrCode');
@@ -2361,19 +2637,40 @@ document.addEventListener('DOMContentLoaded', () => {
     if (elDateTime) elDateTime.textContent = format24hDateTime(payment.date || new Date());
 
     const elMethod = document.getElementById('rcptMethod');
-    if (elMethod) elMethod.textContent = payment.method || 'نقداً (Cash)';
+    if (elMethod) elMethod.textContent = isUnpaid ? 'لم يتم التسديد بعد (دين معلق)' : (payment.method || 'نقداً (Cash)');
 
     const elAmount = document.getElementById('rcptAmountPaid');
-    if (elAmount) elAmount.textContent = `${exactAmount.toLocaleString()} دج`;
+    if (elAmount) {
+      if (isUnpaid) {
+        elAmount.innerHTML = `<span style="color:#DC2626; text-decoration:line-through; font-size:1.05rem;">0 دج</span> <span style="font-size:0.75rem; color:#EF4444; font-weight:800;">(غير مدفوع)</span>`;
+      } else {
+        elAmount.textContent = `${exactAmount.toLocaleString()} دج`;
+        elAmount.style.color = '#059669';
+      }
+    }
 
     const elWords = document.getElementById('rcptAmountWords');
-    if (elWords) elWords.textContent = convertAmountToArabicWords(exactAmount);
+    if (elWords) {
+      if (isUnpaid) {
+        elWords.textContent = `المبلغ المستحق للدفع: ${convertAmountToArabicWords(debtAmount)}`;
+        elWords.style.color = '#DC2626';
+      } else {
+        elWords.textContent = convertAmountToArabicWords(exactAmount);
+        elWords.style.color = '#475569';
+      }
+    }
 
     const elCurrentBalance = document.getElementById('rcptCurrentBalance');
     if (elCurrentBalance) {
-      const remainingSessions = (stu && stu.sessionsRemaining !== undefined) ? stu.sessionsRemaining : (payment.sessionsPurchased || 4);
-      const balanceAmount = (stu && stu.balance !== undefined) ? stu.balance : exactAmount;
-      elCurrentBalance.textContent = `${remainingSessions} حصص متاحة / ${Number(balanceAmount).toLocaleString()} دج`;
+      if (isUnpaid) {
+        elCurrentBalance.textContent = `⚠️ متأخر عن الدفع (مطلوب تسديد دين: ${debtAmount.toLocaleString()} دج)`;
+        elCurrentBalance.style.color = '#DC2626';
+      } else {
+        const remainingSessions = (stu && stu.sessionsRemaining !== undefined) ? stu.sessionsRemaining : (payment.sessionsPurchased || 4);
+        const balanceAmount = (stu && stu.balance !== undefined) ? stu.balance : exactAmount;
+        elCurrentBalance.textContent = `${remainingSessions} حصص متاحة / ${Number(balanceAmount).toLocaleString()} دج`;
+        elCurrentBalance.style.color = '#0F172A';
+      }
     }
     
     const elUser = document.getElementById('rcptUsername');
@@ -2394,8 +2691,11 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.triggerAppPrint = function() {
+    const payments = getData('brainova_payments') || [];
+    const payment = payments.find(p => p.id === currentActiveReceiptPaymentId) || payments[0];
+
     if (window.electronAPI && window.electronAPI.printReceipt) {
-      window.electronAPI.printReceipt({ id: currentActiveReceiptPaymentId });
+      window.electronAPI.printReceipt({ id: currentActiveReceiptPaymentId, payment });
       return;
     }
 
@@ -2484,17 +2784,26 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
 
       ${(stu.hasDebt || Number(stu.debtAmount) > 0 || Number(stu.unpaidMonths) > 0 || Number(stu.unpaidSessions) > 0) ? `
-        <div style="background:rgba(239, 68, 68, 0.12); border:1px solid rgba(239, 68, 68, 0.45); border-radius:var(--radius-sm); padding:14px 16px; margin-bottom:14px;">
+        <div style="background:rgba(239, 68, 68, 0.12); border:1.5px solid rgba(239, 68, 68, 0.55); border-radius:var(--radius-sm); padding:14px 16px; margin-bottom:14px;">
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <div style="color:#F87171; font-weight:800; font-size:0.95rem; display:flex; align-items:center; gap:6px;">
               <span>⚠️</span> حالة المستحقات المالية (دين متأخر معلق)
             </div>
-            <span class="payment-badge overdue" style="font-size:0.75rem;">متأخر في الدفع</span>
+            <span class="payment-badge overdue" style="font-size:0.75rem; font-weight:800; padding:3px 10px;">⚠️ متأخر في الدفع</span>
           </div>
-          <div style="margin-top:8px; font-size:0.85rem; color:#FCA5A5; line-height:1.6;">
-            متأخر عن دفع اشتراك <strong>${(stu.unpaidMonths && Number(stu.unpaidMonths) > 0) ? `${stu.unpaidMonths} شهر (${stu.unpaidSessions || (stu.unpaidMonths * 4)} حصص)` : `${stu.unpaidSessions || 4} حصص تدريبية`}</strong>.<br>
-            المبلغ المستحق للدفع: <strong style="font-size:1.15rem; color:#EF4444; font-family:monospace;">${Number(stu.debtAmount || 0).toLocaleString()} دج</strong>
-            ${stu.debtNotes ? `<div style="margin-top:6px; color:#E2E8F0; font-size:0.8rem; background:rgba(0,0,0,0.25); padding:6px 10px; border-radius:4px;">📌 ملاحظات الإدارة / الولي: <em>${stu.debtNotes}</em></div>` : ''}
+          <div style="margin-top:10px; font-size:0.86rem; color:#FCA5A5; line-height:1.7;">
+            درس الطالب بالفعل: <strong style="color:#FFF; background:#DC2626; padding:2px 8px; border-radius:4px; font-weight:800;">${stu.unpaidAttendedSessions || stu.unpaidSessions || 4} حصص تدريبية (غير مسددة)</strong><br>
+            فترة التأخر المحددة: <strong>${(stu.unpaidMonths && Number(stu.unpaidMonths) > 0) ? `${stu.unpaidMonths} شهر (${stu.unpaidSessions || (stu.unpaidMonths * 4)} حصص)` : `${stu.unpaidSessions || 4} حصص تدريبية`}</strong><br>
+            المبلغ الإجمالي المستحق للدفع: <strong style="font-size:1.15rem; color:#EF4444; font-family:monospace; font-weight:900;">${Number(stu.debtAmount || 0).toLocaleString()} دج</strong>
+            ${stu.debtNotes ? `<div style="margin-top:8px; color:#E2E8F0; font-size:0.8rem; background:rgba(0,0,0,0.3); padding:6px 10px; border-radius:4px;">📌 ملاحظات الإدارة / الولي: <em>${stu.debtNotes}</em></div>` : ''}
+          </div>
+          <div style="display:flex; gap:8px; margin-top:12px; border-top:1px dashed rgba(239,68,68,0.35); padding-top:10px; flex-wrap:wrap;">
+            <button type="button" class="btn btn--small" onclick="closeStudentProfileModal(); openPrintDebtNoticeModal('${stu.id}')" style="background:#DC2626; color:#FFF; font-size:0.8rem; font-weight:800; border:none; padding:6px 12px; border-radius:6px; cursor:pointer;">
+              🖨️ طباعة إشعار تأخر في الدفع (وصل دين 0 دج)
+            </button>
+            <button type="button" class="btn btn--small" onclick="closeStudentProfileModal(); openRecordPaymentModal('${stu.id}', 'paid')" style="background:#059669; color:#FFF; font-size:0.8rem; font-weight:800; border:none; padding:6px 12px; border-radius:6px; cursor:pointer;">
+              💳 تسديد الحصص وإلغاء حالة التأخر
+            </button>
           </div>
         </div>
       ` : ''}
@@ -2851,8 +3160,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (sessionStatus === 'present' || sessionStatus === 'late') {
       stu.lastAttendance = `${sessionDate} (${sessionTime})`;
-      if (deductSession && (stu.sessionsRemaining || 0) > 0) {
-        stu.sessionsRemaining = Math.max(0, stu.sessionsRemaining - 1);
+      if (deductSession) {
+        if ((stu.sessionsRemaining || 0) > 0) {
+          stu.sessionsRemaining = Math.max(0, stu.sessionsRemaining - 1);
+        } else {
+          stu.unpaidAttendedSessions = (stu.unpaidAttendedSessions || 0) + 1;
+          stu.hasDebt = true;
+          stu.unpaidSessions = Math.max(stu.unpaidSessions || 0, stu.unpaidAttendedSessions);
+          const fee = Number(stu.monthlyFee) || 5000;
+          const perSession = Math.round(fee / 4);
+          stu.debtAmount = Math.max(Number(stu.debtAmount) || 0, stu.unpaidSessions * perSession);
+          stu.balance = -Math.abs(stu.debtAmount);
+        }
       }
     }
 
@@ -4709,10 +5028,30 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isNowPresentOrLate && !wasDeducted) {
           if (stu.sessionsRemaining > 0) {
             stu.sessionsRemaining = Math.max(0, stu.sessionsRemaining - 1);
+          } else {
+            stu.unpaidAttendedSessions = (stu.unpaidAttendedSessions || 0) + 1;
+            stu.hasDebt = true;
+            stu.unpaidSessions = Math.max(stu.unpaidSessions || 0, stu.unpaidAttendedSessions);
+            const fee = Number(stu.monthlyFee) || 5000;
+            const perSession = Math.round(fee / 4);
+            stu.debtAmount = Math.max(Number(stu.debtAmount) || 0, stu.unpaidSessions * perSession);
+            stu.balance = -Math.abs(stu.debtAmount);
           }
           stu.lastAttendance = `${selectedDate} (${selectedTime})`;
         } else if (!isNowPresentOrLate && wasDeducted) {
-          stu.sessionsRemaining = (stu.sessionsRemaining || 0) + 1;
+          if (stu.unpaidAttendedSessions && stu.unpaidAttendedSessions > 0) {
+            stu.unpaidAttendedSessions = Math.max(0, stu.unpaidAttendedSessions - 1);
+            if (stu.unpaidSessions) stu.unpaidSessions = Math.max(0, stu.unpaidSessions - 1);
+            const fee = Number(stu.monthlyFee) || 5000;
+            const perSession = Math.round(fee / 4);
+            stu.debtAmount = Math.max(0, (stu.unpaidSessions || 0) * perSession);
+            stu.balance = -Math.abs(stu.debtAmount);
+            if (stu.unpaidSessions === 0 && stu.debtAmount === 0) {
+              stu.hasDebt = false;
+            }
+          } else {
+            stu.sessionsRemaining = (stu.sessionsRemaining || 0) + 1;
+          }
         }
       }
 
