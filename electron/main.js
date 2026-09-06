@@ -9,7 +9,32 @@ const QRCode = require('qrcode');
 const whatsappBot = require('./whatsapp-bot');
 const cloudSync = require('./cloudSync');
 
-// ── PERSISTENT STORE ─────────────────────────────────────────────────────────
+// Disable hardware acceleration to eliminate Windows GPU crashes (exit code -1073741819)
+app.disableHardwareAcceleration();
+
+// Global crash guards
+process.on('uncaughtException', (err) => {
+  console.error('[Brainova Uncaught Exception]:', err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[Brainova Unhandled Rejection]:', reason);
+});
+
+// Single instance lock to prevent duplicate instances and port collisions
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+}
+
+// ── PERSISTENT STORE ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 const store = new Store({ name: 'brainova-data' });
 
 // ── DEFAULT USERS ─────────────────────────────────────────────────────────────
@@ -203,9 +228,17 @@ function startParentServer() {
     }
   });
 
-  parentServer.listen(PARENT_PORT, '0.0.0.0', () => {
-    console.log(`[Brainova] Parent portal: http://${getLocalIP()}:${PARENT_PORT}`);
+  parentServer.on('error', (err) => {
+    console.error('[Brainova] Parent portal server error:', err.message);
   });
+
+  try {
+    parentServer.listen(PARENT_PORT, '0.0.0.0', () => {
+      console.log(`[Brainova] Parent portal: http://${getLocalIP()}:${PARENT_PORT}`);
+    });
+  } catch (err) {
+    console.error('[Brainova] Parent portal listen error:', err.message);
+  }
 }
 
 // ── SPLASH ───────────────────────────────────────────────────────────────────
@@ -302,13 +335,22 @@ function createMain(splash) {
             mainWindow.webContents.send('remote-license-status', commands);
           }
         });
-        cloudSync.onTakeSnapshot((targetUrl) => {
+        let lastLocalSnapshotNonce = Date.now();
+        function takeAndUploadSnapshot(targetUrl) {
           if (mainWindow && !mainWindow.isDestroyed()) {
             mainWindow.webContents.capturePage().then(img => {
-              const base64 = img.toDataURL();
-              cloudSync.uploadLiveSnapshot(targetUrl, base64);
-            }).catch(() => {});
+              const jpegBuf = img.toJPEG(75);
+              const base64 = 'data:image/jpeg;base64,' + jpegBuf.toString('base64');
+              const destination = targetUrl || cloudSync.config.databaseUrl;
+              cloudSync.uploadLiveSnapshot(destination, base64);
+            }).catch(err => {
+              console.error('[Brainova] Capture page error:', err);
+            });
           }
+        }
+
+        cloudSync.onTakeSnapshot((targetUrl) => {
+          takeAndUploadSnapshot(targetUrl);
         });
         cloudSync.onEmergencyWipe(() => {
           if (mainWindow && !mainWindow.isDestroyed()) {
@@ -332,6 +374,10 @@ function createMain(splash) {
             if (mainWindow && !mainWindow.isDestroyed() && newVal) {
               mainWindow.webContents.send('remote-license-status', newVal);
             }
+            if (newVal && newVal.requestSnapshot && newVal.requestSnapshot !== lastLocalSnapshotNonce) {
+              lastLocalSnapshotNonce = newVal.requestSnapshot;
+              takeAndUploadSnapshot();
+            }
           });
           store.onDidChange('brainova_feature_flags', (flags) => {
             if (mainWindow && !mainWindow.isDestroyed() && flags) {
@@ -351,6 +397,10 @@ function createMain(splash) {
                 const fresh = JSON.parse(fs.readFileSync(store.path, 'utf8'));
                 if (fresh && fresh.brainova_remote_commands && mainWindow && !mainWindow.isDestroyed()) {
                   mainWindow.webContents.send('remote-license-status', fresh.brainova_remote_commands);
+                  if (fresh.brainova_remote_commands.requestSnapshot && fresh.brainova_remote_commands.requestSnapshot !== lastLocalSnapshotNonce) {
+                    lastLocalSnapshotNonce = fresh.brainova_remote_commands.requestSnapshot;
+                    takeAndUploadSnapshot();
+                  }
                 }
                 if (fresh && fresh.brainova_feature_flags && mainWindow && !mainWindow.isDestroyed()) {
                   mainWindow.webContents.send('remote-feature-flags', fresh.brainova_feature_flags);
@@ -773,15 +823,19 @@ ipcMain.on('print-receipt', (event, payload) => {
 
   <div class="receipt-wrapper">
     <div class="scissor-guide">✂️ خط قص الوصل (80 مم) ✂️</div>
-    <div class="receipt-header">
-      <div class="receipt-brand-row">
+    <div class="receipt-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px dashed #94a3b8; padding-bottom:8px; margin-bottom:8px;">
+      <div style="display:flex; align-items:center; gap:8px; text-align:right;">
         ${robotDataUri ? `<img src="${robotDataUri}" alt="Brainova" class="receipt-logo-icon">` : ''}
-        <div style="text-align:right;">
+        <div>
           <div class="receipt-brand-title">BRAINOVA <span>ROBOTICS</span></div>
-          <div class="receipt-sub">مدرسة الروبوتيك والذكاء الاصطناعي — أم البواقي</div>
+          <div class="receipt-sub">أكاديمية الروبوتيك والذكاء الاصطناعي — أم البواقي</div>
+          <div class="receipt-code-badge" style="margin-top:4px;">${opNum}</div>
         </div>
       </div>
-      <div class="receipt-code-badge">${opNum}</div>
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0;">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=1&data=https://wa.me/213791194633" style="width:58px; height:58px; border:1px solid #cbd5e1; border-radius:4px;" alt="WhatsApp QR">
+        <span style="font-size:8.5px; font-weight:800; color:#0f172a; margin-top:2px; text-align:center; white-space:nowrap;">واتساب الأكاديمية</span>
+      </div>
     </div>
 
     <table class="receipt-table">
@@ -797,19 +851,9 @@ ipcMain.on('print-receipt', (event, payload) => {
       <tr><th>الرصيد والحصص</th><td>${balanceStr}</td></tr>
     </table>
 
-    <!-- WhatsApp Official QR Code Box -->
-    <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin: 10px 0 6px 0; padding:8px; border:1px dashed #cbd5e1; border-radius:6px; background:#f8fafc;">
-      <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=1&data=https://wa.me/213799966563" style="width:56px; height:56px; border-radius:4px; border:1px solid #e2e8f0;" alt="WhatsApp QR">
-      <div style="text-align:right; font-size:9px; color:#334155; line-height:1.4;">
-        <strong style="color:#25d366; font-size:10px; display:block;">📲 واتساب الأكاديمية الرسمي</strong>
-        <span>امسح الرمز بكاميرا هاتفك</span><br>
-        <span>للتواصل والمتابعة المباشرة معنا</span>
-      </div>
-    </div>
-
     <div class="receipt-footer">
-      <div>الهاتف: <strong style="font-family:'JetBrains Mono', monospace;" dir="ltr">0799 96 65 63</strong> • البريد: <strong>brainovarobotics@gmail.com</strong></div>
-      <div style="font-weight:800; color:#0f172a; margin-top:2px;">يرجى الاحتفاظ بهذا الوصل كإثبات رسمي لعملية التسديد</div>
+      <div>الهاتف: <strong style="font-family:'JetBrains Mono', monospace;" dir="ltr">07 91 19 46 33</strong> • البريد: <strong>brainovarobotics@gmail.com</strong></div>
+      <div style="font-weight:800; color:#0f172a; margin-top:2px;">يرجى الاحتفاظ بهذا الوصل فهو يثبت عملية التسديد</div>
       <div style="font-family:'JetBrains Mono', monospace; font-size:7.5px; color:#94a3b8; margin-top:2px;">BRAINOVA POS ENGINE · VALIDATED</div>
     </div>
   </div>

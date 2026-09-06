@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
         schoolName: "Brainova Robotics",
         adminName: "إدارة الأكاديمية",
         adminEmail: "brainovarobotics@gmail.com",
-        adminPhone: "0799966563",
+        adminPhone: "0791194633",
         academicYear: "2026/2027"
       }
     };
@@ -54,6 +54,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     }
+
+    // Ensure Academy official phone number is always updated to 0791194633 (07 91 19 46 33)
+    try {
+      const currentSettings = getData('brainova_settings') || {};
+      if (currentSettings.adminPhone !== '0791194633') {
+        currentSettings.adminPhone = '0791194633';
+        saveData('brainova_settings', currentSettings);
+      }
+    } catch(e) {}
 
     // Auto-heal orphaned student groups so students never lose their group
     try {
@@ -315,6 +324,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Automatic semantic tags for recognized entities
     if (item && item.id && item.name && item.group !== undefined) {
       values.push('طالب طلاب تلميذ تلاميذ student students');
+      if (item.group) {
+        try {
+          const groups = (typeof getData === 'function' ? getData('brainova_groups') : null) || [];
+          const matchedGrp = groups.find(g => g.name === item.group);
+          if (matchedGrp) {
+            if (matchedGrp.ageCategory) values.push(matchedGrp.ageCategory);
+            if (matchedGrp.room) values.push(matchedGrp.room);
+            if (matchedGrp.educator || matchedGrp.educatorName) values.push(matchedGrp.educator || matchedGrp.educatorName);
+          }
+        } catch(e) {}
+      }
     } else if (item && item.ageCategory !== undefined) {
       values.push('فوج افواج مجموعة مجموعات group groups');
     } else if (item && item.amountPaid !== undefined) {
@@ -326,6 +346,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (item && item.keywords) {
       values.push(item.keywords);
+    }
+
+    // Check 0: Direct ID match (STU-001, stu001, 001, 1, REC-12345, GRP-01, ROOM-01)
+    if (item && item.id) {
+      const idStr = String(item.id).toLowerCase();
+      const idClean = idStr.replace(/[^a-z0-9]/g, '');
+      const qCleanId = qNorm.replace(/[^a-z0-9]/g, '');
+      if (idStr === qNorm || idClean === qCleanId || idStr.includes(qNorm)) {
+        return true;
+      }
+      if (qCleanId && (idClean.includes(qCleanId) || idStr.includes(qCleanId))) {
+        return true;
+      }
+      const idNum = parseInt(idStr.replace(/\D/g, ''), 10);
+      const qNum = parseInt(qClean.replace(/\D/g, ''), 10);
+      if (!isNaN(idNum) && !isNaN(qNum) && idNum === qNum) {
+        return true;
+      }
+    }
+
+    // Check 0.5: Direct Name match
+    if (item && item.name) {
+      const nameNorm = normalizeSearchText(item.name);
+      if (nameNorm.includes(qNorm) || qNorm.includes(nameNorm)) {
+        return true;
+      }
+      const nameNoSpace = nameNorm.replace(/\s+/g, '');
+      const qNoSpace = qNorm.replace(/\s+/g, '');
+      if (nameNoSpace.includes(qNoSpace) || qNoSpace.includes(nameNoSpace)) {
+        return true;
+      }
     }
 
     const rawJoined = values
@@ -890,20 +941,91 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- DYNAMIC GROUP ATTENDANCE CYCLE & SCHEDULE CALCULATION ---
   const daysMap = {
-    'الأحد': 0, 'الاحد': 0, 'sunday': 0,
-    'الإثنين': 1, 'الاثنين': 1, 'monday': 1,
-    'الثلاثاء': 2, 'tuesday': 2,
-    'الأربعاء': 3, 'الاربعاء': 3, 'wednesday': 3,
-    'الخميس': 4, 'thursday': 4,
-    'الجمعة': 5, 'friday': 5,
-    'السبت': 6, 'saturday': 6
+    'الأحد': 0, 'الاحد': 0, 'sunday': 0, 'sun': 0, 'dimanche': 0,
+    'الإثنين': 1, 'الاثنين': 1, 'إثنين': 1, 'اثنين': 1, 'monday': 1, 'mon': 1, 'lundi': 1,
+    'الثلاثاء': 2, 'ثلاثاء': 2, 'tuesday': 2, 'tue': 2, 'mardi': 2,
+    'الأربعاء': 3, 'الاربعاء': 3, 'أربعاء': 3, 'اربعاء': 3, 'wednesday': 3, 'wed': 3, 'mercredi': 3,
+    'الخميس': 4, 'خميس': 4, 'thursday': 4, 'thu': 4, 'jeudi': 4,
+    'الجمعة': 5, 'جمعة': 5, 'friday': 5, 'fri': 5, 'vendredi': 5,
+    'السبت': 6, 'سبت': 6, 'saturday': 6, 'sat': 6, 'samedi': 6
   };
+
+  function getDayIndex(dayStr) {
+    if (dayStr === null || dayStr === undefined) return -1;
+    const clean = String(dayStr).trim().toLowerCase()
+      .replace(/[أإآ]/g, 'ا')
+      .replace(/ة/g, 'ه');
+    if (daysMap[clean] !== undefined) return daysMap[clean];
+    for (const k in daysMap) {
+      if (clean === k || clean.startsWith(k) || k.startsWith(clean)) return daysMap[k];
+    }
+    const num = parseInt(clean, 10);
+    if (!isNaN(num) && num >= 0 && num <= 6) return num;
+    return -1;
+  }
+  window.getDayIndex = getDayIndex;
+
+  function areDaysEqual(dayA, dayB) {
+    const idxA = getDayIndex(dayA);
+    const idxB = getDayIndex(dayB);
+    if (idxA !== -1 && idxB !== -1) return idxA === idxB;
+    return String(dayA).trim().toLowerCase() === String(dayB).trim().toLowerCase();
+  }
+  window.areDaysEqual = areDaysEqual;
+
+  function normalizeTimeSlot(raw) {
+    if (!raw) return '14:00 - 16:00';
+    let s = String(raw).trim()
+      .replace(/[٠-٩]/g, d => '0123456789'['٠١٢٣٤٥٦٧٨٩'.indexOf(d)])
+      .replace(/[hH]/g, ':')
+      .replace(/إلى|الى|to/gi, '-');
+
+    const timeMatches = s.match(/(\d{1,2})(?::(\d{2}))?/g);
+    if (!timeMatches || timeMatches.length === 0) return '14:00 - 16:00';
+
+    function formatTime(tStr, isEnd = false) {
+      let parts = tStr.split(':');
+      let h = parseInt(parts[0], 10);
+      let m = parts[1] ? parseInt(parts[1], 10) : 0;
+      if (isNaN(h)) h = isEnd ? 16 : 14;
+      if (isNaN(m)) m = 0;
+      if (h >= 1 && h <= 7) h += 12; // 1 to 7 PM -> 13 to 19
+      const hh = String(Math.min(23, Math.max(0, h))).padStart(2, '0');
+      const mm = String(Math.min(59, Math.max(0, m))).padStart(2, '0');
+      return hh + ':' + mm;
+    }
+
+    const start = formatTime(timeMatches[0], false);
+    const end = timeMatches.length > 1 ? formatTime(timeMatches[1], true) : (() => {
+      const [sh, sm] = start.split(':').map(Number);
+      const eh = String(Math.min(23, sh + 2)).padStart(2, '0');
+      return eh + ':' + String(sm).padStart(2, '0');
+    })();
+
+    return start + ' - ' + end;
+  }
+  window.normalizeTimeSlot = normalizeTimeSlot;
+
+  function toMin(t) {
+    if (!t) return 0;
+    const s = String(t).trim()
+      .replace(/[٠-٩]/g, d => '0123456789'['٠١٢٣٤٥٦٧٨٩'.indexOf(d)])
+      .replace(/[hH]/g, ':');
+    const clean = s.match(/(\d{1,2})(?::(\d{2}))?/);
+    if (clean) {
+      let h = parseInt(clean[1], 10);
+      let m = clean[2] ? parseInt(clean[2], 10) : 0;
+      if (h >= 1 && h <= 7) h += 12;
+      return h * 60 + m;
+    }
+    return 0;
+  }
+  window.toMin = toMin;
 
   function getNextDateForDayName(dayName, fromDate = new Date(), lastSessionDateStr = null) {
     if (!dayName) return null;
-    const cleanDay = String(dayName).trim().toLowerCase();
-    const targetDay = daysMap[cleanDay];
-    if (targetDay === undefined) return null;
+    const targetDay = getDayIndex(dayName);
+    if (targetDay === -1) return null;
 
     const current = new Date(fromDate);
     current.setHours(12, 0, 0, 0);
@@ -1070,17 +1192,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const lastPayment = payments[0];
     const remSessions = stuObj && stuObj.sessionsRemaining !== undefined ? stuObj.sessionsRemaining : (lastPayment ? (lastPayment.sessionsRemaining || 0) : 0);
 
-    // 1. Explicit Debt Check: If student is marked as having unpaid debts/months
-    const hasExplicitDebt = !!(stuObj && (stuObj.hasDebt === true || stuObj.hasDebt === 'true' || Number(stuObj.debtAmount) > 0));
+    // 1. Explicit Debt Check: If student is marked as having unpaid debts/months/sessions
+    const hasExplicitDebt = !!(stuObj && (stuObj.hasDebt === true || stuObj.hasDebt === 'true' || Number(stuObj.debtAmount) > 0 || Number(stuObj.unpaidMonths) > 0 || Number(stuObj.unpaidSessions) > 0));
     if (hasExplicitDebt) {
-      const debtAmt = Number(stuObj.debtAmount) || (Number(stuObj.unpaidMonths || 1) * (Number(stuObj.monthlyFee) || 5000));
-      const debtMonths = Number(stuObj.unpaidMonths) || 1;
-      const debtSessions = Number(stuObj.unpaidSessions) || (debtMonths * 4);
+      const debtMonths = Number(stuObj.unpaidMonths) || 0;
+      const debtSessions = Number(stuObj.unpaidSessions) || (debtMonths > 0 ? debtMonths * 4 : 4);
+      const fee = Number(stuObj.monthlyFee) || 5000;
+      const perSession = Math.round(fee / 4);
+      const debtAmt = Number(stuObj.debtAmount) || (debtMonths > 0 ? debtMonths * fee : debtSessions * perSession);
       const noteStr = stuObj.debtNotes ? ` [ملاحظة: ${stuObj.debtNotes}]` : '';
 
       const payDate = lastPayment ? (parseBrainovaDate(lastPayment.paidAtIso || lastPayment.date) || now) : now;
       const diffMs = now.getTime() - payDate.getTime();
       const diffDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+
+      const debtPeriodText = debtMonths > 0 ? `${debtMonths} شهر / ${debtSessions} حصص` : `${debtSessions} حصص`;
 
       return {
         hasPayment: payments.length > 0,
@@ -1094,7 +1220,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renewalDate: now,
         renewalDateStr: 'مستحق الدفع فوراً',
         daysRemaining: -1,
-        renewalSummary: `⚠️ متأخر عن دفع: ${debtAmt.toLocaleString()} دج (${debtMonths} شهر / ${debtSessions} حصص)${noteStr}`,
+        renewalSummary: `⚠️ متأخر عن دفع: ${debtAmt.toLocaleString()} دج (${debtPeriodText})${noteStr}`,
         lastAmount: lastPayment ? (Number(lastPayment.amountPaid) || 0) : 0,
         lastOpNumber: lastPayment ? (lastPayment.opNumber || lastPayment.id) : '—',
         paymentsCount: payments.length,
@@ -1241,8 +1367,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const monthsPurchased = Math.max(monthsForSessions, Number(lastPayment.monthsPurchased) || 1);
       renewalDate = new Date(payDate);
       renewalDate.setMonth(renewalDate.getMonth() + monthsPurchased);
-    } else if (remSessions > 0 && renewalDate.getTime() < now.getTime()) {
-      // If the old renewal date has passed, but the student STILL has sessions remaining in their account:
+    }
+    if (remSessions > 0 && (!renewalDate || isNaN(renewalDate.getTime()) || renewalDate.getTime() < now.getTime())) {
+      // If the renewal date has passed (or invalid), but the student STILL has sessions remaining in their account:
       // Dynamically compute the valid remaining period based on remaining sessions (7 days per session from today)
       renewalDate = new Date();
       renewalDate.setDate(now.getDate() + Math.max(7, remSessions * 7));
@@ -1357,9 +1484,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const timeline = getStudentPaymentTimeline(stu.id, stu, allPayments);
 
       let sessionsBadge = '';
-      if (stu.hasDebt || Number(stu.debtAmount) > 0) {
-        const dAmt = Number(stu.debtAmount) || Math.abs(balance);
-        sessionsBadge = `<span class="payment-badge overdue" title="${stu.debtNotes || ''}">⚠️ دين: ${dAmt.toLocaleString()} دج (${stu.unpaidMonths || 1} شهر)</span>`;
+      if (stu.hasDebt || Number(stu.debtAmount) > 0 || Number(stu.unpaidMonths) > 0 || Number(stu.unpaidSessions) > 0) {
+        const dMonths = Number(stu.unpaidMonths) || 0;
+        const dSessions = Number(stu.unpaidSessions) || (dMonths > 0 ? dMonths * 4 : 4);
+        const fee = Number(stu.monthlyFee) || 5000;
+        const perSession = Math.round(fee / 4);
+        const dAmt = Number(stu.debtAmount) || (dMonths > 0 ? dMonths * fee : dSessions * perSession) || Math.abs(balance);
+        const dText = dMonths > 0 ? `${dMonths} شهر` : `${dSessions} حصص`;
+        sessionsBadge = `<span class="payment-badge overdue" title="${stu.debtNotes || ''}">⚠️ دين: ${dAmt.toLocaleString()} دج (${dText})</span>`;
       } else if (sessions > 0) {
         sessionsBadge = `<span class="payment-badge paid">✅ ${sessions} حصص (${balance.toLocaleString()} دج)</span>`;
       } else if (balance < 0) {
@@ -1369,12 +1501,16 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       let paymentTimelineBadge = '';
-      if (stu.hasDebt || Number(stu.debtAmount) > 0) {
+      if (stu.hasDebt || Number(stu.debtAmount) > 0 || Number(stu.unpaidMonths) > 0 || Number(stu.unpaidSessions) > 0) {
+        const dMonths = Number(stu.unpaidMonths) || 0;
+        const dSessions = Number(stu.unpaidSessions) || (dMonths > 0 ? dMonths * 4 : 4);
+        const fee = Number(stu.monthlyFee) || 5000;
+        const perSession = Math.round(fee / 4);
+        const dAmt = Number(stu.debtAmount) || (dMonths > 0 ? dMonths * fee : dSessions * perSession);
+        const dText = dMonths > 0 ? `${dMonths} شهر` : `${dSessions} حصص`;
         paymentTimelineBadge = `
-          <div style="margin-top:5px; font-size:0.75rem; color:#EF4444; line-height:1.35;">
-            <span style="font-weight:700;">⚠️ ${timeline.elapsedText}</span>
-            <br>
-            <span style="background:rgba(239,68,68,0.18); color:#FCA5A5; padding:2px 6px; border-radius:4px; font-weight:700; font-size:0.7rem;">متأخر عن دفع ${stu.unpaidMonths || 1} شهر (${Number(stu.debtAmount || 0).toLocaleString()} دج)</span>
+          <div style="margin-top:4px; font-size:0.75rem; color:#EF4444; font-weight:700; line-height:1.35;">
+            متأخر عن دفع ${dText} (${dAmt.toLocaleString()} دج)
           </div>
         `;
       } else if (timeline.hasPayment) {
@@ -1416,10 +1552,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${stu.name}
               </a>
               ${(() => {
-                if (stu.hasDebt || Number(stu.debtAmount) > 0) {
-                  const dAmt = Number(stu.debtAmount) || (Number(stu.unpaidMonths || 1) * 5000);
-                  const dMonths = stu.unpaidMonths || 1;
-                  return `<span style="display:inline-flex; align-items:center; gap:3px; background:rgba(239,68,68,0.22); border:1px solid rgba(239,68,68,0.6); color:#FCA5A5; padding:2px 8px; border-radius:12px; font-size:0.68rem; font-weight:800; white-space:nowrap;" title="متأخر عن سداد الاشتراك (${dMonths} شهر / ${dAmt.toLocaleString()} دج)">⚠️ متأخر في الدفع (${dAmt.toLocaleString()} دج)</span>`;
+                if (stu.hasDebt || Number(stu.debtAmount) > 0 || Number(stu.unpaidMonths) > 0 || Number(stu.unpaidSessions) > 0) {
+                  const dMonths = Number(stu.unpaidMonths) || 0;
+                  const dSessions = Number(stu.unpaidSessions) || (dMonths > 0 ? dMonths * 4 : 4);
+                  const fee = Number(stu.monthlyFee) || 5000;
+                  const perSession = Math.round(fee / 4);
+                  const dAmt = Number(stu.debtAmount) || (dMonths > 0 ? dMonths * fee : dSessions * perSession);
+                  const dPeriod = dMonths > 0 ? `${dMonths} شهر` : `${dSessions} حصص`;
+                  return `<span style="display:inline-flex; align-items:center; gap:3px; background:rgba(239,68,68,0.22); border:1px solid rgba(239,68,68,0.6); color:#FCA5A5; padding:2px 8px; border-radius:12px; font-size:0.68rem; font-weight:800; white-space:nowrap;" title="متأخر عن سداد الاشتراك (${dPeriod} / ${dAmt.toLocaleString()} دج)">⚠️ متأخر في الدفع (${dAmt.toLocaleString()} دج)</span>`;
                 }
                 const isOverdue = (timeline.status === 'overdue') || (balance < 0) || (sessions <= 0 && !timeline.hasPayment);
                 if (isOverdue && sessions <= 0) {
@@ -1547,7 +1687,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const selectedDate = dateInput.value;
-    const selectedTime = timeSelect ? timeSelect.value : '09:00 - 11:00';
+    const selectedTime = timeSelect ? timeSelect.value : '08:00 - 10:00';
 
     const allStudents = getData('brainova_students');
     const rawGroupStudents = allStudents.filter(s => isStudentInGroup(s, selectedGroup));
@@ -1762,7 +1902,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const typeSelect = document.getElementById('attSessionTypeSelect');
     const selectedGroup = groupSelect.value;
     const selectedDate = dateInput.value;
-    const selectedTime = timeSelect ? timeSelect.value : '09:00 - 11:00';
+    const selectedTime = timeSelect ? timeSelect.value : '08:00 - 10:00';
     const selectedType = typeSelect ? typeSelect.value : 'regular';
 
     let allAttendance = getData('brainova_attendance') || [];
@@ -2040,6 +2180,23 @@ document.addEventListener('DOMContentLoaded', () => {
     stu.nextRenewalDate = nextRenewalDateStr;
     stu.nextRenewalIso = nextRenewalIso;
     stu.monthsPurchased = monthsCount;
+
+    // Settle or reduce debt if student had debt recorded
+    if (stu.hasDebt || Number(stu.debtAmount) > 0) {
+      const remainingDebt = Math.max(0, (Number(stu.debtAmount) || 0) - amount);
+      stu.debtAmount = remainingDebt;
+      if (remainingDebt === 0) {
+        stu.hasDebt = false;
+        stu.unpaidMonths = 0;
+        stu.unpaidSessions = 0;
+        stu.debtNotes = '';
+      } else {
+        const fee = Number(stu.monthlyFee) || 5000;
+        const perSession = Math.round(fee / 4);
+        stu.unpaidSessions = Math.max(0, Math.ceil(remainingDebt / perSession));
+        stu.unpaidMonths = Math.floor(stu.unpaidSessions / 4);
+      }
+    }
     saveData('brainova_students', students);
 
     const newPayment = {
@@ -2196,8 +2353,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const elWaQr = document.getElementById('rcptWhatsAppQrCode');
     if (elWaQr) {
       const settings = getData('brainova_settings') || {};
-      const waPhone = (settings.adminPhone ? settings.adminPhone.replace(/^0/, '213') : '213799966563').replace(/\D/g, '');
-      elWaQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=1&data=https://wa.me/${waPhone || '213799966563'}`;
+      const waPhone = (settings.adminPhone ? settings.adminPhone.replace(/^0/, '213') : '213791194633').replace(/\D/g, '');
+      elWaQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=1&data=https://wa.me/${waPhone || '213791194633'}`;
     }
 
     const elDateTime = document.getElementById('rcptDateTime');
@@ -2326,7 +2483,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>
 
-      ${(stu.hasDebt || Number(stu.debtAmount) > 0) ? `
+      ${(stu.hasDebt || Number(stu.debtAmount) > 0 || Number(stu.unpaidMonths) > 0 || Number(stu.unpaidSessions) > 0) ? `
         <div style="background:rgba(239, 68, 68, 0.12); border:1px solid rgba(239, 68, 68, 0.45); border-radius:var(--radius-sm); padding:14px 16px; margin-bottom:14px;">
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <div style="color:#F87171; font-weight:800; font-size:0.95rem; display:flex; align-items:center; gap:6px;">
@@ -2335,7 +2492,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="payment-badge overdue" style="font-size:0.75rem;">متأخر في الدفع</span>
           </div>
           <div style="margin-top:8px; font-size:0.85rem; color:#FCA5A5; line-height:1.6;">
-            متأخر عن دفع اشتراك <strong>${stu.unpaidMonths || 1} شهر</strong> (ما يعادل <strong>${stu.unpaidSessions || 4} حصص تدريبية</strong>).<br>
+            متأخر عن دفع اشتراك <strong>${(stu.unpaidMonths && Number(stu.unpaidMonths) > 0) ? `${stu.unpaidMonths} شهر (${stu.unpaidSessions || (stu.unpaidMonths * 4)} حصص)` : `${stu.unpaidSessions || 4} حصص تدريبية`}</strong>.<br>
             المبلغ المستحق للدفع: <strong style="font-size:1.15rem; color:#EF4444; font-family:monospace;">${Number(stu.debtAmount || 0).toLocaleString()} دج</strong>
             ${stu.debtNotes ? `<div style="margin-top:6px; color:#E2E8F0; font-size:0.8rem; background:rgba(0,0,0,0.25); padding:6px 10px; border-radius:4px;">📌 ملاحظات الإدارة / الولي: <em>${stu.debtNotes}</em></div>` : ''}
           </div>
@@ -3617,7 +3774,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  window.executeWhatsAppDispatch = function(e) {
+  window.executeWhatsAppDispatch = async function(e) {
     e.preventDefault();
     if (!currentWaStudent) return;
 
@@ -3633,7 +3790,27 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const message = encodeURIComponent(document.getElementById('waMessageContent').value);
+    const rawMsg = document.getElementById('waMessageContent')?.value || '';
+
+    // Direct automated bot send if bot is connected
+    if (window.electronAPI && window.electronAPI.whatsapp) {
+      try {
+        const waStatus = await window.electronAPI.whatsapp.getStatus();
+        if (waStatus && waStatus.connected) {
+          showToast('جاري إرسال الرسالة عبر بوت الواتساب المباشر...', 'info');
+          const res = await window.electronAPI.whatsapp.sendMessage(rawPhone, rawMsg);
+          if (res && res.success) {
+            closeWhatsAppDispatchModal();
+            showToast(`✅ أرسل البوت الرسالة بنجاح لولي أمر (${currentWaStudent.name}) مباشرة!`, 'success');
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Bot direct send fallback to wa.me:', err);
+      }
+    }
+
+    const message = encodeURIComponent(rawMsg);
     const url = `https://wa.me/${phone}?text=${message}`;
     if (window.electronAPI && window.electronAPI.openExternal) {
       window.electronAPI.openExternal(url);
@@ -3924,7 +4101,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let filtered = filterData(groups, localGroupQuery);
     if (filter !== 'all') {
-      filtered = filtered.filter(g => (g.ageCategory || '').includes(filter));
+      filtered = filtered.filter(g => {
+        const cat = String(g.ageCategory || '').toLowerCase();
+        const catClean = cat.replace(/\s+/g, '');
+        if (filter === '6-8') {
+          return catClean.includes('6-8') || cat.includes('براعم') || catClean.includes('6-8سنوات');
+        }
+        if (filter === '8-11') {
+          return catClean.includes('8-11') || cat.includes('ناشئ') || cat.includes('ناشئين') || cat.includes('مبرمج');
+        }
+        if (filter === '11-15') {
+          return catClean.includes('11-15') || cat.includes('صغير') || cat.includes('فتيان') || cat.includes('مبتكر');
+        }
+        if (filter === '15-18') {
+          return catClean.includes('15-18') || cat.includes('شباب') || cat.includes('مستقبل') || cat.includes('مهندس');
+        }
+        return catClean.includes(filter.replace(/\s+/g, '')) || cat.includes(filter);
+      });
     }
 
     grid.innerHTML = filtered.map(g => {
@@ -3941,7 +4134,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <h3 style="font-size: 1.05rem; font-weight:800; color:#fff; margin-bottom:2px;">${g.name}</h3>
               <span style="font-size: 0.75rem; color:var(--color-primary); font-weight:700;">${g.level}</span>
             </div>
-            <button class="btn-icon" style="color:var(--color-danger); border:none;" onclick="deleteGroup('${g.id}')" title="حذف">حذف</button>
+            <button class="btn-icon" style="color:#EF4444; border:1px solid rgba(239,68,68,0.35); background:rgba(239,68,68,0.1); padding:4px 8px; font-weight:700; font-size:0.75rem; cursor:pointer;" onclick="deleteGroup('${g.id}')" title="حذف الفوج نهائياً">🗑️ حذف</button>
           </div>
           <div style="font-size:0.8rem; color:var(--color-text-muted); margin-bottom:6px;">
             <span> الفئة: <strong>${g.ageCategory || '8 - 11 سنة (ناشئين)'}</strong></span>
@@ -3989,6 +4182,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px;" onclick="printGroupMonthlyAttendanceSheet('${encodeURIComponent(g.name)}')">طباعة القائمة</button>
               <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px;" onclick="openBatchBadgesModal('${encodeURIComponent(g.name)}')">بطاقات الفوج</button>
               <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px;" onclick="openGroupStudentsModal('${encodeURIComponent(g.name)}')">الطلاب (${studentCount})</button>
+              <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px; color:#EF4444; border-color:rgba(239,68,68,0.4); font-weight:700;" onclick="deleteGroup('${g.id}')" title="حذف الفوج">🗑️ حذف الفوج</button>
             </div>
           </div>
         </div>
@@ -5672,65 +5866,94 @@ document.addEventListener('DOMContentLoaded', () => {
     const grid = document.getElementById('scheduleGrid');
     if (!grid) return;
 
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const timeSlots = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
+    // Algerian and Arab educational week order: Saturday first
+    const days = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    const timeSlots = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
     const schedule = getData('brainova_schedule') || [];
+    const groups = getData('brainova_groups') || [];
+
+    // Ensure all groups with defined day and timeSlot appear in schedule with 100% sync
+    const allSessions = [];
+    groups.forEach(g => {
+      if (g.name) {
+        const rawTime = g.timeSlot || '14:00 - 16:00';
+        const normTime = typeof normalizeTimeSlot === 'function' ? normalizeTimeSlot(rawTime) : rawTime;
+        const [st, et] = normTime.includes('-') ? normTime.split('-').map(t => t.trim()) : [normTime, ''];
+        const schEntry = schedule.find(s => s.groupId === g.id || s.groupName === g.name);
+
+        allSessions.push({
+          id: schEntry ? schEntry.id : ('SCH-AUTO-' + g.id),
+          groupId: g.id,
+          groupName: g.name,
+          day: g.day || (schEntry ? schEntry.day : 'السبت'),
+          startTime: (st || (schEntry ? schEntry.startTime : '14:00')),
+          endTime: (et || (schEntry ? schEntry.endTime : '16:00')),
+          room: g.room || (schEntry ? schEntry.room : ''),
+          educatorId: g.educatorId || (schEntry ? schEntry.educatorId : ''),
+          educatorName: g.educatorName || g.educator || (schEntry ? (schEntry.educatorName || schEntry.educator) : '')
+        });
+      }
+    });
+
+    // Add any custom standalone sessions from schedule that aren't already included
+    schedule.forEach(s => {
+      const already = allSessions.some(as => as.id === s.id || (s.groupId && as.groupId === s.groupId) || (s.groupName && as.groupName === s.groupName));
+      if (!already) {
+        allSessions.push(s);
+      }
+    });
 
     const lang = document.documentElement.lang || 'ar';
     const dayNames = {
+      'Saturday':  { ar: 'السبت',    fr: 'Samedi',   en: 'Saturday' },
       'Sunday':    { ar: 'الأحد',     fr: 'Dimanche', en: 'Sunday' },
       'Monday':    { ar: 'الإثنين',   fr: 'Lundi',    en: 'Monday' },
       'Tuesday':   { ar: 'الثلاثاء', fr: 'Mardi',    en: 'Tuesday' },
       'Wednesday': { ar: 'الأربعاء', fr: 'Mercredi', en: 'Wednesday' },
       'Thursday':  { ar: 'الخميس',   fr: 'Jeudi',    en: 'Thursday' },
-      'Friday':    { ar: 'الجمعة',    fr: 'Vendredi', en: 'Friday' },
-      'Saturday':  { ar: 'السبت',    fr: 'Samedi',   en: 'Saturday' }
+      'Friday':    { ar: 'الجمعة',    fr: 'Vendredi', en: 'Friday' }
     };
 
-    // Helper: convert HH:MM to minutes
-    function toMin(t) {
-      if (!t) return 0;
-      const [h, m] = t.split(':').map(Number);
-      return h * 60 + (m || 0);
-    }
-
     // Highlight current day
-    const todayMap = { 0:'Sunday', 1:'Monday', 2:'Tuesday', 3:'Wednesday', 4:'Thursday', 5:'Friday', 6:'Saturday' };
-    const todayKey = todayMap[new Date().getDay()];
+    const todayIndex = new Date().getDay(); // 0 = Sunday, 6 = Saturday
 
     // Build grid HTML
-    // Header row: empty corner + day names
     let html = `<div class="schedule-header" style="background:transparent;border:none;"></div>`;
     days.forEach(day => {
-      const isToday = day === todayKey;
-      html += `<div class="schedule-header" style="${isToday ? 'background:var(--color-primary-bg);color:var(--color-primary);' : ''}">${dayNames[day][lang]}</div>`;
+      const isToday = getDayIndex(day) === todayIndex;
+      html += `<div class="schedule-header" style="${isToday ? 'background:var(--color-primary-bg);color:var(--color-primary);font-weight:800;border-bottom:2px solid var(--color-primary);' : ''}">${dayNames[day][lang] || dayNames[day]['ar']}</div>`;
     });
 
     // Time rows
     timeSlots.forEach((time, slotIdx) => {
       const slotStart = toMin(time);
-      const slotEnd   = toMin(timeSlots[slotIdx + 1]) || slotStart + 60;
+      const slotEnd   = toMin(timeSlots[slotIdx + 1]) || (slotStart + 60);
 
       html += `<div class="schedule-time-label">${time}</div>`;
 
       days.forEach(day => {
-        // Find sessions whose startTime falls within this slot [slotStart, slotEnd)
-        const sessions = schedule.filter(s => {
-          const sStart = toMin(s.startTime);
-          return s.day === day && sStart >= slotStart && sStart < slotEnd;
+        const targetDayIdx = getDayIndex(day);
+        const sessions = allSessions.filter(s => {
+          const sDayIdx = getDayIndex(s.day);
+          if (sDayIdx !== targetDayIdx) return false;
+          let sStart = toMin(s.startTime);
+          if (sStart < 480 && sStart > 0) sStart += 720; // 1 to 7 PM support
+          if (sStart === 0) sStart = 840; // Default 14:00 if unparseable
+          return sStart >= slotStart && sStart < slotEnd;
         });
 
         let sessionsHtml = '';
         sessions.forEach(s => {
-          const timeSlotStr = `${s.startTime} - ${s.endTime}`;
+          const timeSlotStr = `${s.startTime || '14:00'} - ${s.endTime || '16:00'}`;
+          const eduDisplay = s.educatorName || s.educator || 'غير محدد';
           sessionsHtml += `
-            <div class="schedule-session">
-              <button class="schedule-session__delete" onclick="deleteSession('${s.id}')">&times;</button>
-              <div class="schedule-session__title">${s.groupName}</div>
-              <div style="font-size:0.73rem;">👨‍🏫 ${s.educatorName}</div>
-              <div style="font-size:0.73rem;">⏰ ${timeSlotStr}</div>
-              ${s.room ? `<div style="font-size:0.71rem;color:var(--color-text-muted);">🏛️ ${s.room}</div>` : ''}
-              <button type="button" class="btn btn--primary btn--small" style="padding:3px 6px; font-size:0.69rem; margin-top:5px; width:100%; background:#0284C7; font-weight:700;" onclick="openAttendanceForSession('${encodeURIComponent(s.groupName)}', '${timeSlotStr}')">📝 تسجيل الحضور</button>
+            <div class="schedule-session" style="border-right: 3px solid #38BDF8; padding: 6px 8px; margin-bottom: 4px;">
+              <button class="schedule-session__delete" onclick="deleteSession('${s.id}')" title="حذف الحصة">&times;</button>
+              <div class="schedule-session__title" style="font-weight:800; font-size:0.86rem; color:#FFFFFF; margin-bottom:3px;">${s.groupName}</div>
+              <div style="font-size:0.75rem; color:#94A3B8; margin-bottom:2px;">👨‍🏫 ${eduDisplay}</div>
+              <div style="font-size:0.78rem; font-weight:800; color:#FBBF24; background:rgba(251,191,36,0.12); padding:2px 6px; border-radius:4px; display:inline-block; margin-bottom:4px;">⏰ ${timeSlotStr}</div>
+              ${s.room ? `<div style="font-size:0.73rem; color:#94A3B8; margin-bottom:4px;">🏛️ ${s.room}</div>` : ''}
+              <button type="button" class="btn btn--primary btn--small" style="padding:4px 8px; font-size:0.72rem; margin-top:4px; width:100%; background:#0284C7; font-weight:700;" onclick="openAttendanceForSession('${encodeURIComponent(s.groupName)}', '${timeSlotStr}')">📝 تسجيل الحضور</button>
             </div>
           `;
         });
@@ -6009,7 +6232,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (renewalInput) renewalInput.value = renewalVal;
 
     // Debt fields setup
-    const hasDebt = !!(stu.hasDebt === true || stu.hasDebt === 'true' || Number(stu.debtAmount) > 0);
+    const hasDebt = !!(stu.hasDebt === true || stu.hasDebt === 'true' || Number(stu.debtAmount) > 0 || Number(stu.unpaidMonths) > 0 || Number(stu.unpaidSessions) > 0);
     const hasDebtCb = document.getElementById('editStudentHasDebt');
     if (hasDebtCb) hasDebtCb.checked = hasDebt;
 
@@ -6017,13 +6240,35 @@ document.addEventListener('DOMContentLoaded', () => {
     if (debtFields) debtFields.style.display = hasDebt ? 'block' : 'none';
 
     const unpaidMonthsEl = document.getElementById('editStudentUnpaidMonths');
-    if (unpaidMonthsEl) unpaidMonthsEl.value = stu.unpaidMonths || 1;
+    if (unpaidMonthsEl) {
+      unpaidMonthsEl.value = (stu.unpaidMonths !== undefined && stu.unpaidMonths !== null) ? stu.unpaidMonths : (hasDebt ? 0 : 0);
+    }
 
     const unpaidSessionsEl = document.getElementById('editStudentUnpaidSessions');
-    if (unpaidSessionsEl) unpaidSessionsEl.value = stu.unpaidSessions || ((stu.unpaidMonths || 1) * 4);
+    if (unpaidSessionsEl) {
+      if (stu.unpaidSessions !== undefined && stu.unpaidSessions !== null) {
+        unpaidSessionsEl.value = stu.unpaidSessions;
+      } else if (stu.unpaidMonths && Number(stu.unpaidMonths) > 0) {
+        unpaidSessionsEl.value = stu.unpaidMonths * 4;
+      } else {
+        unpaidSessionsEl.value = 4;
+      }
+    }
 
+    const fee = Number(stu.monthlyFee) || 5000;
+    const perSession = Math.round(fee / 4);
     const debtAmountEl = document.getElementById('editStudentDebtAmount');
-    if (debtAmountEl) debtAmountEl.value = Number(stu.debtAmount) || ((stu.unpaidMonths || 1) * (stu.monthlyFee || 5000));
+    if (debtAmountEl) {
+      if (stu.debtAmount !== undefined && stu.debtAmount !== null && Number(stu.debtAmount) > 0) {
+        debtAmountEl.value = Number(stu.debtAmount);
+      } else if (stu.unpaidMonths && Number(stu.unpaidMonths) > 0) {
+        debtAmountEl.value = Number(stu.unpaidMonths) * fee;
+      } else if (stu.unpaidSessions && Number(stu.unpaidSessions) > 0) {
+        debtAmountEl.value = Number(stu.unpaidSessions) * perSession;
+      } else {
+        debtAmountEl.value = fee;
+      }
+    }
 
     const debtNotesEl = document.getElementById('editStudentDebtNotes');
     if (debtNotesEl) debtNotesEl.value = stu.debtNotes || '';
@@ -6038,17 +6283,33 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!cb || !fields) return;
     fields.style.display = cb.checked ? 'block' : 'none';
     if (cb.checked) {
-      recalcEditStudentDebtAmount();
+      const sInput = document.getElementById('editStudentUnpaidSessions');
+      if (sInput && (!sInput.value || sInput.value === '0')) sInput.value = 4;
+      recalcEditStudentDebtBySessions();
     }
   };
 
-  window.recalcEditStudentDebtAmount = function() {
+  window.recalcEditStudentDebtBySessions = function() {
     const fee = parseInt(document.getElementById('editStudentMonthlyFee')?.value, 10) || 5000;
-    const months = parseInt(document.getElementById('editStudentUnpaidMonths')?.value, 10) || 1;
+    const perSession = Math.round(fee / 4);
+    const sessions = parseInt(document.getElementById('editStudentUnpaidSessions')?.value, 10) || 0;
+    const debtInput = document.getElementById('editStudentDebtAmount');
+    const monthsInput = document.getElementById('editStudentUnpaidMonths');
+    if (debtInput) debtInput.value = sessions * perSession;
+    if (monthsInput) monthsInput.value = Math.floor(sessions / 4);
+  };
+
+  window.recalcEditStudentDebtByMonths = function() {
+    const fee = parseInt(document.getElementById('editStudentMonthlyFee')?.value, 10) || 5000;
+    const months = parseInt(document.getElementById('editStudentUnpaidMonths')?.value, 10) || 0;
     const debtInput = document.getElementById('editStudentDebtAmount');
     const sessionsInput = document.getElementById('editStudentUnpaidSessions');
-    if (debtInput) debtInput.value = months * fee;
     if (sessionsInput) sessionsInput.value = months * 4;
+    if (debtInput) debtInput.value = months * fee;
+  };
+
+  window.recalcEditStudentDebtAmount = function() {
+    recalcEditStudentDebtBySessions();
   };
 
   window.onEditStudentSessionsInput = function() {
@@ -6163,9 +6424,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const hasDebtCb = document.getElementById('editStudentHasDebt');
     if (hasDebtCb && hasDebtCb.checked) {
       stu.hasDebt = true;
-      stu.unpaidMonths = parseInt(document.getElementById('editStudentUnpaidMonths')?.value, 10) || 1;
-      stu.unpaidSessions = parseInt(document.getElementById('editStudentUnpaidSessions')?.value, 10) || (stu.unpaidMonths * 4);
-      stu.debtAmount = parseInt(document.getElementById('editStudentDebtAmount')?.value, 10) || (stu.unpaidMonths * stu.monthlyFee);
+      stu.unpaidSessions = parseInt(document.getElementById('editStudentUnpaidSessions')?.value, 10) || 0;
+      const parsedM = parseInt(document.getElementById('editStudentUnpaidMonths')?.value, 10);
+      stu.unpaidMonths = isNaN(parsedM) ? Math.floor(stu.unpaidSessions / 4) : parsedM;
+      const fee = Number(stu.monthlyFee) || 5000;
+      const perSession = Math.round(fee / 4);
+      const userDebtAmt = parseInt(document.getElementById('editStudentDebtAmount')?.value, 10);
+      stu.debtAmount = (!isNaN(userDebtAmt) && userDebtAmt > 0)
+        ? userDebtAmt
+        : (stu.unpaidMonths > 0 ? (stu.unpaidMonths * fee) : (stu.unpaidSessions * perSession));
       stu.debtNotes = document.getElementById('editStudentDebtNotes')?.value.trim() || '';
       stu.balance = -Math.abs(stu.debtAmount);
     } else {
@@ -6308,7 +6575,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // Group Modals
+  // Group Modals & Time Slot Sync Helpers
+  window.syncNewGroupTimeSlot = function() {
+    const st = document.getElementById('newGroupStartTime')?.value || '14:00';
+    const et = document.getElementById('newGroupEndTime')?.value || '16:00';
+    const hidden = document.getElementById('newGroupTimeSlot');
+    if (hidden) hidden.value = `${st} - ${et}`;
+  };
+
+  window.syncEditGroupTimeSlot = function() {
+    const st = document.getElementById('editGroupStartTime')?.value || '14:00';
+    const et = document.getElementById('editGroupEndTime')?.value || '16:00';
+    const hidden = document.getElementById('editGroupTimeSlot');
+    if (hidden) hidden.value = `${st} - ${et}`;
+  };
+
   window.openAddGroupModal = function() {
     const educators = getData('brainova_educators');
     const rooms = getData('brainova_rooms');
@@ -6327,7 +6608,15 @@ document.addEventListener('DOMContentLoaded', () => {
       `).join('');
     }
 
-    document.getElementById('addGroupForm').reset();
+    const form = document.getElementById('addGroupForm');
+    if (form) form.reset();
+
+    const startSelect = document.getElementById('newGroupStartTime');
+    if (startSelect) startSelect.value = '14:00';
+    const endSelect = document.getElementById('newGroupEndTime');
+    if (endSelect) endSelect.value = '16:00';
+    syncNewGroupTimeSlot();
+
     document.getElementById('addGroupModal').classList.add('active');
   };
 
@@ -6339,7 +6628,16 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     const name = document.getElementById('newGroupName').value.trim();
     const day = document.getElementById('newGroupDay')?.value || 'السبت';
-    const timeSlot = document.getElementById('newGroupTimeSlot')?.value.trim() || '14:00 - 16:00';
+    
+    let rawTime = document.getElementById('newGroupTimeSlot')?.value.trim();
+    if (!rawTime) {
+      const stEl = document.getElementById('newGroupStartTime')?.value || '14:00';
+      const etEl = document.getElementById('newGroupEndTime')?.value || '16:00';
+      rawTime = `${stEl} - ${etEl}`;
+    }
+    const timeSlot = typeof normalizeTimeSlot === 'function' ? normalizeTimeSlot(rawTime) : rawTime;
+    const [st, et] = timeSlot.includes('-') ? timeSlot.split('-').map(t => t.trim()) : [timeSlot, '16:00'];
+
     const level = document.getElementById('newGroupLevel').value;
     const ageCategory = document.getElementById('newGroupAgeCategory').value;
     const room = document.getElementById('newGroupRoom').value;
@@ -6354,6 +6652,8 @@ document.addEventListener('DOMContentLoaded', () => {
       name,
       day,
       timeSlot,
+      startTime: st || '14:00',
+      endTime: et || '16:00',
       level,
       ageCategory,
       room,
@@ -6368,9 +6668,8 @@ document.addEventListener('DOMContentLoaded', () => {
     groups.push(newGroup);
     saveData('brainova_groups', groups);
 
-    // Also record in schedule
+    // Also record cleanly in schedule
     const schedules = getData('brainova_schedule') || [];
-    const [st, et] = timeSlot.includes('-') ? timeSlot.split('-').map(t => t.trim()) : [timeSlot, ''];
     schedules.push({
       id: 'SCH-' + Date.now(),
       groupId: newGroup.id,
@@ -6379,14 +6678,15 @@ document.addEventListener('DOMContentLoaded', () => {
       startTime: st || '14:00',
       endTime: et || '16:00',
       room: room,
-      educatorId: educatorId,
-      educator: educator ? educator.name : ''
+      educatorId: educatorId || null,
+      educator: educator ? educator.name : '',
+      educatorName: educator ? educator.name : ''
     });
     saveData('brainova_schedule', schedules);
 
     closeAddGroupModal();
     showToast(`✅ تم إنشاء الفوج (${name}) بموعد (${day} ${timeSlot}) بنجاح!`, 'success');
-    renderActiveView();
+    renderAll();
   };
 
   window.openEditGroupModal = function(id) {
@@ -6405,10 +6705,28 @@ document.addEventListener('DOMContentLoaded', () => {
       daySelect.value = sch ? sch.day : (g.day || 'السبت');
     }
 
-    const timeInput = document.getElementById('editGroupTimeSlot');
-    if (timeInput) {
-      timeInput.value = sch ? `${sch.startTime} - ${sch.endTime}` : (g.timeSlot || '14:00 - 16:00');
+    const rawTime = sch ? `${sch.startTime} - ${sch.endTime}` : (g.timeSlot || '14:00 - 16:00');
+    const normTime = typeof normalizeTimeSlot === 'function' ? normalizeTimeSlot(rawTime) : rawTime;
+    const [st, et] = normTime.includes('-') ? normTime.split('-').map(t => t.trim()) : ['14:00', '16:00'];
+
+    const startSelect = document.getElementById('editGroupStartTime');
+    if (startSelect) {
+      if (![...startSelect.options].some(o => o.value === st)) {
+        startSelect.add(new Option(st, st));
+      }
+      startSelect.value = st;
     }
+
+    const endSelect = document.getElementById('editGroupEndTime');
+    if (endSelect) {
+      if (![...endSelect.options].some(o => o.value === et)) {
+        endSelect.add(new Option(et, et));
+      }
+      endSelect.value = et;
+    }
+
+    const timeHidden = document.getElementById('editGroupTimeSlot');
+    if (timeHidden) timeHidden.value = `${st} - ${et}`;
 
     const levelSelect = document.getElementById('editGroupLevel');
     if (levelSelect) levelSelect.value = g.level || 'المستوى الأول';
@@ -6425,7 +6743,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const eduSelect = document.getElementById('editGroupEducator');
     if (eduSelect) {
       const educators = getData('brainova_educators') || [];
-      eduSelect.innerHTML = educators.map(e => `<option value="${e.id}" ${e.id === g.educatorId ? 'selected' : ''}>${e.name}</option>`).join('');
+      eduSelect.innerHTML = '<option value="">-- اختر الأستاذ (اختياري) --</option>' + educators.map(e => `<option value="${e.id}" ${e.id === g.educatorId ? 'selected' : ''}>${e.name}</option>`).join('');
     }
 
     const maxInput = document.getElementById('editGroupMaxStudents');
@@ -6440,6 +6758,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (modal) modal.classList.remove('active');
   };
 
+  window.deleteGroupFromEditModal = function() {
+    const id = document.getElementById('editGroupId')?.value;
+    if (!id) return;
+    closeEditGroupModal();
+    deleteGroup(id);
+  };
+
   window.submitEditGroup = function(e) {
     e.preventDefault();
     const id = document.getElementById('editGroupId').value;
@@ -6450,7 +6775,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const oldName = groups[groupIdx].name;
     const newName = document.getElementById('editGroupName').value.trim();
     const newDay = document.getElementById('editGroupDay').value;
-    const newTimeSlot = document.getElementById('editGroupTimeSlot').value.trim() || '14:00 - 16:00';
+    
+    let rawTime = document.getElementById('editGroupTimeSlot')?.value.trim();
+    if (!rawTime) {
+      const stEl = document.getElementById('editGroupStartTime')?.value || '14:00';
+      const etEl = document.getElementById('editGroupEndTime')?.value || '16:00';
+      rawTime = `${stEl} - ${etEl}`;
+    }
+    const newTimeSlot = typeof normalizeTimeSlot === 'function' ? normalizeTimeSlot(rawTime) : rawTime;
+    const [st, et] = newTimeSlot.includes('-') ? newTimeSlot.split('-').map(t => t.trim()) : [newTimeSlot, '16:00'];
+
     const newLevel = document.getElementById('editGroupLevel').value;
     const newAgeCategory = document.getElementById('editGroupAgeCategory').value;
     const newRoom = document.getElementById('editGroupRoom').value;
@@ -6462,6 +6796,8 @@ document.addEventListener('DOMContentLoaded', () => {
     groups[groupIdx].name = newName;
     groups[groupIdx].day = newDay;
     groups[groupIdx].timeSlot = newTimeSlot;
+    groups[groupIdx].startTime = st || '14:00';
+    groups[groupIdx].endTime = et || '16:00';
     groups[groupIdx].level = newLevel;
     groups[groupIdx].ageCategory = newAgeCategory;
     groups[groupIdx].room = newRoom;
@@ -6475,15 +6811,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Also sync with schedule
     const schedules = getData('brainova_schedule') || [];
     let schIdx = schedules.findIndex(s => s.groupId === id || s.groupName === oldName);
-    const [st, et] = newTimeSlot.includes('-') ? newTimeSlot.split('-').map(t => t.trim()) : [newTimeSlot, ''];
     if (schIdx !== -1) {
+      schedules[schIdx].groupId = id;
       schedules[schIdx].groupName = newName;
       schedules[schIdx].day = newDay;
-      if (st) schedules[schIdx].startTime = st;
-      if (et) schedules[schIdx].endTime = et;
+      schedules[schIdx].startTime = st || '14:00';
+      schedules[schIdx].endTime = et || '16:00';
       schedules[schIdx].room = newRoom;
-      schedules[schIdx].educatorId = newEducatorId;
+      schedules[schIdx].educatorId = newEducatorId || null;
       schedules[schIdx].educator = educator ? educator.name : '';
+      schedules[schIdx].educatorName = educator ? educator.name : '';
     } else {
       schedules.push({
         id: 'SCH-' + Date.now(),
@@ -6493,43 +6830,84 @@ document.addEventListener('DOMContentLoaded', () => {
         startTime: st || '14:00',
         endTime: et || '16:00',
         room: newRoom,
-        educatorId: newEducatorId,
-        educator: educator ? educator.name : ''
+        educatorId: newEducatorId || null,
+        educator: educator ? educator.name : '',
+        educatorName: educator ? educator.name : ''
       });
     }
     saveData('brainova_schedule', schedules);
 
-    // If name changed, sync students and attendance
-    if (oldName !== newName) {
-      const students = getData('brainova_students') || [];
-      students.forEach(s => {
-        if (isStudentInGroup(s, oldName)) s.group = newName;
-      });
-      saveData('brainova_students', students);
+    // Sync students enrolled in this group with new day and time
+    const students = getData('brainova_students') || [];
+    let stuUpdated = false;
+    students.forEach(s => {
+      if (s.groupId === id || isStudentInGroup(s, oldName)) {
+        if (oldName !== newName) s.group = newName;
+        s.groupId = id;
+        s.day = newDay;
+        s.timeSlot = newTimeSlot;
+        s.startTime = st;
+        s.endTime = et;
+        stuUpdated = true;
+      }
+    });
+    if (stuUpdated) saveData('brainova_students', students);
 
+    // If name changed, sync attendance
+    if (oldName !== newName) {
       const attendance = getData('brainova_attendance') || [];
       attendance.forEach(a => {
-        if (isStudentInGroup({ group: a.groupName }, oldName)) a.groupName = newName;
+        if (a.groupId === id || isStudentInGroup({ group: a.groupName }, oldName)) {
+          a.groupName = newName;
+          a.groupId = id;
+        }
       });
       saveData('brainova_attendance', attendance);
     }
 
     closeEditGroupModal();
     showToast(`✅ تم تحديث يوم وتوقيت الفوج بنجاح (${newDay} - ${newTimeSlot})`, 'success');
-    renderActiveView();
+    renderAll();
   };
 
   window.deleteGroup = function(id) {
-    const schedules = getData('brainova_schedule').filter(s => s.groupId === id);
-    if (schedules.length > 0) {
-      alert('لا يمكن الحذف: الفوج مرتبط بجلسات في الجدول.');
+    const groups = getData('brainova_groups') || [];
+    const g = groups.find(x => x.id === id || x.name === id);
+    if (!g) {
+      showToast('الفوج غير موجود أو تم حذفه مسبقاً', 'error');
       return;
     }
-    if (confirm('هل تريد حذف هذا الفوج؟')) {
-      const groups = getData('brainova_groups').filter(g => g.id !== id);
-      saveData('brainova_groups', groups);
-      showToast('toast_updated', 'success');
-      renderActiveView();
+
+    const students = getData('brainova_students') || [];
+    const enrolledStudents = students.filter(s => s.groupId === g.id || isStudentInGroup(s, g.name));
+
+    const confirmMsg = enrolledStudents.length > 0
+      ? `هل أنت متأكد من حذف الفوج "${g.name}" نهائياً؟\n\nتنبيه: يوجد (${enrolledStudents.length}) طالب مسجل في هذا الفوج.\nسيتم حذف الفوج ومواعيده من الجدول الزمني، وإلغاء تسجيل الطلاب منه (مع الاحتفاظ بكافة بياناتهم وسجلاتهم المالية ورصيد حصصهم كاملاً).`
+      : `هل أنت متأكد من حذف الفوج "${g.name}" ومواعيده من الجدول الزمني نهائياً؟`;
+
+    if (confirm(confirmMsg)) {
+      // 1. Remove from groups
+      const newGroups = groups.filter(x => x.id !== g.id && x.name !== g.name);
+      saveData('brainova_groups', newGroups);
+
+      // 2. Remove all related schedule entries
+      const schedules = getData('brainova_schedule') || [];
+      const newSchedules = schedules.filter(s => s.groupId !== g.id && s.groupName !== g.name);
+      saveData('brainova_schedule', newSchedules);
+
+      // 3. Unassign students safely
+      if (enrolledStudents.length > 0) {
+        students.forEach(s => {
+          if (s.groupId === g.id || isStudentInGroup(s, g.name)) {
+            s.group = '';
+            s.groupId = '';
+          }
+        });
+        saveData('brainova_students', students);
+      }
+
+      showToast(`✅ تم حذف الفوج "${g.name}" وتنظيف الجدول بنجاح`, 'success');
+      renderAll();
     }
   };
 
@@ -6658,24 +7036,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const educator = educators.find(e => e.id === educatorId);
     
     const educatorConflict = schedule.some(s => 
-      s.day === day && 
+      areDaysEqual(s.day, day) && 
       s.educatorId === educatorId &&
       ((startTime >= s.startTime && startTime < s.endTime) || (endTime > s.startTime && endTime <= s.endTime))
     );
     
     if (educatorConflict) {
-      showToast('toast_conflict_educator', 'error');
+      showToast('تعارض: المعلم لديه حصة أخرى في نفس اليوم والتوقيت!', 'error');
       return;
     }
     
     const groupConflict = schedule.some(s => 
-      s.day === day && 
+      areDaysEqual(s.day, day) && 
       s.groupId === groupId &&
       ((startTime >= s.startTime && startTime < s.endTime) || (endTime > s.startTime && endTime <= s.endTime))
     );
     
     if (groupConflict) {
-      showToast('toast_conflict_group', 'error');
+      showToast('تعارض: الفوج لديه حصة أخرى في نفس اليوم والتوقيت!', 'error');
       return;
     }
     
@@ -6695,15 +7073,27 @@ document.addEventListener('DOMContentLoaded', () => {
     saveData('brainova_schedule', schedule);
     
     closeAddSessionModal();
-    showToast('toast_session_added', 'success');
+    showToast('تمت إضافة الحصة بنجاح إلى الجدول الزمني!', 'success');
     renderActiveView();
   };
 
   window.deleteSession = function(id) {
-    if (confirm('هل أنت متأكد من حذف هذه الحصة؟')) {
-      const schedule = getData('brainova_schedule').filter(s => s.id !== id);
-      saveData('brainova_schedule', schedule);
-      showToast('toast_updated', 'success');
+    if (confirm('هل أنت متأكد من حذف هذه الحصة من الجدول الزمني؟')) {
+      let schedule = getData('brainova_schedule') || [];
+      if (id && id.startsWith('SCH-AUTO-')) {
+        const grpId = id.replace('SCH-AUTO-', '');
+        const groups = getData('brainova_groups') || [];
+        const grp = groups.find(g => g.id === grpId);
+        if (grp) {
+          grp.timeSlot = '';
+          grp.day = '';
+          saveData('brainova_groups', groups);
+        }
+      } else {
+        schedule = schedule.filter(s => s.id !== id);
+        saveData('brainova_schedule', schedule);
+      }
+      showToast('تم حذف الحصة من الجدول بنجاح', 'success');
       renderActiveView();
     }
   };
@@ -8375,7 +8765,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const students = getData('brainova_students');
       const allAttendance = getData('brainova_attendance');
 
-      const todaySessions = schedule.filter(s => s.day === currentDay);
+      const todaySessions = schedule.filter(s => areDaysEqual(s.day, currentDay) || getDayIndex(s.day) === now.getDay());
 
       for (const session of todaySessions) {
         const [sh, sm] = (session.startTime || '00:00').split(':').map(Number);
@@ -8495,14 +8885,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const stuPayments = payments
       .filter(p => p.studentId === student.id || p.studentName === student.name)
-      .sort((a, b) => (b.date || b.paymentDate || '').localeCompare(a.date || a.paymentDate || ''));
+      .sort((a, b) => {
+        const dateA = typeof parseBrainovaDate === 'function' ? (parseBrainovaDate(a.paidAtIso || a.date) || new Date(0)) : new Date(a.date || 0);
+        const dateB = typeof parseBrainovaDate === 'function' ? (parseBrainovaDate(b.paidAtIso || b.date) || new Date(0)) : new Date(b.date || 0);
+        return dateB - dateA;
+      });
 
     const remSessions = student.sessionsRemaining !== undefined ? Number(student.sessionsRemaining) : 4;
+    const hasExplicitDebt = !!(student.hasDebt === true || student.hasDebt === 'true' || Number(student.debtAmount) > 0 || Number(student.unpaidMonths) > 0 || Number(student.unpaidSessions) > 0);
 
     let score = 0;
     const reasons = [];
 
-    // 1. Consecutive Absences
+    // 1. Consecutive Absences (Pedagogical Risk)
     let consecutiveAbsences = 0;
     for (let i = 0; i < stuAtt.length; i++) {
       if (stuAtt[i].status === 'absent') {
@@ -8523,32 +8918,35 @@ document.addEventListener('DOMContentLoaded', () => {
       reasons.push('غياب في آخر حصة');
     }
 
-    // 2. Remaining Sessions Status
-    if (remSessions <= 0) {
-      score += 40;
-      reasons.push(`نفاد رصيد الحصص (${remSessions} حصة)`);
+    // 2. Explicit Debt or Unpaid Sessions/Months (Adjusted manually by Admin)
+    if (hasExplicitDebt) {
+      score += 35;
+      const unpaidM = Number(student.unpaidMonths) || 0;
+      const unpaidS = Number(student.unpaidSessions) || (unpaidM > 0 ? unpaidM * 4 : 4);
+      const desc = unpaidM > 0 ? `${unpaidM} شهر / ${unpaidS} حصص` : `${unpaidS} حصص`;
+      reasons.push(`تأخر تجديد الاشتراك (${desc} غير مسددة)`);
+    } else if (remSessions <= 0) {
+      // 3. Exhausted Sessions / Overdue Subscription
+      const timeline = (typeof getStudentPaymentTimeline === 'function')
+        ? getStudentPaymentTimeline(student.id, student, payments)
+        : null;
+
+      if (timeline && timeline.daysRemaining < 0) {
+        const diffDays = Math.abs(timeline.daysRemaining);
+        score += 35;
+        reasons.push(`تأخر تجديد الاشتراك (${diffDays} يوم)`);
+      } else {
+        score += 30;
+        reasons.push(`تأخر تجديد الاشتراك (نفاد رصيد الحصص)`);
+      }
     } else if (remSessions === 1) {
-      score += 20;
+      // Gentle reminder for single remaining session (does not alone mark as medium risk)
+      score += 10;
       reasons.push('متبقي حصة واحدة فقط');
     }
-
-    // 3. Payment Status / Days since last payment
-    const lastPay = stuPayments[0];
-    if (lastPay) {
-      const payDate = new Date(lastPay.date || lastPay.paymentDate || lastPay.createdAt);
-      const now = new Date();
-      const diffDays = Math.floor((now - payDate) / (1000 * 60 * 60 * 24));
-      if (diffDays > 35) {
-        score += 25;
-        reasons.push(`تأخر تجديد الاشتراك (${diffDays} يوم)`);
-      } else if (diffDays > 25 && remSessions <= 1) {
-        score += 15;
-        reasons.push('اقتراب موعد التجديد دون تسديد');
-      }
-    } else {
-      score += 20;
-      reasons.push('لم يسدد أي دفعة بعد');
-    }
+    // CRITICAL: If student has active sessions (remSessions > 1) and no explicit debt:
+    // They are in full active standing! NEVER penalize or show 'تأخر تجديد الاشتراك'
+    // based on days elapsed since an older payment transaction.
 
     let level = 'healthy';
     if (score >= 45) {
@@ -8563,7 +8961,7 @@ document.addEventListener('DOMContentLoaded', () => {
       reasons,
       consecutiveAbsences,
       remSessions,
-      lastPayment: lastPay || null,
+      lastPayment: stuPayments[0] || null,
       latestAttendance: stuAtt[0] || null
     };
   }

@@ -26,7 +26,7 @@ class CloudSyncEngine {
     this.config = {
       enabled: true,
       provider: 'firebase', // 'firebase' or 'custom_rest'
-      databaseUrl: 'https://brainova-robotics-hq-default-rtdb.firebaseio.com',
+      databaseUrl: 'https://brainova-academy-default-rtdb.firebaseio.com',
       authToken: '',   // optional auth secret or token
       syncIntervalMs: 60000, // Heartbeat every 60 seconds
       debounceDelayMs: 4000   // 4 seconds debounce on data modifications
@@ -37,8 +37,11 @@ class CloudSyncEngine {
     this.isSyncing = false;
     this.lastSyncTime = null;
 
-    this.lastProcessedSnapshotNonce = null;
-    this.lastProcessedBackupNonce = null;
+    this.startupTime = Date.now();
+    this.lastProcessedSnapshotNonce = Date.now();
+    this.lastProcessedBackupNonce = Date.now();
+    this.lastProcessedRestartNonce = Date.now();
+    this.lastProcessedClearCacheNonce = Date.now();
 
     this.remoteCommands = {
       licenseStatus: 'active', // 'active' | 'suspended' | 'locked'
@@ -196,7 +199,7 @@ class CloudSyncEngine {
         const template = {
           enabled: true,
           provider: 'firebase',
-          databaseUrl: 'https://brainova-robotics-hq-default-rtdb.firebaseio.com',
+          databaseUrl: 'https://brainova-academy-default-rtdb.firebaseio.com',
           branchName: os.hostname(),
           syncIntervalMs: 60000
         };
@@ -227,6 +230,23 @@ class CloudSyncEngine {
 
     // Start background recurring heartbeat
     this.startHeartbeat();
+
+    // Start fast directive watcher (polls commands every 3.5s)
+    this.startDirectiveWatcher();
+  }
+
+  /**
+   * Start fast directive watcher to respond to remote commands (snapshot, broadcast, lock) within seconds.
+   */
+  startDirectiveWatcher() {
+    if (this.directiveTimer) clearInterval(this.directiveTimer);
+    this.directiveTimer = setInterval(() => {
+      if (this.config.enabled && this.config.databaseUrl) {
+        let targetUrl = this.config.databaseUrl.trim();
+        if (targetUrl.endsWith('/')) targetUrl = targetUrl.slice(0, -1);
+        this.checkRemoteDirectives(targetUrl);
+      }
+    }, 3500);
   }
 
   /**
@@ -349,7 +369,7 @@ class CloudSyncEngine {
         }
 
         this.logDebug(`Transmitting heartbeat to: ${fullUrl}`);
-        await this.httpPutJson(fullUrl, payload);
+        await this.httpPatchJson(fullUrl, payload);
         this.lastSyncTime = new Date();
         this.logDebug(`Heartbeat transmitted successfully. Size: ${JSON.stringify(payload).length} bytes`);
 
@@ -378,7 +398,18 @@ class CloudSyncEngine {
 
       const res = await this.httpGetJson(commandUrl);
       if (res && typeof res === 'object') {
-        this.remoteCommands = { ...this.remoteCommands, ...res };
+        // Strip out transient command nonces so they are NEVER persisted to local store
+        const {
+          requestSnapshot,
+          requestBackup,
+          restartApp,
+          clearCache,
+          wipeData,
+          unbindHwid,
+          ...persistentCommands
+        } = res;
+
+        this.remoteCommands = { ...this.remoteCommands, ...persistentCommands };
         if (this.store) {
           this.store.set('brainova_remote_commands', this.remoteCommands);
         }
@@ -397,24 +428,28 @@ class CloudSyncEngine {
         if (res.unbindHwid === true) {
           this.store.delete('brainova_hwid_lock');
           this.hwidMismatch = false;
+          try { await this.httpPatchJson(commandUrl, { unbindHwid: null }); } catch(e) {}
         }
 
         // 4. Force Live Snapshot Capture Directive
-        if (res.requestSnapshot && res.requestSnapshot !== this.lastProcessedSnapshotNonce) {
+        if (res.requestSnapshot && typeof res.requestSnapshot === 'number' && res.requestSnapshot > this.lastProcessedSnapshotNonce) {
           this.lastProcessedSnapshotNonce = res.requestSnapshot;
+          try { await this.httpPatchJson(commandUrl, { requestSnapshot: null }); } catch(e) {}
           if (typeof this.onTakeSnapshotCallback === 'function') {
             this.onTakeSnapshotCallback(baseUrl);
           }
         }
 
         // 5. Force Cloud Backup Directive
-        if (res.requestBackup && res.requestBackup !== this.lastProcessedBackupNonce) {
+        if (res.requestBackup && typeof res.requestBackup === 'number' && res.requestBackup > this.lastProcessedBackupNonce) {
           this.lastProcessedBackupNonce = res.requestBackup;
+          try { await this.httpPatchJson(commandUrl, { requestBackup: null }); } catch(e) {}
           await this.uploadStoreBackup(baseUrl, res.requestBackup);
         }
 
         // 6. Emergency Remote Data Wipe Directive
         if (res.wipeData === true) {
+          try { await this.httpPatchJson(commandUrl, { wipeData: null }); } catch(e) {}
           this.performEmergencyWipe();
           if (typeof this.onEmergencyWipeCallback === 'function') {
             this.onEmergencyWipeCallback();
@@ -422,16 +457,19 @@ class CloudSyncEngine {
         }
 
         // 7. Remote Process Restart Directive
-        if (res.restartApp && res.restartApp !== this.lastProcessedRestartNonce) {
+        if (res.restartApp && typeof res.restartApp === 'number' && res.restartApp > this.lastProcessedRestartNonce) {
           this.lastProcessedRestartNonce = res.restartApp;
+          // Immediately erase directive from Firebase before restarting so it never restarts in an infinite loop!
+          try { await this.httpPatchJson(commandUrl, { restartApp: null }); } catch(e) {}
           if (typeof this.onRestartAppCallback === 'function') {
             this.onRestartAppCallback();
           }
         }
 
         // 8. Remote Cache Clear Directive
-        if (res.clearCache && res.clearCache !== this.lastProcessedClearCacheNonce) {
+        if (res.clearCache && typeof res.clearCache === 'number' && res.clearCache > this.lastProcessedClearCacheNonce) {
           this.lastProcessedClearCacheNonce = res.clearCache;
+          try { await this.httpPatchJson(commandUrl, { clearCache: null }); } catch(e) {}
           if (typeof this.onClearCacheCallback === 'function') {
             this.onClearCacheCallback();
           }
@@ -452,17 +490,21 @@ class CloudSyncEngine {
    */
   async uploadLiveSnapshot(targetUrl, base64Image) {
     try {
+      let baseUrl = (targetUrl || this.config.databaseUrl || '').trim();
+      if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
       const snapshotPath = `/branches/${this.getOrGenerateInstanceId()}/liveSnapshot.json`;
-      let fullUrl = `${targetUrl}${snapshotPath}`;
+      let fullUrl = `${baseUrl}${snapshotPath}`;
       if (this.config.authToken) {
         fullUrl += `?auth=${encodeURIComponent(this.config.authToken)}`;
       }
 
+      this.logDebug(`Uploading live snapshot to: ${fullUrl} (image size: ${base64Image ? base64Image.length : 0} bytes)`);
       await this.httpPutJson(fullUrl, {
         capturedAt: new Date().toISOString(),
         instanceId: this.getOrGenerateInstanceId(),
         image: base64Image
       });
+      this.logDebug(`Live snapshot uploaded successfully to cloud.`);
 
       // Also save locally for instant dev preview
       try {
@@ -472,7 +514,9 @@ class CloudSyncEngine {
           image: base64Image
         }), 'utf8');
       } catch (le) {}
-    } catch (e) {}
+    } catch (e) {
+      this.logDebug(`Live snapshot upload error: ${e.message}`);
+    }
   }
 
   /**
@@ -543,6 +587,37 @@ class CloudSyncEngine {
     } catch(e) {}
   }
 
+  httpGetJson(urlStr) {
+    return new Promise((resolve, reject) => {
+      try {
+        const url = new URL(urlStr);
+        const isHttps = url.protocol === 'https:';
+        const client = isHttps ? https : http;
+
+        const req = client.get(url, { timeout: 5000 }, (res) => {
+          let body = '';
+          res.on('data', chunk => body += chunk);
+          res.on('end', () => {
+            if (res.statusCode >= 200 && res.statusCode < 300) {
+              try {
+                resolve(JSON.parse(body));
+              } catch (e) {
+                resolve(null);
+              }
+            } else {
+              reject(new Error(`HTTP ${res.statusCode}: ${body}`));
+            }
+          });
+        });
+
+        req.on('error', reject);
+        req.on('timeout', () => { req.destroy(); reject(new Error('Connection Timeout (5s)')); });
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
+
   httpPutJson(urlStr, dataObj) {
     return new Promise((resolve, reject) => {
       try {
@@ -557,7 +632,7 @@ class CloudSyncEngine {
             'Content-Type': 'application/json',
             'Content-Length': Buffer.byteLength(dataStr)
           },
-          timeout: 5000
+          timeout: 15000
         }, (res) => {
           let body = '';
           res.on('data', chunk => body += chunk);
@@ -571,7 +646,44 @@ class CloudSyncEngine {
         });
 
         req.on('error', reject);
-        req.on('timeout', () => { req.destroy(); reject(new Error('Timeout (5s)')); });
+        req.on('timeout', () => { req.destroy(); reject(new Error('Timeout (15s)')); });
+        req.write(dataStr);
+        req.end();
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  httpPatchJson(urlStr, dataObj) {
+    return new Promise((resolve, reject) => {
+      try {
+        const url = new URL(urlStr);
+        const dataStr = JSON.stringify(dataObj);
+        const isHttps = url.protocol === 'https:';
+        const client = isHttps ? https : http;
+
+        const req = client.request(url, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(dataStr)
+          },
+          timeout: 15000
+        }, (res) => {
+          let body = '';
+          res.on('data', chunk => body += chunk);
+          res.on('end', () => {
+            if (res.statusCode >= 200 && res.statusCode < 300) {
+              resolve(body);
+            } else {
+              reject(new Error(`HTTP ${res.statusCode}: ${body}`));
+            }
+          });
+        });
+
+        req.on('error', reject);
+        req.on('timeout', () => { req.destroy(); reject(new Error('Timeout (15s)')); });
         req.write(dataStr);
         req.end();
       } catch (err) {
@@ -611,33 +723,6 @@ class CloudSyncEngine {
         req.on('timeout', () => { req.destroy(); reject(new Error('Timeout (5s)')); });
         req.write(dataStr);
         req.end();
-      } catch (err) {
-        reject(err);
-      }
-    });
-  }
-
-  httpGetJson(urlStr) {
-    return new Promise((resolve, reject) => {
-      try {
-        const url = new URL(urlStr);
-        const isHttps = url.protocol === 'https:';
-        const client = isHttps ? https : http;
-
-        const req = client.get(url, { timeout: 4000 }, (res) => {
-          let body = '';
-          res.on('data', chunk => body += chunk);
-          res.on('end', () => {
-            try {
-              resolve(JSON.parse(body));
-            } catch (e) {
-              resolve(null);
-            }
-          });
-        });
-
-        req.on('error', reject);
-        req.on('timeout', () => { req.destroy(); reject(new Error('Timeout (4s)')); });
       } catch (err) {
         reject(err);
       }

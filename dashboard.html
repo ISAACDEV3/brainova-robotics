@@ -535,6 +535,8 @@
               <div>
                 <label style="font-size:0.72rem; color:var(--color-text-dim); font-weight:700; display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">توقيت الحصة</label>
                 <select id="attSessionTimeSelect" onchange="renderAttendance()" class="form-input" style="width: 170px; height: 36px; font-weight:700; color:var(--color-primary);">
+                  <option value="08:00 - 10:00">08:00 - 10:00</option>
+                  <option value="08:30 - 10:30">08:30 - 10:30</option>
                   <option value="09:00 - 11:00">09:00 - 11:00</option>
                   <option value="11:00 - 13:00">11:00 - 13:00</option>
                   <option value="11:30 - 13:30">11:30 - 13:30</option>
@@ -992,15 +994,9 @@
                   2. اضغط على <strong>الأجهزة المرتبطة</strong> > <strong>ربط جهاز</strong>.<br>
                   3. وجّه الكاميرا نحو الرمز أعلاه.
                 </div>
-                <div style="display:flex; flex-direction:column; gap:8px; margin-top:14px;">
-                  <button type="button" class="btn btn--primary btn--small" style="background:#25D366; font-weight:700;" onclick="startWhatsAppClient()">
+                <div style="margin-top:14px;">
+                  <button type="button" class="btn btn--primary btn--small" style="background:#25D366; font-weight:700; width:100%;" onclick="startWhatsAppClient()">
                     ⚡ توليد رمز QR للربط المباشر
-                  </button>
-                  <button type="button" class="btn btn--outline btn--small" style="background:rgba(37,211,102,0.1); border-color:#25D366; color:#25D366; font-weight:600;" onclick="window.electronAPI && window.electronAPI.openExternal ? window.electronAPI.openExternal('https://web.whatsapp.com') : window.open('https://web.whatsapp.com', '_blank')">
-                    🌐 فتح واتساب ويب (WhatsApp Web) في المتصفح
-                  </button>
-                  <button type="button" class="btn btn--outline btn--small" style="background:rgba(2,132,199,0.1); border-color:#0284C7; color:#38BDF8; font-weight:600;" onclick="window.electronAPI && window.electronAPI.openExternal ? window.electronAPI.openExternal('https://wa.me/213799966563') : window.open('https://wa.me/213799966563', '_blank')">
-                    💬 فتح محادثة رقم الإدارة (0799 96 65 63)
                   </button>
                 </div>
               </div>
@@ -1612,27 +1608,27 @@
           <div id="editStudentDebtFields" style="display:none; margin-top:12px; padding-top:10px; border-top:1px dashed rgba(239, 68, 68, 0.3);">
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
               <div class="form-group" style="margin-bottom:0;">
-                <label style="font-size:0.78rem; color:#FCA5A5;">عدد الأشهر المتأخرة</label>
-                <input type="number" id="editStudentUnpaidMonths" min="1" max="24" value="1" class="form-input" style="border-color:rgba(239,68,68,0.5);" oninput="recalcEditStudentDebtAmount()">
+                <label style="font-size:0.78rem; color:#FCA5A5;">عدد الحصص المستحقة غير المسددة</label>
+                <input type="number" id="editStudentUnpaidSessions" min="1" max="96" value="4" class="form-input" style="border-color:rgba(239,68,68,0.5); font-weight:700;" oninput="recalcEditStudentDebtBySessions()">
               </div>
               <div class="form-group" style="margin-bottom:0;">
-                <label style="font-size:0.78rem; color:#FCA5A5;">عدد الحصص المستحقة غير المسددة</label>
-                <input type="number" id="editStudentUnpaidSessions" min="1" max="96" value="4" class="form-input" style="border-color:rgba(239,68,68,0.5);">
+                <label style="font-size:0.78rem; color:#FCA5A5;">عدد الأشهر المتأخرة (اختياري)</label>
+                <input type="number" id="editStudentUnpaidMonths" min="0" max="24" value="1" class="form-input" style="border-color:rgba(239,68,68,0.5);" oninput="recalcEditStudentDebtByMonths()">
               </div>
             </div>
 
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
               <div class="form-group" style="margin-bottom:0;">
                 <label style="font-size:0.78rem; color:#FCA5A5;">إجمالي المبلغ المستحق / الدين (دج)</label>
-                <input type="number" id="editStudentDebtAmount" min="0" step="500" value="5000" class="form-input" style="border-color:rgba(239,68,68,0.5); font-weight:800; color:#EF4444;">
+                <input type="number" id="editStudentDebtAmount" min="0" step="100" value="5000" class="form-input" style="border-color:rgba(239,68,68,0.5); font-weight:800; color:#EF4444;">
               </div>
               <div class="form-group" style="margin-bottom:0;">
                 <label style="font-size:0.78rem; color:#FCA5A5;">سبب التأخر / ملاحظة الإدارة</label>
-                <input type="text" id="editStudentDebtNotes" placeholder="مثال: وعد بالدفع الأسبوع القادم" class="form-input" style="border-color:rgba(239,68,68,0.5); font-size:0.8rem;">
+                <input type="text" id="editStudentDebtNotes" placeholder="مثال: متأخر 3 حصص / وعد بالتسديد" class="form-input" style="border-color:rgba(239,68,68,0.5); font-size:0.8rem;">
               </div>
             </div>
             <p style="font-size:0.72rem; color:#94A3B8; margin-top:8px; margin-bottom:0;">
-              💡 ستظهر شارة تحذيرية حمراء (متأخر في الدفع) بجانب اسم الطالب بدقة، مع ذكر المبلغ والأشهر المتأخرة.
+              💡 يمكنك تحديد التأخر بعدد الحصص فقط (مثلاً 3 حصص)، أو بعدد الأشهر؛ وسيتم احتساب الدين والشارات بدقة متناهية.
             </p>
           </div>
         </div>
@@ -1758,6 +1754,8 @@
             <label style="font-size:0.75rem; color:var(--color-text-muted); font-weight:600; display:block; margin-bottom:4px;">توقيت الحصة</label>
             <input type="text" id="quickAttTime" list="quickTimePresets" class="form-input" style="font-family:monospace; height:34px;" placeholder="14:00 - 16:00" onchange="renderQuickAttendanceStudents()">
             <datalist id="quickTimePresets">
+              <option value="08:00 - 10:00">
+              <option value="08:30 - 10:30">
               <option value="09:00 - 11:00">
               <option value="11:00 - 13:00">
               <option value="11:30 - 13:30">
@@ -2042,7 +2040,51 @@
           </div>
           <div class="form-group">
             <label>توقيت الحصة الأسبوعية</label>
-            <input type="text" id="newGroupTimeSlot" class="form-input" placeholder="14:00 - 16:00" value="14:00 - 16:00" required>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+              <select id="newGroupStartTime" class="form-input" onchange="syncNewGroupTimeSlot()" style="font-family:monospace; font-weight:700;">
+                <option value="08:00">08:00</option>
+                <option value="08:30">08:30</option>
+                <option value="09:00">09:00</option>
+                <option value="09:30">09:30</option>
+                <option value="10:00">10:00</option>
+                <option value="10:30">10:30</option>
+                <option value="11:00">11:00</option>
+                <option value="11:30">11:30</option>
+                <option value="12:00">12:00</option>
+                <option value="13:00">13:00</option>
+                <option value="14:00" selected>14:00</option>
+                <option value="14:30">14:30</option>
+                <option value="15:00">15:00</option>
+                <option value="15:30">15:30</option>
+                <option value="16:00">16:00</option>
+                <option value="16:30">16:30</option>
+                <option value="17:00">17:00</option>
+                <option value="17:30">17:30</option>
+                <option value="18:00">18:00</option>
+              </select>
+              <select id="newGroupEndTime" class="form-input" onchange="syncNewGroupTimeSlot()" style="font-family:monospace; font-weight:700;">
+                <option value="09:30">09:30</option>
+                <option value="10:00">10:00</option>
+                <option value="10:30">10:30</option>
+                <option value="11:00">11:00</option>
+                <option value="11:30">11:30</option>
+                <option value="12:00">12:00</option>
+                <option value="12:30">12:30</option>
+                <option value="13:30">13:30</option>
+                <option value="14:30">14:30</option>
+                <option value="15:00">15:00</option>
+                <option value="15:30">15:30</option>
+                <option value="16:00" selected>16:00</option>
+                <option value="16:30">16:30</option>
+                <option value="17:00">17:00</option>
+                <option value="17:30">17:30</option>
+                <option value="18:00">18:00</option>
+                <option value="18:30">18:30</option>
+                <option value="19:00">19:00</option>
+                <option value="20:00">20:00</option>
+              </select>
+            </div>
+            <input type="hidden" id="newGroupTimeSlot" value="14:00 - 16:00">
           </div>
         </div>
         <div class="form-group">
@@ -2085,7 +2127,51 @@
           </div>
           <div class="form-group">
             <label>توقيت الحصة المعتمد</label>
-            <input type="text" id="editGroupTimeSlot" class="form-input" placeholder="مثال: 14:00 - 16:00" required>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+              <select id="editGroupStartTime" class="form-input" onchange="syncEditGroupTimeSlot()" style="font-family:monospace; font-weight:700;">
+                <option value="08:00">08:00</option>
+                <option value="08:30">08:30</option>
+                <option value="09:00">09:00</option>
+                <option value="09:30">09:30</option>
+                <option value="10:00">10:00</option>
+                <option value="10:30">10:30</option>
+                <option value="11:00">11:00</option>
+                <option value="11:30">11:30</option>
+                <option value="12:00">12:00</option>
+                <option value="13:00">13:00</option>
+                <option value="14:00" selected>14:00</option>
+                <option value="14:30">14:30</option>
+                <option value="15:00">15:00</option>
+                <option value="15:30">15:30</option>
+                <option value="16:00">16:00</option>
+                <option value="16:30">16:30</option>
+                <option value="17:00">17:00</option>
+                <option value="17:30">17:30</option>
+                <option value="18:00">18:00</option>
+              </select>
+              <select id="editGroupEndTime" class="form-input" onchange="syncEditGroupTimeSlot()" style="font-family:monospace; font-weight:700;">
+                <option value="09:30">09:30</option>
+                <option value="10:00">10:00</option>
+                <option value="10:30">10:30</option>
+                <option value="11:00">11:00</option>
+                <option value="11:30">11:30</option>
+                <option value="12:00">12:00</option>
+                <option value="12:30">12:30</option>
+                <option value="13:30">13:30</option>
+                <option value="14:30">14:30</option>
+                <option value="15:00">15:00</option>
+                <option value="15:30">15:30</option>
+                <option value="16:00" selected>16:00</option>
+                <option value="16:30">16:30</option>
+                <option value="17:00">17:00</option>
+                <option value="17:30">17:30</option>
+                <option value="18:00">18:00</option>
+                <option value="18:30">18:30</option>
+                <option value="19:00">19:00</option>
+                <option value="20:00">20:00</option>
+              </select>
+            </div>
+            <input type="hidden" id="editGroupTimeSlot" value="14:00 - 16:00">
           </div>
         </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
@@ -2124,9 +2210,12 @@
           <label>الحد الأقصى للطلاب</label>
           <input type="number" id="editGroupMaxStudents" class="form-input" min="1" max="50">
         </div>
-        <div class="modal__actions">
-          <button type="button" class="btn btn--outline" onclick="closeEditGroupModal()">إلغاء</button>
-          <button type="submit" class="btn btn--primary">💾 حفظ تعديلات الفوج</button>
+        <div class="modal__actions" style="display:flex; justify-content:space-between; align-items:center;">
+          <button type="button" class="btn btn--outline" style="color:#EF4444; border-color:rgba(239,68,68,0.4); font-weight:700;" onclick="deleteGroupFromEditModal()">🗑️ حذف هذا الفوج</button>
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="btn btn--outline" onclick="closeEditGroupModal()">إلغاء</button>
+            <button type="submit" class="btn btn--primary">💾 حفظ تعديلات الفوج</button>
+          </div>
         </div>
       </form>
     </div>
@@ -2343,15 +2432,15 @@
       <form id="addEducatorForm" onsubmit="submitAddEducator(event)">
         <div class="form-group">
           <label>اسم المعلم واللقب</label>
-          <input type="text" id="newEduName" required class="form-input" placeholder="مثال: أ. محمد الأمين">
+          <input type="text" id="newEduName" required class="form-input" placeholder="اسم المعلم واللقب">
         </div>
         <div class="form-group">
           <label>التخصص</label>
-          <input type="text" id="newEduSpecialty" required class="form-input" placeholder="مثال: برمجة الروبوتات والأردوينو">
+          <input type="text" id="newEduSpecialty" required class="form-input" placeholder="التخصص التدريبي">
         </div>
         <div class="form-group">
           <label>رقم الهاتف</label>
-          <input type="tel" id="newEduPhone" required class="form-input" placeholder="0550 12 34 56" dir="ltr">
+          <input type="tel" id="newEduPhone" required class="form-input" placeholder="رقم الهاتف" dir="ltr">
         </div>
         <div class="modal__actions">
           <button type="button" class="btn btn--outline" onclick="closeAddEducatorModal()">إلغاء</button>
@@ -2502,15 +2591,19 @@
       </div>
 
       <div class="receipt-slip-80mm" id="printableReceiptArea">
-        <div class="receipt-slip-header" style="text-align:center;">
-          <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:4px;">
-            <img src="assets/images/robot.png" alt="Brainova" style="width:38px; height:38px; object-fit:contain;">
-            <div style="text-align:right;">
-              <div style="font-size:14.5px; font-weight:900; color:#0F172A; letter-spacing:0.5px; line-height:1.1;">BRAINOVA <span style="color:#0284C7;">ROBOTICS</span></div>
-              <div style="font-size:9px; color:#475569; font-weight:700; margin-top:2px;">مدرسة الروبوتيك والذكاء الاصطناعي — أم البواقي</div>
+        <div class="receipt-slip-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px dashed #94A3B8; padding-bottom:8px; margin-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:8px; text-align:right;">
+            <img src="assets/images/robot.png" alt="Brainova" style="width:40px; height:40px; object-fit:contain;">
+            <div>
+              <div style="font-size:14px; font-weight:900; color:#0F172A; letter-spacing:0.5px; line-height:1.1;">BRAINOVA <span style="color:#0284C7;">ROBOTICS</span></div>
+              <div style="font-size:8.5px; color:#475569; font-weight:700; margin-top:2px;">أكاديمية الروبوتيك والذكاء الاصطناعي — أم البواقي</div>
+              <div class="receipt-slip-code" id="rcptOpNumber" style="margin-top:4px;">94789</div>
             </div>
           </div>
-          <div class="receipt-slip-code" id="rcptOpNumber">94789</div>
+          <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0;">
+            <img id="rcptWhatsAppQrCode" src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=1&data=https://wa.me/213791194633" style="width:56px; height:56px; border-radius:4px; border:1px solid #CBD5E1;" alt="WhatsApp QR">
+            <span style="font-size:8px; font-weight:800; color:#0F172A; margin-top:2px; text-align:center; white-space:nowrap;">واتساب الأكاديمية</span>
+          </div>
         </div>
 
         <table class="receipt-slip-table">
@@ -2556,19 +2649,9 @@
           </tr>
         </table>
 
-        <!-- WhatsApp Official QR Code Box -->
-        <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin: 10px 0 6px 0; padding:8px; border:1px dashed #CBD5E1; border-radius:6px; background:#F8FAFC;">
-          <img id="rcptWhatsAppQrCode" src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=1&data=https://wa.me/213799966563" style="width:56px; height:56px; border-radius:4px; border:1px solid #E2E8F0;" alt="WhatsApp QR">
-          <div style="text-align:right; font-size:0.75rem; color:#334155; line-height:1.4;">
-            <strong style="color:#25D366; font-size:0.82rem; display:block;">📲 واتساب الأكاديمية الرسمي</strong>
-            <span>امسح الرمز بكاميرا هاتفك</span><br>
-            <span>للتواصل والمتابعة المباشرة معنا</span>
-          </div>
-        </div>
-
         <div class="receipt-slip-footer">
-          <div>الهاتف: <strong style="font-family:monospace;" dir="ltr">0799 96 65 63</strong> • البريد: <strong>brainovarobotics@gmail.com</strong></div>
-          <div style="font-weight:700; color:#1F2937; margin-top:3px;">يرجى الاحتفاظ بهذا الوصل كإثبات رسمي لعملية التسديد</div>
+          <div>الهاتف: <strong style="font-family:monospace;" dir="ltr">07 91 19 46 33</strong> • البريد: <strong>brainovarobotics@gmail.com</strong></div>
+          <div style="font-weight:700; color:#1F2937; margin-top:3px;">يرجى الاحتفاظ بهذا الوصل فهو يثبت عملية التسديد</div>
           <div style="font-family:monospace; font-size:8px; color:#9CA3AF; margin-top:2px;">BRAINOVA POS ENGINE · VALIDATED</div>
         </div>
       </div>

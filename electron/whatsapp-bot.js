@@ -145,9 +145,10 @@ class WhatsAppBot {
         console.warn('[WhatsApp Bot] Using fallback version:', vErr);
       }
 
-      const browserProfile = Browsers && typeof Browsers.ubuntu === 'function' ? Browsers.ubuntu('Chrome') : ['Ubuntu', 'Chrome', '20.0.04'];
+      const browserProfile = Browsers && typeof Browsers.windows === 'function' ? Browsers.windows('Chrome') : ['Windows', 'Chrome', '10.0.22631'];
 
       if (this.sock) {
+        try { this.sock.ev.removeAllListeners(); } catch(e) {}
         try { this.sock.end(); } catch(e) {}
         this.sock = null;
       }
