@@ -867,7 +867,6 @@ ipcMain.on('print-receipt', (event, payload) => {
       <tr><th>اسم التلميذ</th><td style="font-size:12px; font-weight:900; color:#0f172a;">${stuName}</td></tr>
       <tr><th>ولي الأمر</th><td>${parentName}</td></tr>
       <tr><th>المستوى والفوج</th><td>${levelGroup}</td></tr>
-      <tr><th>حالة الدفع</th><td>${isUnpaid ? `<span style="background:#fee2e2; color:#dc2626; border:1px solid #f87171; padding:2px 6px; border-radius:4px; font-weight:900; font-size:10.5px;">متأخر عن الدفع (مستحق السداد) ⚠️</span>` : `<span style="background:#ecfdf5; color:#059669; border:1px solid #34d399; padding:2px 6px; border-radius:4px; font-weight:900; font-size:10.5px;">مدفوع بالكامل ✅</span>`}</td></tr>
       ${isUnpaid ? `
         <tr><th style="color:#dc2626;">الحصص / الفترة غير المدفوعة</th><td style="color:#dc2626; font-weight:800;">${unpaidPeriodText}</td></tr>
         <tr><th style="color:#dc2626;">المبلغ المستحق للدفع</th><td style="color:#dc2626; font-size:13px; font-weight:900; font-family:'JetBrains Mono', monospace;">${debtAmountNum.toLocaleString()} دج</td></tr>
@@ -877,7 +876,7 @@ ipcMain.on('print-receipt', (event, payload) => {
       <tr><th>تاريخ العملية</th><td style="font-family:'JetBrains Mono', monospace;">${dateStr}</td></tr>
       <tr><th>طريقة الدفع</th><td style="color:#0284c7; font-weight:800;">${isUnpaid ? 'غير مدفوع (دين معلق)' : payMethod}</td></tr>
       <tr><th>المبلغ المدفوع</th><td>${isUnpaid ? `<span style="color:#dc2626; font-weight:900; text-decoration:line-through;">0 دج (غير مدفوع)</span>` : `<span class="highlight-amount">${amountStr}</span>`}</td></tr>
-      <tr><th>المبلغ كتابة</th><td style="font-size:8.5px; color:#475569; font-weight:700;">${wordsTafqeet}</td></tr>
+      ${!isUnpaid ? `<tr><th>المبلغ كتابة</th><td style="font-size:8.5px; color:#475569; font-weight:700;">${wordsTafqeet}</td></tr>` : ''}
       <tr><th>الرصيد والحصص</th><td>${balanceStr}</td></tr>
     </table>
 

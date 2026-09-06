@@ -1494,7 +1494,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
       let sessionsBadge = '';
       if (hasDebtStatus) {
-        sessionsBadge = `<span class="payment-badge overdue" title="${stu.debtNotes || ''}">⚠️ دين: ${dAmt.toLocaleString()} دج (درس ${attendedUnpaid} حصص غير مسددة)</span>`;
+        sessionsBadge = `
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <span class="payment-badge" style="background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid rgba(56,189,248,0.35); font-weight:800; font-size:0.75rem;">
+              📘 درس ${attendedUnpaid} حصص
+            </span>
+            <span class="payment-badge overdue" style="font-weight:800; font-size:0.72rem; white-space:nowrap;" title="${stu.debtNotes || ''}">
+              ⚠️ متأخر عن دفع ${dSessions} حصص تدريبية
+            </span>
+          </div>
+        `;
       } else if (sessions > 0) {
         sessionsBadge = `<span class="payment-badge paid">✅ ${sessions} حصص (${balance.toLocaleString()} دج)</span>`;
       } else if (balance < 0) {
@@ -1507,7 +1516,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (hasDebtStatus) {
         paymentTimelineBadge = `
           <div style="margin-top:4px; font-size:0.75rem; color:#EF4444; font-weight:700; line-height:1.35;">
-            متأخر عن دفع: ${dText} (${dAmt.toLocaleString()} دج) — درس ${attendedUnpaid} حصص
+            متأخر عن دفع ${dSessions} حصص تدريبية (${dAmt.toLocaleString()} دج)
           </div>
         `;
       } else if (timeline.hasPayment) {
@@ -1550,7 +1559,7 @@ document.addEventListener('DOMContentLoaded', () => {
               </a>
               ${(() => {
                 if (hasDebtStatus) {
-                  return `<span style="display:inline-flex; align-items:center; gap:3px; background:rgba(239,68,68,0.22); border:1px solid rgba(239,68,68,0.6); color:#FCA5A5; padding:2px 8px; border-radius:12px; font-size:0.68rem; font-weight:800; white-space:nowrap;" title="درس الطالب ${attendedUnpaid} حصص غير مسددة (${dAmt.toLocaleString()} دج)">⚠️ متأخر في الدفع (درس ${attendedUnpaid} حصص)</span>`;
+                  return `<span style="display:inline-flex; align-items:center; gap:3px; background:rgba(239,68,68,0.22); border:1px solid rgba(239,68,68,0.6); color:#FCA5A5; padding:2px 8px; border-radius:12px; font-size:0.68rem; font-weight:800; white-space:nowrap;" title="درس الطالب ${attendedUnpaid} حصص — متأخر عن دفع ${dSessions} حصص تدريبية (${dAmt.toLocaleString()} دج)">⚠️ متأخر عن دفع ${dSessions} حصص تدريبية</span>`;
                 }
                 const isOverdue = (timeline.status === 'overdue') || (balance < 0) || (sessions <= 0 && !timeline.hasPayment);
                 if (isOverdue && sessions <= 0) {
@@ -2543,16 +2552,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Payment Status Row
-    const elStatus = document.getElementById('rcptPaymentStatus');
-    if (elStatus) {
-      if (isUnpaid) {
-        elStatus.innerHTML = `<span style="color:#DC2626; font-weight:900; background:#FEE2E2; padding:2px 8px; border-radius:4px;">غير مدفوع (متأخر في الدفع ⚠️)</span>`;
-      } else {
-        elStatus.innerHTML = `<span style="color:#059669; font-weight:900; background:#D1FAE5; padding:2px 8px; border-radius:4px;">مدفوع بالكامل ✅</span>`;
-      }
-    }
-
     // Unpaid period row & Debt amount row
     const elUnpaidPeriodRow = document.getElementById('rcptUnpaidPeriodRow');
     const elUnpaidPeriod = document.getElementById('rcptUnpaidPeriod');
@@ -2649,12 +2648,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    const elWordsRow = document.getElementById('rcptAmountWordsRow');
     const elWords = document.getElementById('rcptAmountWords');
-    if (elWords) {
-      if (isUnpaid) {
-        elWords.textContent = `المبلغ المستحق للدفع: ${convertAmountToArabicWords(debtAmount)}`;
-        elWords.style.color = '#DC2626';
-      } else {
+    if (isUnpaid) {
+      if (elWordsRow) elWordsRow.style.display = 'none';
+    } else {
+      if (elWordsRow) elWordsRow.style.display = 'table-row';
+      if (elWords) {
         elWords.textContent = convertAmountToArabicWords(exactAmount);
         elWords.style.color = '#475569';
       }
@@ -2789,11 +2789,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="color:#F87171; font-weight:800; font-size:0.95rem; display:flex; align-items:center; gap:6px;">
               <span>⚠️</span> حالة المستحقات المالية (دين متأخر معلق)
             </div>
-            <span class="payment-badge overdue" style="font-size:0.75rem; font-weight:800; padding:3px 10px;">⚠️ متأخر في الدفع</span>
+            <span class="payment-badge overdue" style="font-size:0.75rem; font-weight:800; padding:3px 10px;">⚠️ متأخر عن دفع ${stu.unpaidSessions || 4} حصص تدريبية</span>
           </div>
           <div style="margin-top:10px; font-size:0.86rem; color:#FCA5A5; line-height:1.7;">
-            درس الطالب بالفعل: <strong style="color:#FFF; background:#DC2626; padding:2px 8px; border-radius:4px; font-weight:800;">${stu.unpaidAttendedSessions || stu.unpaidSessions || 4} حصص تدريبية (غير مسددة)</strong><br>
-            فترة التأخر المحددة: <strong>${(stu.unpaidMonths && Number(stu.unpaidMonths) > 0) ? `${stu.unpaidMonths} شهر (${stu.unpaidSessions || (stu.unpaidMonths * 4)} حصص)` : `${stu.unpaidSessions || 4} حصص تدريبية`}</strong><br>
+            الحصص التي درسها الطالب: <strong style="color:#FFF; background:#0284C7; padding:2px 8px; border-radius:4px; font-weight:800;">درس ${stu.unpaidAttendedSessions || stu.unpaidSessions || 4} حصص</strong><br>
+            الحالة: <strong style="color:#FFF; background:#DC2626; padding:2px 8px; border-radius:4px; font-weight:800;">⚠️ متأخر عن دفع ${(stu.unpaidMonths && Number(stu.unpaidMonths) > 0) ? `${stu.unpaidMonths} شهر (${stu.unpaidSessions || (stu.unpaidMonths * 4)} حصص)` : `${stu.unpaidSessions || 4} حصص تدريبية`}</strong><br>
             المبلغ الإجمالي المستحق للدفع: <strong style="font-size:1.15rem; color:#EF4444; font-family:monospace; font-weight:900;">${Number(stu.debtAmount || 0).toLocaleString()} دج</strong>
             ${stu.debtNotes ? `<div style="margin-top:8px; color:#E2E8F0; font-size:0.8rem; background:rgba(0,0,0,0.3); padding:6px 10px; border-radius:4px;">📌 ملاحظات الإدارة / الولي: <em>${stu.debtNotes}</em></div>` : ''}
           </div>

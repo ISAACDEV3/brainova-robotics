@@ -294,10 +294,6 @@
         <th>المستوى والفوج</th>
         <td id="rcptLevelGroup">المستوى الثاني • الفوج ب</td>
       </tr>
-      <tr id="rcptStatusRow">
-        <th>حالة الدفع</th>
-        <td id="rcptPaymentStatus"><span style="color:#059669; font-weight:800;">مدفوع بالكامل ✅</span></td>
-      </tr>
       <tr id="rcptUnpaidPeriodRow" style="display:none;">
         <th style="color:#dc2626;">الحصص / الفترة غير المدفوعة</th>
         <td id="rcptUnpaidPeriod" style="color:#dc2626; font-weight:800;">4 حصص غير مدفوعة (درسها الطالب)</td>
@@ -326,7 +322,7 @@
         <th>المبلغ المدفوع</th>
         <td class="highlight-amount" id="rcptAmount">5,000 دج</td>
       </tr>
-      <tr>
+      <tr id="rcptAmountWordsRow">
         <th>المبلغ كتابة</th>
         <td id="rcptAmountWords" style="font-size:8.5px; color:#475569; font-weight:700;">خمسة آلاف دينار جزائري فقط</td>
       </tr>
@@ -519,12 +515,11 @@
         const unpaidSessions = pay.unpaidSessions || (student && student.unpaidSessions) || (student && student.unpaidAttendedSessions) || 4;
         const unpaidPeriodText = pay.unpaidPeriodText || (student && student.debtNotes) || `${unpaidSessions} حصص غير مدفوعة (درسها الطالب)`;
 
+        const elWordsRow = document.getElementById('rcptAmountWordsRow');
+
         if (isUnpaid) {
           if (elTypeBadge) {
             elTypeBadge.innerHTML = `<div style="background:#fee2e2; border:1.5px solid #ef4444; color:#b91c1c; font-weight:900; font-size:11px; padding:4px 8px; border-radius:4px;">⚠️ إشعار دين وتأخر في الدفع — غير مدفوع</div>`;
-          }
-          if (elStatus) {
-            elStatus.innerHTML = `<span style="background:#fee2e2; color:#dc2626; border:1px solid #f87171; padding:2px 8px; border-radius:4px; font-weight:900; font-size:10.5px;">متأخر عن الدفع (مستحق السداد) ⚠️</span>`;
           }
           if (elAmount) {
             elAmount.innerHTML = `<span style="color:#dc2626; font-weight:900; font-size:13px; text-decoration:line-through;">0 دج (غير مدفوع)</span>`;
@@ -539,8 +534,8 @@
             elValidity.style.color = '#dc2626';
           }
 
-          if (elWords) {
-            elWords.textContent = `المبلغ المطلوب: ${debtAmount.toLocaleString()} دينار جزائري (غير مسددة)`;
+          if (elWordsRow) {
+            elWordsRow.style.display = 'none';
           }
 
           document.getElementById('rcptBalance').textContent = `⚠️ دين معلق: ${debtAmount.toLocaleString()} دج`;
@@ -548,14 +543,15 @@
           if (elTypeBadge) {
             elTypeBadge.innerHTML = `<div style="background:#f0fdf4; border:1.5px solid #22c55e; color:#15803d; font-weight:900; font-size:11px; padding:4px 8px; border-radius:4px;">وصل دفع رسمي — تم التسديد بنجاح ✅</div>`;
           }
-          if (elStatus) {
-            elStatus.innerHTML = `<span style="background:#ecfdf5; color:#059669; border:1px solid #34d399; padding:2px 8px; border-radius:4px; font-weight:900; font-size:10.5px;">مدفوع بالكامل ✅</span>`;
-          }
           if (elAmount) {
             elAmount.textContent = amount.toLocaleString() + ' دج';
           }
           if (elDueRow) elDueRow.style.display = 'none';
           if (elUnpaidPeriodRow) elUnpaidPeriodRow.style.display = 'none';
+
+          if (elWordsRow) {
+            elWordsRow.style.display = '';
+          }
 
           // Words tafqeet
           if (amount === 5000) elWords.textContent = 'خمسة آلاف دينار جزائري فقط (5,000 دج)';
