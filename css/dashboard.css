@@ -1243,6 +1243,71 @@ tr.att-row-late,
   display: inline-block;
 }
 
+/* ── Absence Deduction & Holding Toggle Buttons ── */
+.att-deduct-toggle-btn,
+.quick-att-deduct-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  border: 1px solid transparent;
+  user-select: none;
+}
+
+.att-deduct-toggle-btn.is-held,
+.quick-att-deduct-btn.is-held {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.45);
+  color: #38BDF8;
+}
+
+.att-deduct-toggle-btn.is-held:hover,
+.quick-att-deduct-btn.is-held:hover {
+  background: rgba(56, 189, 248, 0.22);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.25);
+}
+
+.att-deduct-toggle-btn.is-deducted,
+.quick-att-deduct-btn.is-deducted {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #F87171;
+}
+
+.att-deduct-toggle-btn.is-deducted:hover,
+.quick-att-deduct-btn.is-deducted:hover {
+  background: rgba(239, 68, 68, 0.25);
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.25);
+}
+
+.badge-status-absent-held {
+  background: rgba(56, 189, 248, 0.15) !important;
+  color: #38BDF8 !important;
+  border: 1px solid rgba(56, 189, 248, 0.4) !important;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: inline-block;
+}
+
+.badge-status-absent-deducted {
+  background: rgba(239, 68, 68, 0.18) !important;
+  color: #EF4444 !important;
+  border: 1px solid rgba(239, 68, 68, 0.4) !important;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: inline-block;
+}
+
 /* ── Retention & Risk Radar Styles ── */
 .risk-card-high {
   background: linear-gradient(145deg, rgba(239, 68, 68, 0.08) 0%, rgba(15, 23, 42, 0.85) 100%) !important;

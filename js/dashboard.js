@@ -34,7 +34,10 @@ document.addEventListener('DOMContentLoaded', () => {
     plus: (s=12, stroke=2.5) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
     dot: (color='#94A3B8') => `<span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:${color}; vertical-align:middle; margin-left:4px;"></span>`,
     shield: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
-    bot: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 9h.01"/><path d="M15 9h.01"/><path d="M10 15h4"/></svg>`
+    bot: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 9h.01"/><path d="M15 9h.01"/><path d="M10 15h4"/></svg>`,
+    lock: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
+    scissors: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>`,
+    minusCircle: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>`
   };
   window.UI_ICONS = UI_ICONS;
 
@@ -1534,6 +1537,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderStudents() {
     const rawStudents = getData('brainova_students');
     const allPayments = getData('brainova_payments');
+    const allAttendance = getData('brainova_attendance') || [];
     const subFilter = document.getElementById('studentSubFilter')?.value || 'all';
     const localQuery = document.getElementById('studentsLocalSearch')?.value.trim() || searchQuery;
     const tbody = document.getElementById('studentsTableBody');
@@ -1564,10 +1568,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const sessions = Number(stu.sessionsRemaining) || 0;
       const timeline = getStudentPaymentTimeline(stu.id, stu, allPayments);
 
+      const stuAtt = allAttendance.filter(a => a.studentId === stu.id || (stu.name && a.studentName === stu.name));
+      const actualAttendedCount = stuAtt.filter(a => a.status === 'present' || a.status === 'late').length;
+      const heldAbsentCount = stuAtt.filter(a => a.status === 'absent' && (a.deductSession === false || a.freezeSession)).length;
+
       const hasDebtStatus = !!(stu.hasDebt || Number(stu.debtAmount) > 0 || Number(stu.unpaidMonths) > 0 || Number(stu.unpaidSessions) > 0 || (stu.unpaidAttendedSessions && stu.unpaidAttendedSessions > 0));
-      const attendedUnpaid = stu.unpaidAttendedSessions || stu.unpaidSessions || 4;
+      const attendedUnpaid = (stu.unpaidAttendedSessions !== undefined && stu.unpaidAttendedSessions !== null && Number(stu.unpaidAttendedSessions) > 0)
+        ? Number(stu.unpaidAttendedSessions)
+        : (Number(stu.unpaidSessions) > 0 ? Number(stu.unpaidSessions) : (actualAttendedCount > 0 ? actualAttendedCount : (hasDebtStatus ? 1 : 0)));
+
       const dMonths = Number(stu.unpaidMonths) || 0;
-      const dSessions = Number(stu.unpaidSessions) || (dMonths > 0 ? dMonths * 4 : attendedUnpaid);
+      const dSessions = Number(stu.unpaidSessions) || (dMonths > 0 ? dMonths * 4 : (attendedUnpaid || (hasDebtStatus ? 1 : 0)));
       const fee = Number(stu.monthlyFee) || 5000;
       const perSession = Math.round(fee / 4);
       const dAmt = Number(stu.debtAmount) || (dMonths > 0 ? dMonths * fee : dSessions * perSession) || Math.abs(balance);
@@ -1578,19 +1589,34 @@ document.addEventListener('DOMContentLoaded', () => {
         sessionsBadge = `
           <div style="display:flex; flex-direction:column; gap:4px; line-height:1.4;">
             <div style="color:#38BDF8; font-weight:800; font-size:0.78rem; display:inline-flex; align-items:center; gap:5px;">
-              ${UI_ICONS.book(13)} درس ${attendedUnpaid} حصص
+              ${UI_ICONS.book(13)} درس ${attendedUnpaid} ${attendedUnpaid === 1 ? 'حصة' : (attendedUnpaid === 2 ? 'حصتين' : 'حصص')}
             </div>
+            ${heldAbsentCount > 0 ? `
+              <div style="color:#06B6D4; font-weight:700; font-size:0.74rem; display:inline-flex; align-items:center; gap:5px;">
+                ${UI_ICONS.lock(12)} ${heldAbsentCount} ${heldAbsentCount === 1 ? 'حصة محبوسة' : (heldAbsentCount === 2 ? 'حصتين محبوستين' : 'حصص محبوسة')}
+              </div>
+            ` : ''}
             <div style="color:#EF4444; font-weight:800; font-size:0.78rem; white-space:nowrap; display:inline-flex; align-items:center; gap:5px;" title="${stu.debtNotes || ''}">
-              ${UI_ICONS.alert(13)} متأخر عن دفع ${dSessions} حصص تدريبية (${dAmt.toLocaleString()} دج)
+              ${UI_ICONS.alert(13)} متأخر عن دفع ${dSessions} ${dSessions === 1 ? 'حصة تدريبية' : (dSessions === 2 ? 'حصتين تدريبيتين' : 'حصص تدريبية')} (${dAmt.toLocaleString()} دج)
             </div>
           </div>
         `;
       } else if (sessions > 0) {
-        sessionsBadge = `<span class="payment-badge paid" style="background:rgba(16,185,129,0.14); color:#10B981; border:1px solid rgba(16,185,129,0.35); padding:3px 8px; border-radius:5px; font-weight:800; font-size:0.74rem; display:inline-flex; align-items:center; gap:5px;">${UI_ICONS.check(13)} ${sessions} حصص (${balance.toLocaleString()} دج)</span>`;
+        sessionsBadge = `
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <span class="payment-badge paid" style="background:rgba(16,185,129,0.14); color:#10B981; border:1px solid rgba(16,185,129,0.35); padding:3px 8px; border-radius:5px; font-weight:800; font-size:0.74rem; display:inline-flex; align-items:center; gap:5px;">${UI_ICONS.check(13)} ${sessions} حصص (${balance.toLocaleString()} دج)</span>
+            ${heldAbsentCount > 0 ? `<span style="color:#06B6D4; font-size:0.72rem; font-weight:700; display:inline-flex; align-items:center; gap:4px;">${UI_ICONS.lock(11)} ${heldAbsentCount} غياب محبوس (محفوظ)</span>` : ''}
+          </div>
+        `;
       } else if (balance < 0) {
         sessionsBadge = `<span class="payment-badge overdue" style="background:rgba(239,68,68,0.16); color:#EF4444; border:1px solid rgba(239,68,68,0.45); padding:3px 8px; border-radius:5px; font-weight:800; font-size:0.74rem; display:inline-flex; align-items:center; gap:5px;">${UI_ICONS.alert(13)} دين: ${Math.abs(balance).toLocaleString()} دج</span>`;
       } else {
-        sessionsBadge = `<span class="payment-badge partial" style="background:rgba(245,158,11,0.14); color:#F59E0B; border:1px solid rgba(245,158,11,0.35); padding:3px 8px; border-radius:5px; font-weight:800; font-size:0.74rem; display:inline-flex; align-items:center; gap:5px;">${UI_ICONS.hourglass(13)} نفدت الحصص</span>`;
+        sessionsBadge = `
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <span class="payment-badge partial" style="background:rgba(245,158,11,0.14); color:#F59E0B; border:1px solid rgba(245,158,11,0.35); padding:3px 8px; border-radius:5px; font-weight:800; font-size:0.74rem; display:inline-flex; align-items:center; gap:5px;">${UI_ICONS.hourglass(13)} نفدت الحصص</span>
+            ${heldAbsentCount > 0 ? `<span style="color:#06B6D4; font-size:0.72rem; font-weight:700; display:inline-flex; align-items:center; gap:4px;">${UI_ICONS.lock(11)} ${heldAbsentCount} غياب محبوس (محفوظ)</span>` : ''}
+          </div>
+        `;
       }
 
       let paymentTimelineBadge = '';
@@ -2156,10 +2182,20 @@ document.addEventListener('DOMContentLoaded', () => {
     activeAttendanceDraft = {};
     groupStudents.forEach(stu => {
       const existing = existingRecords.find(r => r.studentId === stu.id);
+      let isDeduct = true;
+      if (existing) {
+        isDeduct = existing.deductSession !== undefined ? !!existing.deductSession : (existing.status === 'present' || existing.status === 'late');
+      } else {
+        isDeduct = true;
+      }
       activeAttendanceDraft[stu.id] = {
         status: existing ? existing.status : 'present',
+        deductSession: isDeduct,
         note: existing ? existing.note || '' : ''
       };
+      if (activeAttendanceDraft[stu.id].status === 'absent' && (!existing || existing.deductSession === undefined)) {
+        activeAttendanceDraft[stu.id].deductSession = false;
+      }
     });
 
     updateAttendanceStats();
@@ -2170,25 +2206,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     tbody.innerHTML = groupStudents.map(stu => {
-      const draft = activeAttendanceDraft[stu.id] || { status: 'present', note: '' };
+      const draft = activeAttendanceDraft[stu.id] || { status: 'present', deductSession: true, note: '' };
       const sessions = Number(stu.sessionsRemaining) || 0;
       const status = draft.status;
       const isPresent = status === 'present';
       const isLate = status === 'late';
       const isAbsent = status === 'absent';
+      const isDeducted = !!draft.deductSession;
 
       let rowClass = 'att-row-present';
       let avatarBorder = 'border:1px solid rgba(16,185,129,0.4); background:rgba(16,185,129,0.12); color:#34D399;';
-      let statusBadge = '<span class="badge-status-present">حاضر</span>';
+      let statusBadge = `<span class="badge-status-present">${UI_ICONS.check(11)} حاضر</span>`;
 
       if (isAbsent) {
         rowClass = 'att-row-absent';
         avatarBorder = 'border:1px solid rgba(239,68,68,0.4); background:rgba(239,68,68,0.15); color:#FCA5A5;';
-        statusBadge = '<span class="badge-status-absent">غائب</span>';
+        statusBadge = isDeducted 
+          ? `<span class="badge-status-absent-deducted">${UI_ICONS.scissors(11)} غائب (حصة مخصومة)</span>` 
+          : `<span class="badge-status-absent-held">${UI_ICONS.lock(11)} غائب (حصة محبوسة)</span>`;
       } else if (isLate) {
         rowClass = 'att-row-late';
         avatarBorder = 'border:1px solid rgba(245,158,11,0.4); background:rgba(245,158,11,0.15); color:#FCD34D;';
-        statusBadge = '<span class="badge-status-late">متأخر</span>';
+        statusBadge = `<span class="badge-status-late">${UI_ICONS.clock(11)} متأخر</span>`;
       }
 
       return `
@@ -2210,12 +2249,22 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </td>
 
-          <!-- Status Segmented Control -->
+          <!-- Status Segmented Control & Absence Toggle -->
           <td style="text-align: center;">
             <div class="att-segmented-control" id="att-toggles-${stu.id}">
               <button type="button" class="att-seg-btn ${isPresent ? 'is-active-present' : ''}" onclick="setAttendanceStatus('${stu.id}', 'present')">حاضر</button>
               <button type="button" class="att-seg-btn ${isLate ? 'is-active-late' : ''}" onclick="setAttendanceStatus('${stu.id}', 'late')">متأخر</button>
               <button type="button" class="att-seg-btn ${isAbsent ? 'is-active-absent' : ''}" onclick="setAttendanceStatus('${stu.id}', 'absent')">غائب</button>
+            </div>
+            <div id="att-absence-ctrl-${stu.id}" style="${isAbsent ? 'display:flex;' : 'display:none;'} justify-content:center; margin-top:5px;">
+              <button type="button" 
+                class="att-deduct-toggle-btn ${isDeducted ? 'is-deducted' : 'is-held'}" 
+                onclick="toggleAttendanceDeduction('${stu.id}')"
+                title="انقر للتبديل بين حبس الحصة وخصمها من الرصيد">
+                ${isDeducted 
+                  ? `${UI_ICONS.scissors(11)} <span>خصم الحصة من الرصيد</span>` 
+                  : `${UI_ICONS.lock(11)} <span>حبس الحصة (لا تُخصم)</span>`}
+              </button>
             </div>
           </td>
 
@@ -2243,8 +2292,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   window.setAttendanceStatus = function(studentId, status) {
-    if (!activeAttendanceDraft[studentId]) activeAttendanceDraft[studentId] = { status: 'present', note: '' };
+    if (!activeAttendanceDraft[studentId]) activeAttendanceDraft[studentId] = { status: 'present', deductSession: true, note: '' };
     activeAttendanceDraft[studentId].status = status;
+    if (status === 'absent') {
+      if (activeAttendanceDraft[studentId].deductSession === undefined) {
+        activeAttendanceDraft[studentId].deductSession = false;
+      }
+    } else {
+      activeAttendanceDraft[studentId].deductSession = true;
+    }
 
     const row = document.getElementById(`att-row-${studentId}`);
     if (row) {
@@ -2254,11 +2310,18 @@ document.addEventListener('DOMContentLoaded', () => {
       else row.classList.add('att-row-present');
     }
 
+    const isDeducted = !!activeAttendanceDraft[studentId].deductSession;
     const badge = document.getElementById(`att-badge-${studentId}`);
     if (badge) {
-      if (status === 'absent') badge.innerHTML = '<span class="badge-status-absent">غائب</span>';
-      else if (status === 'late') badge.innerHTML = '<span class="badge-status-late">متأخر</span>';
-      else badge.innerHTML = '<span class="badge-status-present">حاضر</span>';
+      if (status === 'absent') {
+        badge.innerHTML = isDeducted 
+          ? `<span class="badge-status-absent-deducted">${UI_ICONS.scissors(11)} غائب (حصة مخصومة)</span>` 
+          : `<span class="badge-status-absent-held">${UI_ICONS.lock(11)} غائب (حصة محبوسة)</span>`;
+      } else if (status === 'late') {
+        badge.innerHTML = `<span class="badge-status-late">${UI_ICONS.clock(11)} متأخر</span>`;
+      } else {
+        badge.innerHTML = `<span class="badge-status-present">${UI_ICONS.check(11)} حاضر</span>`;
+      }
     }
 
     const avatar = document.getElementById(`att-avatar-${studentId}`);
@@ -2279,7 +2342,55 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
+    const ctrl = document.getElementById(`att-absence-ctrl-${studentId}`);
+    if (ctrl) {
+      ctrl.style.display = status === 'absent' ? 'flex' : 'none';
+      if (status === 'absent') {
+        ctrl.innerHTML = `
+          <button type="button" 
+            class="att-deduct-toggle-btn ${isDeducted ? 'is-deducted' : 'is-held'}" 
+            onclick="toggleAttendanceDeduction('${studentId}')"
+            title="انقر للتبديل بين حبس الحصة وخصمها من الرصيد">
+            ${isDeducted 
+              ? `${UI_ICONS.scissors(11)} <span>خصم الحصة من الرصيد</span>` 
+              : `${UI_ICONS.lock(11)} <span>حبس الحصة (لا تُخصم)</span>`}
+          </button>
+        `;
+      }
+    }
+
     updateAttendanceStats();
+  };
+
+  window.toggleAttendanceDeduction = function(studentId) {
+    if (!activeAttendanceDraft[studentId]) {
+      activeAttendanceDraft[studentId] = { status: 'absent', deductSession: false, note: '' };
+    }
+    activeAttendanceDraft[studentId].deductSession = !activeAttendanceDraft[studentId].deductSession;
+    const isDeducted = !!activeAttendanceDraft[studentId].deductSession;
+
+    const badge = document.getElementById(`att-badge-${studentId}`);
+    if (badge) {
+      badge.innerHTML = isDeducted 
+        ? `<span class="badge-status-absent-deducted">${UI_ICONS.scissors(11)} غائب (حصة مخصومة)</span>` 
+        : `<span class="badge-status-absent-held">${UI_ICONS.lock(11)} غائب (حصة محبوسة)</span>`;
+    }
+
+    const ctrl = document.getElementById(`att-absence-ctrl-${studentId}`);
+    if (ctrl) {
+      ctrl.innerHTML = `
+        <button type="button" 
+          class="att-deduct-toggle-btn ${isDeducted ? 'is-deducted' : 'is-held'}" 
+          onclick="toggleAttendanceDeduction('${studentId}')"
+          title="انقر للتبديل بين حبس الحصة وخصمها من الرصيد">
+          ${isDeducted 
+            ? `${UI_ICONS.scissors(11)} <span>خصم الحصة من الرصيد</span>` 
+            : `${UI_ICONS.lock(11)} <span>حبس الحصة (لا تُخصم)</span>`}
+        </button>
+      `;
+    }
+
+    showToast(isDeducted ? 'تم ضبط الغياب ليتم خصم الحصة من الرصيد' : 'تم حبس الحصة (لن يتم خصمها من رصيد التلميذ)', 'info');
   };
 
   window.setAttendanceNote = function(studentId, note) {
@@ -2341,7 +2452,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dateInput.value = cycle.lastSessionDate;
         window.__preserveAttDate = true;
         renderAttendance();
-        showToast(`⏮️ تم الانتقال إلى الحصة السابقة المسجلة (${cycle.lastSessionDate})`, 'info');
+        showToast(`تم الانتقال إلى الحصة السابقة المسجلة (${cycle.lastSessionDate})`, 'info');
       }
     } else {
       showToast('لا توجد حصص سابقة مسجلة لهذا الفوج', 'info');
@@ -2377,6 +2488,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     for (const [studentId, data] of Object.entries(activeAttendanceDraft)) {
       const stu = students.find(s => s.id === studentId);
+      const isDeducted = (data.status === 'present' || data.status === 'late') ? true : !!data.deductSession;
+
       allAttendance.push({
         id: 'ATT-' + Date.now() + '-' + studentId + '-' + Math.floor(Math.random() * 1000),
         date: selectedDate,
@@ -2386,33 +2499,47 @@ document.addEventListener('DOMContentLoaded', () => {
         studentId,
         studentName: stu ? stu.name : 'Unknown',
         status: data.status,
+        deductSession: isDeducted,
+        freezeSession: data.status === 'absent' && !isDeducted,
         note: data.note || ''
       });
       savedCount++;
 
-      // Safe deduction logic: only deduct if not already deducted in a previous save of this session
+      // Safe deduction calculation:
       const prevRecord = existingAttForSession.find(a => a.studentId === studentId);
-      const wasDeducted = prevRecord && (prevRecord.status === 'present' || prevRecord.status === 'late');
-      const isNowPresentOrLate = data.status === 'present' || data.status === 'late';
+      const prevDeducted = prevRecord && (
+        prevRecord.status === 'present' || 
+        prevRecord.status === 'late' || 
+        (prevRecord.status === 'absent' && prevRecord.deductSession === true)
+      );
+      const nowDeducted = (
+        data.status === 'present' || 
+        data.status === 'late' || 
+        (data.status === 'absent' && isDeducted)
+      );
 
       if (stu) {
-        if (isNowPresentOrLate && !wasDeducted) {
+        if (nowDeducted && !prevDeducted) {
           if (stu.sessionsRemaining > 0) {
             stu.sessionsRemaining = Math.max(0, stu.sessionsRemaining - 1);
           } else {
-            stu.unpaidAttendedSessions = (stu.unpaidAttendedSessions || 0) + 1;
+            stu.unpaidAttendedSessions = (stu.unpaidAttendedSessions || 0) + (data.status === 'present' || data.status === 'late' ? 1 : 0);
             stu.hasDebt = true;
-            stu.unpaidSessions = Math.max(stu.unpaidSessions || 0, stu.unpaidAttendedSessions);
+            stu.unpaidSessions = (stu.unpaidSessions || 0) + 1;
             const fee = Number(stu.monthlyFee) || 5000;
             const perSession = Math.round(fee / 4);
             stu.debtAmount = Math.max(Number(stu.debtAmount) || 0, stu.unpaidSessions * perSession);
             stu.balance = -Math.abs(stu.debtAmount);
           }
-          stu.lastAttendance = `${selectedDate} (${selectedTime})`;
-        } else if (!isNowPresentOrLate && wasDeducted) {
-          if (stu.unpaidAttendedSessions && stu.unpaidAttendedSessions > 0) {
-            stu.unpaidAttendedSessions = Math.max(0, stu.unpaidAttendedSessions - 1);
-            if (stu.unpaidSessions) stu.unpaidSessions = Math.max(0, stu.unpaidSessions - 1);
+          if (data.status === 'present' || data.status === 'late') {
+            stu.lastAttendance = `${selectedDate} (${selectedTime})`;
+          }
+        } else if (!nowDeducted && prevDeducted) {
+          if (stu.unpaidSessions && stu.unpaidSessions > 0) {
+            stu.unpaidSessions = Math.max(0, stu.unpaidSessions - 1);
+            if (stu.unpaidAttendedSessions && stu.unpaidAttendedSessions > 0) {
+              stu.unpaidAttendedSessions = Math.max(0, stu.unpaidAttendedSessions - 1);
+            }
             const fee = Number(stu.monthlyFee) || 5000;
             const perSession = Math.round(fee / 4);
             stu.debtAmount = Math.max(0, (stu.unpaidSessions || 0) * perSession);
@@ -2434,7 +2561,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     saveData('brainova_attendance', allAttendance);
     saveData('brainova_students', students);
-    const typeMsg = selectedType === 'makeup' ? ' (حصة تعويضية)' : (selectedType === 'extra' ? ' (حصة استثنائية ⭐)' : '');
+    const typeMsg = selectedType === 'makeup' ? ' (حصة تعويضية)' : (selectedType === 'extra' ? ' (حصة استثنائية)' : '');
     showToast(`تم حفظ وتثبيت سجل حضور وغياب (${savedCount}) تلميذ لفوج (${selectedGroup}) بتاريخ (${selectedDate})${typeMsg} بنجاح!`, 'success');
   };
 
@@ -2638,7 +2765,16 @@ document.addEventListener('DOMContentLoaded', () => {
         dDescInput.value = `اشتراك ${months} شهر (${sessions} حصص تدريبية غير مدفوعة)`;
       }
     } else {
-      const sessions = parseInt(sInput?.value, 10) || 4;
+      let defaultSessions = 4;
+      if (stu) {
+        const allAtt = getData('brainova_attendance') || [];
+        const stuAtt = allAtt.filter(a => a.studentId === studentId || (stu.name && a.studentName === stu.name));
+        const actualAtt = stuAtt.filter(a => a.status === 'present' || a.status === 'late').length;
+        if (stu.unpaidAttendedSessions && Number(stu.unpaidAttendedSessions) > 0) defaultSessions = Number(stu.unpaidAttendedSessions);
+        else if (stu.unpaidSessions && Number(stu.unpaidSessions) > 0) defaultSessions = Number(stu.unpaidSessions);
+        else if (actualAtt > 0) defaultSessions = actualAtt;
+      }
+      const sessions = parseInt(sInput?.value, 10) || defaultSessions;
       const months = Math.max(1, Math.floor(sessions / 4));
       if (mInput && source === 'sessions') mInput.value = months;
       if (dAmtInput) dAmtInput.value = sessions * perSession;
@@ -2715,9 +2851,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (amountInput) amountInput.value = feePerMonth * months;
 
     // Check debt status
+    const allAtt = getData('brainova_attendance') || [];
+    const stuAtt = allAtt.filter(a => a.studentId === studentId || (stu.name && a.studentName === stu.name));
+    const actualAttended = stuAtt.filter(a => a.status === 'present' || a.status === 'late').length;
+
     const hasDebt = !!(stu.hasDebt || Number(stu.debtAmount) > 0 || Number(stu.unpaidSessions) > 0 || Number(stu.unpaidMonths) > 0 || (stu.unpaidAttendedSessions && stu.unpaidAttendedSessions > 0));
     const banner = document.getElementById('payDebtNoticeBanner');
-    const attendedUnpaid = stu.unpaidAttendedSessions || stu.unpaidSessions || 4;
+    const attendedUnpaid = (stu.unpaidAttendedSessions !== undefined && stu.unpaidAttendedSessions !== null && Number(stu.unpaidAttendedSessions) > 0)
+      ? Number(stu.unpaidAttendedSessions)
+      : (Number(stu.unpaidSessions) > 0 ? Number(stu.unpaidSessions) : (actualAttended > 0 ? actualAttended : (hasDebt ? 1 : 0)));
+
     const dAmt = Number(stu.debtAmount) || (attendedUnpaid * perSession);
     const dMonths = Number(stu.unpaidMonths) || Math.floor(attendedUnpaid / 4);
 
@@ -2745,9 +2888,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (debtSessionsInput) debtSessionsInput.value = attendedUnpaid;
     if (debtMonthsInput) debtMonthsInput.value = Math.max(1, dMonths || 1);
     if (debtAmountInput) debtAmountInput.value = dAmt;
-    if (debtDescInput) {
-      debtDescInput.value = stu.debtNotes || `${attendedUnpaid} حصص روبوتيك درسها الطالب ولم تسدد`;
-    }
+    if (debtDescInput) debtDescInput.value = stu.debtNotes || (dMonths > 0 ? `اشتراك ${dMonths} شهر (${attendedUnpaid} حصص غير مسددة)` : `${attendedUnpaid} حصص تدريبية غير مسددة`);
   };
 
   window.submitRecordPayment = function(e) {
@@ -2781,7 +2922,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (mode === 'debt') {
       // CASE 1: UNPAID / DEBT NOTICE RECEIPT
-      const debtSessions = parseInt(document.getElementById('payDebtSessionsInput')?.value, 10) || 4;
+      const debtSessions = parseInt(document.getElementById('payDebtSessionsInput')?.value, 10) || (stu.unpaidAttendedSessions || stu.unpaidSessions || 1);
       const debtMonths = parseInt(document.getElementById('payDebtMonthsInput')?.value, 10) || 1;
       const debtAmount = parseInt(document.getElementById('payDebtAmount')?.value, 10) || (debtSessions * Math.round((Number(stu.monthlyFee) || 5000) / 4));
       const periodDesc = document.getElementById('payDebtPeriodDesc')?.value.trim() || `${debtSessions} حصص درسها الطالب ولم تسدد`;
@@ -3172,7 +3313,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const totalSessions = chronologicalAttendance.length;
     const presentCount = chronologicalAttendance.filter(a => a.status === 'present').length;
     const lateCount = chronologicalAttendance.filter(a => a.status === 'late').length;
-    const absentCount = chronologicalAttendance.filter(a => a.status === 'absent').length;
+    const absentRecords = chronologicalAttendance.filter(a => a.status === 'absent');
+    const absentCount = absentRecords.length;
+    const heldAbsentCount = absentRecords.filter(a => a.deductSession === false || a.freezeSession).length;
+    const deductedAbsentCount = absentRecords.filter(a => a.deductSession === true).length;
     const attendedCount = presentCount + lateCount;
     const attRate = totalSessions > 0 ? Math.round((attendedCount / totalSessions) * 100) : 100;
 
@@ -3183,14 +3327,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const hasDebtStatus = !!(stu.hasDebt || Number(stu.debtAmount) > 0 || Number(stu.unpaidMonths) > 0 || Number(stu.unpaidSessions) > 0 || (stu.unpaidAttendedSessions && stu.unpaidAttendedSessions > 0));
     const dMonths = Number(stu.unpaidMonths) || 0;
-    const unpaidDebtSessions = Number(stu.unpaidSessions) || (dMonths > 0 ? dMonths * 4 : (stu.unpaidAttendedSessions || (hasDebtStatus ? 4 : 0)));
+    const unpaidDebtSessions = Number(stu.unpaidSessions) || (dMonths > 0 ? dMonths * 4 : (stu.unpaidAttendedSessions || (hasDebtStatus ? (attendedCount || 0) : 0)));
     const debtAmount = Number(stu.debtAmount) || (unpaidDebtSessions * perSession) || Math.abs(balance);
 
     const timeline = getStudentPaymentTimeline(studentId, stu, allPayments);
 
     // Correlate sessions with payments and debts:
-    // If student attended M sessions, and currently has U unpaid debt sessions:
-    // Then the first (M - U) attended sessions were covered by subscriptions, and the last U are unpaid debt!
     const coveredAttendedCount = Math.max(0, attendedCount - (hasDebtStatus ? unpaidDebtSessions : 0));
 
     let runningAttendedIndex = 0;
@@ -3200,15 +3342,20 @@ document.addEventListener('DOMContentLoaded', () => {
       let isDebtSession = false;
 
       if (att.status === 'absent') {
-        coverageBadge = `<span class="coverage-neutral">${UI_ICONS.dot('#94A3B8')} لم تُخصم (غياب)</span>`;
+        const isHeld = (att.deductSession === false || att.freezeSession);
+        if (isHeld) {
+          coverageBadge = `<span class="coverage-neutral" style="background:rgba(56,189,248,0.12); color:#38BDF8; border:1px solid rgba(56,189,248,0.3); font-weight:700; padding:2px 7px; border-radius:4px; display:inline-flex; align-items:center; gap:4px;">${UI_ICONS.lock(10)} حصة محبوسة (غياب معفى)</span>`;
+        } else {
+          coverageBadge = `<span class="coverage-debt" style="background:rgba(239,68,68,0.15); color:#EF4444; border:1px solid rgba(239,68,68,0.3); font-weight:700; padding:2px 7px; border-radius:4px; display:inline-flex; align-items:center; gap:4px;">${UI_ICONS.scissors(10)} غياب مخصوم من الرصيد</span>`;
+        }
       } else {
         runningAttendedIndex++;
         if (runningAttendedIndex <= coveredAttendedCount) {
-          coverageBadge = `<span class="coverage-paid">${UI_ICONS.check(11)} مغطاة بالاشتراك</span>`;
+          coverageBadge = `<span class="coverage-paid" style="display:inline-flex; align-items:center; gap:4px;">${UI_ICONS.check(11)} مغطاة بالاشتراك</span>`;
         } else {
           isDebtSession = true;
           const debtSeq = runningAttendedIndex - coveredAttendedCount;
-          coverageBadge = `<span class="coverage-debt">${UI_ICONS.alert(11)} غير مسددة (دين: حصة ${debtSeq})</span>`;
+          coverageBadge = `<span class="coverage-debt" style="display:inline-flex; align-items:center; gap:4px;">${UI_ICONS.alert(11)} غير مسددة (دين: حصة ${debtSeq})</span>`;
         }
       }
 
@@ -3281,9 +3428,9 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="dossier-kpi-card">
           <div class="dossier-kpi-lbl">الحصص الفعلية والتغطية</div>
           <div class="dossier-kpi-val" style="color:#38BDF8;">
-            ${attendedCount} <span style="font-size:0.75rem; font-weight:600; color:#94A3B8;">حصص مدروسة</span>
+            ${attendedCount} <span style="font-size:0.75rem; font-weight:600; color:#94A3B8;">حصص مدروسة فعلياً</span>
           </div>
-          <div class="dossier-kpi-sub">${coveredAttendedCount} مغطاة • ${hasDebtStatus ? `${unpaidDebtSessions} غير مسددة (دين)` : 'لا توجد ديون معلقة'}</div>
+          <div class="dossier-kpi-sub">${coveredAttendedCount} مغطاة • ${heldAbsentCount > 0 ? `${heldAbsentCount} محبوسة (معفية) • ` : ''}${hasDebtStatus ? `${unpaidDebtSessions} غير مسددة (دين)` : 'لا توجد ديون معلقة'}</div>
         </div>
 
         <div class="dossier-kpi-card">
@@ -3312,7 +3459,7 @@ document.addEventListener('DOMContentLoaded', () => {
               مستحقات مالية معلقة — تأخر في دفع الاشتراك
             </div>
             <div class="dossier-debt-text">
-              درس الطالب <strong>${stu.unpaidAttendedSessions || unpaidDebtSessions} حصص تدريبية</strong> دون تسديد مسبق. إجمالي المبلغ المستحق للدفع: <strong style="color:#FFF; font-family:var(--font-mono);">${debtAmount.toLocaleString()} دج</strong>.
+              درس الطالب <strong>${attendedCount || stu.unpaidAttendedSessions || unpaidDebtSessions} حصص تدريبية</strong> دون تسديد مسبق. إجمالي المبلغ المستحق للدفع: <strong style="color:#FFF; font-family:var(--font-mono);">${debtAmount.toLocaleString()} دج</strong>.
               ${stu.debtNotes ? `<div style="margin-top:4px; color:#E2E8F0; font-size:0.75rem;">${UI_ICONS.edit(11)} ملاحظات الولي / الإدارة: <em>${stu.debtNotes}</em></div>` : ''}
             </div>
           </div>
@@ -3406,11 +3553,14 @@ document.addEventListener('DOMContentLoaded', () => {
                   const dayName = getArabicDayName(att.date);
                   let statusBadge = '';
                   if (att.status === 'present') {
-                    statusBadge = '<span class="dossier-badge-present">حاضر</span>';
+                    statusBadge = `<span class="dossier-badge-present" style="display:inline-flex; align-items:center; gap:4px;">${UI_ICONS.check(10)} حاضر</span>`;
                   } else if (att.status === 'late') {
-                    statusBadge = '<span class="dossier-badge-late">متأخر</span>';
+                    statusBadge = `<span class="dossier-badge-late" style="display:inline-flex; align-items:center; gap:4px;">${UI_ICONS.clock(10)} متأخر</span>`;
                   } else {
-                    statusBadge = '<span class="dossier-badge-absent">غائب</span>';
+                    const isHeld = (att.deductSession === false || att.freezeSession);
+                    statusBadge = isHeld
+                      ? `<button type="button" class="quick-att-deduct-btn is-held" onclick="toggleAbsentRecordDeduction('${att.id}', '${stu.id}')" title="انقر لتغيير الحالة إلى مخصومة من الرصيد">${UI_ICONS.lock(10)} <span>غائب (حصة محبوسة)</span></button>`
+                      : `<button type="button" class="quick-att-deduct-btn is-deducted" onclick="toggleAbsentRecordDeduction('${att.id}', '${stu.id}')" title="انقر لتغيير الحالة إلى حصة محبوسة">${UI_ICONS.scissors(10)} <span>غائب (مخصومة)</span></button>`;
                   }
 
                   return `
@@ -3643,10 +3793,13 @@ document.addEventListener('DOMContentLoaded', () => {
   window.handleSessionStatusChange = function() {
     const status = document.getElementById('sessionStatusInput').value;
     const deductCb = document.getElementById('sessionDeductCheckbox');
+    const deductLbl = document.getElementById('sessionDeductLabel');
     if (status === 'absent') {
       deductCb.checked = false;
+      if (deductLbl) deductLbl.textContent = 'خصم الحصة من الرصيد (اتركه غير محدد لحبس الحصة عند الغياب)';
     } else {
       deductCb.checked = true;
+      if (deductLbl) deductLbl.textContent = 'خصم حصة واحدة (1) من رصيد الحصص المتبقية للتلميذ';
     }
   };
 
@@ -3684,6 +3837,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let allAttendance = getData('brainova_attendance');
+    const isDeducted = (sessionStatus === 'present' || sessionStatus === 'late') ? true : !!deductSession;
+
     const newRecord = {
       id: 'ATT-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
       date: sessionDate,
@@ -3692,6 +3847,8 @@ document.addEventListener('DOMContentLoaded', () => {
       studentId: stu.id,
       studentName: stu.name,
       status: sessionStatus,
+      deductSession: isDeducted,
+      freezeSession: sessionStatus === 'absent' && !isDeducted,
       paidMarker: paidMarker || null,
       paidMarkerLabel: paidMarker === 'paid_next' ? 'دفع في الحصة التالية' : (paidMarker === 'paid_this' ? 'سدد في هذه الحصة' : null),
       paidAt: paidAtValue,
@@ -3702,18 +3859,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (sessionStatus === 'present' || sessionStatus === 'late') {
       stu.lastAttendance = `${sessionDate} (${sessionTime})`;
-      if (deductSession) {
-        if ((stu.sessionsRemaining || 0) > 0) {
-          stu.sessionsRemaining = Math.max(0, stu.sessionsRemaining - 1);
-        } else {
-          stu.unpaidAttendedSessions = (stu.unpaidAttendedSessions || 0) + 1;
-          stu.hasDebt = true;
-          stu.unpaidSessions = Math.max(stu.unpaidSessions || 0, stu.unpaidAttendedSessions);
-          const fee = Number(stu.monthlyFee) || 5000;
-          const perSession = Math.round(fee / 4);
-          stu.debtAmount = Math.max(Number(stu.debtAmount) || 0, stu.unpaidSessions * perSession);
-          stu.balance = -Math.abs(stu.debtAmount);
-        }
+    }
+
+    if (isDeducted) {
+      if ((stu.sessionsRemaining || 0) > 0) {
+        stu.sessionsRemaining = Math.max(0, stu.sessionsRemaining - 1);
+      } else {
+        stu.unpaidAttendedSessions = (stu.unpaidAttendedSessions || 0) + (sessionStatus === 'present' || sessionStatus === 'late' ? 1 : 0);
+        stu.hasDebt = true;
+        stu.unpaidSessions = (stu.unpaidSessions || 0) + 1;
+        const fee = Number(stu.monthlyFee) || 5000;
+        const perSession = Math.round(fee / 4);
+        stu.debtAmount = Math.max(Number(stu.debtAmount) || 0, stu.unpaidSessions * perSession);
+        stu.balance = -Math.abs(stu.debtAmount);
       }
     }
 
@@ -3730,6 +3888,60 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast(`تم تسجيل الحصة بالتاريخ (${sessionDate})${timeFeedback} بنجاح!`, 'success');
 
     // Refresh profile modal and active views
+    openStudentProfile(studentId);
+    renderActiveView();
+  };
+
+  window.toggleAbsentRecordDeduction = function(attendanceId, studentId) {
+    let allAttendance = getData('brainova_attendance');
+    const record = allAttendance.find(a => a.id === attendanceId);
+    if (!record || record.status !== 'absent') return;
+
+    const students = getData('brainova_students');
+    const stu = students.find(s => s.id === studentId);
+    const wasDeducted = record.deductSession === true;
+
+    // Toggle state
+    record.deductSession = !wasDeducted;
+    record.freezeSession = wasDeducted;
+
+    if (stu) {
+      if (wasDeducted) {
+        // Was deducted, now held -> restore session
+        if (stu.unpaidSessions && stu.unpaidSessions > 0) {
+          stu.unpaidSessions = Math.max(0, stu.unpaidSessions - 1);
+          if (stu.unpaidAttendedSessions && stu.unpaidAttendedSessions > 0) {
+            stu.unpaidAttendedSessions = Math.max(0, stu.unpaidAttendedSessions - 1);
+          }
+          const fee = Number(stu.monthlyFee) || 5000;
+          const perSession = Math.round(fee / 4);
+          stu.debtAmount = Math.max(0, (stu.unpaidSessions || 0) * perSession);
+          stu.balance = -Math.abs(stu.debtAmount);
+          if (stu.unpaidSessions === 0 && stu.debtAmount === 0) {
+            stu.hasDebt = false;
+          }
+        } else {
+          stu.sessionsRemaining = (stu.sessionsRemaining || 0) + 1;
+        }
+        showToast('تم تحويل الحصة إلى (حصة محبوسة) واسترجاعها إلى رصيد التلميذ بنجاح!', 'success');
+      } else {
+        // Was held, now deducted -> deduct session
+        if (stu.sessionsRemaining > 0) {
+          stu.sessionsRemaining = Math.max(0, stu.sessionsRemaining - 1);
+        } else {
+          stu.hasDebt = true;
+          stu.unpaidSessions = (stu.unpaidSessions || 0) + 1;
+          const fee = Number(stu.monthlyFee) || 5000;
+          const perSession = Math.round(fee / 4);
+          stu.debtAmount = Math.max(Number(stu.debtAmount) || 0, stu.unpaidSessions * perSession);
+          stu.balance = -Math.abs(stu.debtAmount);
+        }
+        showToast('تم تحويل الحصة إلى (حصة مخصومة) وخصمها من رصيد التلميذ بنجاح!', 'info');
+      }
+      saveData('brainova_students', students);
+    }
+
+    saveData('brainova_attendance', allAttendance);
     openStudentProfile(studentId);
     renderActiveView();
   };
@@ -3776,10 +3988,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const students = getData('brainova_students');
     const stu = students.find(s => s.id === studentId);
-    if (stu && (record.status === 'present' || record.status === 'late')) {
-      if (stu.unpaidAttendedSessions && stu.unpaidAttendedSessions > 0) {
-        stu.unpaidAttendedSessions = Math.max(0, stu.unpaidAttendedSessions - 1);
-        if (stu.unpaidSessions) stu.unpaidSessions = Math.max(0, stu.unpaidSessions - 1);
+    const wasRecordDeducted = record.status === 'present' || record.status === 'late' || (record.status === 'absent' && record.deductSession === true);
+
+    if (stu && wasRecordDeducted) {
+      if (stu.unpaidSessions && stu.unpaidSessions > 0) {
+        stu.unpaidSessions = Math.max(0, stu.unpaidSessions - 1);
+        if (stu.unpaidAttendedSessions && stu.unpaidAttendedSessions > 0) {
+          stu.unpaidAttendedSessions = Math.max(0, stu.unpaidAttendedSessions - 1);
+        }
         const fee = Number(stu.monthlyFee) || 5000;
         const perSession = Math.round(fee / 4);
         stu.debtAmount = Math.max(0, (stu.unpaidSessions || 0) * perSession);
@@ -3811,13 +4027,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const totalSessions = attendance.length;
     const presentCount = attendance.filter(a => a.status === 'present').length;
     const lateCount = attendance.filter(a => a.status === 'late').length;
-    const absentCount = attendance.filter(a => a.status === 'absent').length;
+    const absentRecords = attendance.filter(a => a.status === 'absent');
+    const absentCount = absentRecords.length;
+    const heldAbsentCount = absentRecords.filter(a => a.deductSession === false || a.freezeSession).length;
+    const deductedAbsentCount = absentRecords.filter(a => a.deductSession === true && !a.freezeSession).length;
     const attendedCount = presentCount + lateCount;
     const attRate = totalSessions > 0 ? Math.round((attendedCount / totalSessions) * 100) : 100;
 
     const hasDebtStatus = !!(stu.hasDebt || Number(stu.debtAmount) > 0 || Number(stu.unpaidMonths) > 0 || Number(stu.unpaidSessions) > 0 || (stu.unpaidAttendedSessions && stu.unpaidAttendedSessions > 0));
     const dMonths = Number(stu.unpaidMonths) || 0;
-    const unpaidDebtSessions = Number(stu.unpaidSessions) || (dMonths > 0 ? dMonths * 4 : (stu.unpaidAttendedSessions || (hasDebtStatus ? 4 : 0)));
+    const unpaidDebtSessions = Number(stu.unpaidSessions) || (dMonths > 0 ? dMonths * 4 : (stu.unpaidAttendedSessions || (hasDebtStatus ? (attendedCount || 1) : 0)));
     const fee = Number(stu.monthlyFee) || 5000;
     const perSession = Math.round(fee / 4);
     const debtAmount = Number(stu.debtAmount) || (unpaidDebtSessions * perSession) || Math.abs(Number(stu.balance) || 0);
@@ -3830,7 +4049,8 @@ document.addEventListener('DOMContentLoaded', () => {
       let statusText = att.status === 'present' ? 'حاضر' : (att.status === 'late' ? 'متأخر' : 'غائب');
       let covText = '';
       if (att.status === 'absent') {
-        covText = 'لم تُخصم (غياب)';
+        const isHeld = (att.deductSession === false || att.freezeSession);
+        covText = isHeld ? 'حصة محبوسة (غياب معفى)' : 'مخصومة من الرصيد (غياب)';
       } else {
         runningAttendedIndex++;
         if (runningAttendedIndex <= coveredAttendedCount) {
@@ -3911,11 +4131,11 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           <div class="kpi-cell">
             <div class="kpi-lbl">الحصص الفعلية</div>
-            <div class="kpi-val">${attendedCount} من أصل ${totalSessions}</div>
+            <div class="kpi-val">${attendedCount} مدروسة ${heldAbsentCount > 0 ? `(${heldAbsentCount} محبوسة)` : ''}</div>
           </div>
           <div class="kpi-cell">
             <div class="kpi-lbl">التغطية بالاشتراك</div>
-            <div class="kpi-val">${coveredAttendedCount} مغطاة</div>
+            <div class="kpi-val">${coveredAttendedCount} مغطاة ${heldAbsentCount > 0 ? `+ ${heldAbsentCount} محبوسة` : ''}</div>
           </div>
           <div class="kpi-cell">
             <div class="kpi-lbl">المستحقات والديون</div>
@@ -5470,7 +5690,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (type === 'makeup') {
         noticeEl.innerHTML = `<span style="color:#C084FC; font-weight:700;">وضع الحصة التعويضية (${selectedDate} • ${selectedTime}) — يمكنك إدخال أي وقت وتاريخ للتعويض بحرية تامة دون أي قيود.</span>`;
       } else if (type === 'extra') {
-        noticeEl.innerHTML = `<span style="color:#F59E0B; font-weight:700;">⭐ حصة استثنائية / إضافية (${selectedDate} • ${selectedTime}) — ورشة خاصة أو نشاط تدريبي إضافي.</span>`;
+        noticeEl.innerHTML = `<span style="color:#F59E0B; font-weight:700;">حصة استثنائية / إضافية (${selectedDate} • ${selectedTime}) — ورشة خاصة أو نشاط تدريبي إضافي.</span>`;
       } else {
         renderQuickAttendanceStudents();
       }
@@ -5488,7 +5708,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.__quickAttDraft = {};
         window.__quickAttDraftDate = cycle.lastSessionDate;
         renderQuickAttendanceStudents();
-        showToast(`⏮️ تم الانتقال إلى الحصة السابقة المسجلة (${cycle.lastSessionDate})`, 'info');
+        showToast(`تم الانتقال إلى الحصة السابقة المسجلة (${cycle.lastSessionDate})`, 'info');
       }
     } else {
       showToast('لا توجد حصص سابقة مسجلة لهذا الفوج', 'info');
@@ -5597,17 +5817,26 @@ document.addEventListener('DOMContentLoaded', () => {
     groupStudents.forEach(stu => {
       if (!window.__quickAttDraft[stu.id]) {
         const found = existingAtt.find(a => a.studentId === stu.id);
+        const st = found ? found.status : 'present';
+        let ded = true;
+        if (found) {
+          ded = found.deductSession !== undefined ? !!found.deductSession : (found.status === 'present' || found.status === 'late');
+        } else if (st === 'absent') {
+          ded = false;
+        }
         window.__quickAttDraft[stu.id] = {
-          status: found ? found.status : 'present',
+          status: st,
+          deductSession: ded,
           note: found ? (found.note || '') : ''
         };
       }
     });
 
     listEl.innerHTML = groupStudents.map(stu => {
-      const state = window.__quickAttDraft[stu.id] || { status: 'present', note: '' };
+      const state = window.__quickAttDraft[stu.id] || { status: 'present', deductSession: true, note: '' };
       const status = state.status;
       const sessions = Number(stu.sessionsRemaining) || 0;
+      const isDeducted = !!state.deductSession;
 
       const isPresent = status === 'present';
       const isLate = status === 'late';
@@ -5615,16 +5844,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
       let rowBg = 'background:rgba(16,185,129,0.04); border-right:4px solid #10B981; border-bottom:1px solid var(--color-border);';
       let avatarBorder = 'border:1px solid rgba(16,185,129,0.4); background:rgba(16,185,129,0.12); color:#34D399;';
-      let statusBadge = '<span style="background:rgba(16,185,129,0.15); color:#10B981; border:1px solid rgba(16,185,129,0.3); font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:10px;">حاضر</span>';
+      let statusBadge = `<span style="background:rgba(16,185,129,0.15); color:#10B981; border:1px solid rgba(16,185,129,0.3); font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:10px; display:inline-flex; align-items:center; gap:4px;">${UI_ICONS.check(10)} حاضر</span>`;
 
       if (isAbsent) {
         rowBg = 'background:rgba(239,68,68,0.08); border-right:4px solid #EF4444; border-bottom:1px solid rgba(239,68,68,0.2);';
         avatarBorder = 'border:1px solid rgba(239,68,68,0.4); background:rgba(239,68,68,0.15); color:#FCA5A5;';
-        statusBadge = '<span style="background:rgba(239,68,68,0.18); color:#EF4444; border:1px solid rgba(239,68,68,0.35); font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:10px;">غائب</span>';
+        statusBadge = isDeducted
+          ? `<span style="background:rgba(239,68,68,0.18); color:#EF4444; border:1px solid rgba(239,68,68,0.35); font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:10px; display:inline-flex; align-items:center; gap:4px;">${UI_ICONS.scissors(10)} غائب (مخصومة)</span>`
+          : `<span style="background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid rgba(56,189,248,0.35); font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:10px; display:inline-flex; align-items:center; gap:4px;">${UI_ICONS.lock(10)} غائب (حصة محبوسة)</span>`;
       } else if (isLate) {
         rowBg = 'background:rgba(245,158,11,0.06); border-right:4px solid #F59E0B; border-bottom:1px solid rgba(245,158,11,0.2);';
         avatarBorder = 'border:1px solid rgba(245,158,11,0.4); background:rgba(245,158,11,0.15); color:#FCD34D;';
-        statusBadge = '<span style="background:rgba(245,158,11,0.18); color:#F59E0B; border:1px solid rgba(245,158,11,0.35); font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:10px;">متأخر</span>';
+        statusBadge = `<span style="background:rgba(245,158,11,0.18); color:#F59E0B; border:1px solid rgba(245,158,11,0.35); font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:10px; display:inline-flex; align-items:center; gap:4px;">${UI_ICONS.clock(10)} متأخر</span>`;
       }
 
       return `
@@ -5644,28 +5875,40 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </div>
 
-          <!-- Status Segmented Control with Distinct Colors -->
-          <div style="display:flex; align-items:center; background:rgba(0,0,0,0.35); padding:3px; border-radius:8px; border:1px solid var(--color-border); gap:3px;">
-            <button type="button" 
-              style="padding:5px 12px; font-size:0.75rem; font-weight:700; border-radius:6px; border:none; cursor:pointer; transition:all 0.15s ease;
-              ${isPresent ? 'background:#10B981; color:#fff; box-shadow:0 1px 4px rgba(16,185,129,0.4);' : 'background:transparent; color:var(--color-text-muted);'}"
-              onclick="setQuickStudentStatus('${stu.id}', 'present')">
-              حاضر
-            </button>
+          <!-- Status Segmented Control & Manual Hold/Deduct Toggle -->
+          <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
+            <div style="display:flex; align-items:center; background:rgba(0,0,0,0.35); padding:3px; border-radius:8px; border:1px solid var(--color-border); gap:3px;">
+              <button type="button" 
+                style="padding:5px 12px; font-size:0.75rem; font-weight:700; border-radius:6px; border:none; cursor:pointer; transition:all 0.15s ease;
+                ${isPresent ? 'background:#10B981; color:#fff; box-shadow:0 1px 4px rgba(16,185,129,0.4);' : 'background:transparent; color:var(--color-text-muted);'}"
+                onclick="setQuickStudentStatus('${stu.id}', 'present')">
+                حاضر
+              </button>
 
-            <button type="button" 
-              style="padding:5px 12px; font-size:0.75rem; font-weight:700; border-radius:6px; border:none; cursor:pointer; transition:all 0.15s ease;
-              ${isLate ? 'background:#F59E0B; color:#0F172A; box-shadow:0 1px 4px rgba(245,158,11,0.4);' : 'background:transparent; color:var(--color-text-muted);'}"
-              onclick="setQuickStudentStatus('${stu.id}', 'late')">
-              متأخر
-            </button>
+              <button type="button" 
+                style="padding:5px 12px; font-size:0.75rem; font-weight:700; border-radius:6px; border:none; cursor:pointer; transition:all 0.15s ease;
+                ${isLate ? 'background:#F59E0B; color:#0F172A; box-shadow:0 1px 4px rgba(245,158,11,0.4);' : 'background:transparent; color:var(--color-text-muted);'}"
+                onclick="setQuickStudentStatus('${stu.id}', 'late')">
+                متأخر
+              </button>
 
-            <button type="button" 
-              style="padding:5px 12px; font-size:0.75rem; font-weight:700; border-radius:6px; border:none; cursor:pointer; transition:all 0.15s ease;
-              ${isAbsent ? 'background:#EF4444; color:#fff; box-shadow:0 1px 4px rgba(239,68,68,0.4);' : 'background:transparent; color:var(--color-text-muted);'}"
-              onclick="setQuickStudentStatus('${stu.id}', 'absent')">
-              غائب
-            </button>
+              <button type="button" 
+                style="padding:5px 12px; font-size:0.75rem; font-weight:700; border-radius:6px; border:none; cursor:pointer; transition:all 0.15s ease;
+                ${isAbsent ? 'background:#EF4444; color:#fff; box-shadow:0 1px 4px rgba(239,68,68,0.4);' : 'background:transparent; color:var(--color-text-muted);'}"
+                onclick="setQuickStudentStatus('${stu.id}', 'absent')">
+                غائب
+              </button>
+            </div>
+            ${isAbsent ? `
+              <button type="button" 
+                class="quick-att-deduct-btn ${isDeducted ? 'is-deducted' : 'is-held'}" 
+                onclick="toggleQuickStudentDeduction('${stu.id}')"
+                title="انقر للتبديل بين حبس الحصة وخصمها من الرصيد">
+                ${isDeducted 
+                  ? `${UI_ICONS.scissors(11)} <span>خصم الحصة من الرصيد</span>` 
+                  : `${UI_ICONS.lock(11)} <span>حبس الحصة (لا تُخصم)</span>`}
+              </button>
+            ` : ''}
           </div>
 
           <div style="flex:1; min-width:150px;">
@@ -5682,16 +5925,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function setQuickStudentStatus(studentId, status) {
     if (!window.__quickAttDraft[studentId]) {
-      window.__quickAttDraft[studentId] = { status: 'present', note: '' };
+      window.__quickAttDraft[studentId] = { status: 'present', deductSession: true, note: '' };
     }
     window.__quickAttDraft[studentId].status = status;
+    if (status === 'absent') {
+      if (window.__quickAttDraft[studentId].deductSession === undefined) {
+        window.__quickAttDraft[studentId].deductSession = false;
+      }
+    } else {
+      window.__quickAttDraft[studentId].deductSession = true;
+    }
     renderQuickAttendanceStudents();
   }
   window.setQuickStudentStatus = setQuickStudentStatus;
 
+  function toggleQuickStudentDeduction(studentId) {
+    if (!window.__quickAttDraft[studentId]) {
+      window.__quickAttDraft[studentId] = { status: 'absent', deductSession: false, note: '' };
+    }
+    window.__quickAttDraft[studentId].deductSession = !window.__quickAttDraft[studentId].deductSession;
+    renderQuickAttendanceStudents();
+    const isDed = !!window.__quickAttDraft[studentId].deductSession;
+    showToast(isDed ? 'تم ضبط الغياب ليتم خصم الحصة من الرصيد' : 'تم حبس الحصة (لن يتم خصمها من رصيد التلميذ)', 'info');
+  }
+  window.toggleQuickStudentDeduction = toggleQuickStudentDeduction;
+
   function setQuickStudentNote(studentId, note) {
     if (!window.__quickAttDraft[studentId]) {
-      window.__quickAttDraft[studentId] = { status: 'present', note: '' };
+      window.__quickAttDraft[studentId] = { status: 'present', deductSession: true, note: '' };
     }
     window.__quickAttDraft[studentId].note = note;
   }
@@ -5700,9 +5961,14 @@ document.addEventListener('DOMContentLoaded', () => {
   function setAllQuickAttendance(status) {
     Object.keys(window.__quickAttDraft).forEach(id => {
       window.__quickAttDraft[id].status = status;
+      if (status === 'absent') {
+        window.__quickAttDraft[id].deductSession = false;
+      } else {
+        window.__quickAttDraft[id].deductSession = true;
+      }
     });
     renderQuickAttendanceStudents();
-    showToast(status === 'present' ? 'تم تحديد جميع التلاميذ كحاضرين' : 'تم تحديد جميع التلاميذ كغائبين', 'info');
+    showToast(status === 'present' ? 'تم تحديد جميع التلاميذ كحاضرين' : 'تم تحديد جميع التلاميذ كغائبين (حصص محبوسة)', 'info');
   }
   window.setAllQuickAttendance = setAllQuickAttendance;
 
@@ -5734,6 +6000,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     for (const [studentId, data] of Object.entries(window.__quickAttDraft)) {
       const stu = students.find(s => s.id === studentId);
+      const isDeducted = (data.status === 'present' || data.status === 'late') ? true : !!data.deductSession;
+
       allAttendance.push({
         id: 'ATT-' + Date.now() + '-' + studentId + '-' + Math.floor(Math.random() * 1000),
         date: selectedDate,
@@ -5743,33 +6011,47 @@ document.addEventListener('DOMContentLoaded', () => {
         studentId: studentId,
         studentName: stu ? stu.name : 'Unknown',
         status: data.status,
+        deductSession: isDeducted,
+        freezeSession: data.status === 'absent' && !isDeducted,
         note: data.note || ''
       });
       savedCount++;
 
-      // Safe deduction logic: only deduct if not already deducted in a previous save of this session
+      // Safe deduction calculation:
       const prevRecord = existingAttForSession.find(a => a.studentId === studentId);
-      const wasDeducted = prevRecord && (prevRecord.status === 'present' || prevRecord.status === 'late');
-      const isNowPresentOrLate = data.status === 'present' || data.status === 'late';
+      const prevDeducted = prevRecord && (
+        prevRecord.status === 'present' || 
+        prevRecord.status === 'late' || 
+        (prevRecord.status === 'absent' && prevRecord.deductSession === true)
+      );
+      const nowDeducted = (
+        data.status === 'present' || 
+        data.status === 'late' || 
+        (data.status === 'absent' && isDeducted)
+      );
 
       if (stu) {
-        if (isNowPresentOrLate && !wasDeducted) {
+        if (nowDeducted && !prevDeducted) {
           if (stu.sessionsRemaining > 0) {
             stu.sessionsRemaining = Math.max(0, stu.sessionsRemaining - 1);
           } else {
-            stu.unpaidAttendedSessions = (stu.unpaidAttendedSessions || 0) + 1;
+            stu.unpaidAttendedSessions = (stu.unpaidAttendedSessions || 0) + (data.status === 'present' || data.status === 'late' ? 1 : 0);
             stu.hasDebt = true;
-            stu.unpaidSessions = Math.max(stu.unpaidSessions || 0, stu.unpaidAttendedSessions);
+            stu.unpaidSessions = (stu.unpaidSessions || 0) + 1;
             const fee = Number(stu.monthlyFee) || 5000;
             const perSession = Math.round(fee / 4);
             stu.debtAmount = Math.max(Number(stu.debtAmount) || 0, stu.unpaidSessions * perSession);
             stu.balance = -Math.abs(stu.debtAmount);
           }
-          stu.lastAttendance = `${selectedDate} (${selectedTime})`;
-        } else if (!isNowPresentOrLate && wasDeducted) {
-          if (stu.unpaidAttendedSessions && stu.unpaidAttendedSessions > 0) {
-            stu.unpaidAttendedSessions = Math.max(0, stu.unpaidAttendedSessions - 1);
-            if (stu.unpaidSessions) stu.unpaidSessions = Math.max(0, stu.unpaidSessions - 1);
+          if (data.status === 'present' || data.status === 'late') {
+            stu.lastAttendance = `${selectedDate} (${selectedTime})`;
+          }
+        } else if (!nowDeducted && prevDeducted) {
+          if (stu.unpaidSessions && stu.unpaidSessions > 0) {
+            stu.unpaidSessions = Math.max(0, stu.unpaidSessions - 1);
+            if (stu.unpaidAttendedSessions && stu.unpaidAttendedSessions > 0) {
+              stu.unpaidAttendedSessions = Math.max(0, stu.unpaidAttendedSessions - 1);
+            }
             const fee = Number(stu.monthlyFee) || 5000;
             const perSession = Math.round(fee / 4);
             stu.debtAmount = Math.max(0, (stu.unpaidSessions || 0) * perSession);
@@ -5793,7 +6075,7 @@ document.addEventListener('DOMContentLoaded', () => {
     saveData('brainova_attendance', allAttendance);
     saveData('brainova_students', students);
 
-    const typeMsg = selectedType === 'makeup' ? ' (حصة تعويضية)' : (selectedType === 'extra' ? ' (حصة استثنائية ⭐)' : '');
+    const typeMsg = selectedType === 'makeup' ? ' (حصة تعويضية)' : (selectedType === 'extra' ? ' (حصة استثنائية)' : '');
     closeQuickGroupAttendanceModal();
     showToast(`تم حفظ حضور وغياب (${savedCount}) تلميذ لفوج (${groupName}) بتاريخ (${selectedDate} - ${selectedTime})${typeMsg} بنجاح!`, 'success');
     renderActiveView();

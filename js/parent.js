@@ -120,7 +120,7 @@
     if (!user || !pass) {
       if (errEl) {
         errEl.style.display = 'flex';
-        errEl.innerHTML = '<span>⚠️</span> يرجى إدخال اسم المستخدم وكلمة المرور.';
+        errEl.innerHTML = '<span style="display:inline-flex; align-items:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span> يرجى إدخال اسم المستخدم وكلمة المرور.';
       }
       return;
     }
@@ -146,7 +146,7 @@
       });
 
       if (spinner) spinner.style.display = 'none';
-      if (btnLabel) btnLabel.textContent = 'دخول إلى بوابتي 🚀';
+      if (btnLabel) btnLabel.textContent = 'دخول إلى البوابة';
 
       if (found) {
         if (errEl) errEl.style.display = 'none';
@@ -155,7 +155,7 @@
       } else {
         if (errEl) {
           errEl.style.display = 'flex';
-          errEl.innerHTML = '<span>⚠️</span> اسم المستخدم أو كلمة المرور غير مطابقة. يرجى التأكد من البيانات المطبوعة في الوصل.';
+          errEl.innerHTML = '<span style="display:inline-flex; align-items:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span> اسم المستخدم أو كلمة المرور غير مطابقة. يرجى التأكد من البيانات المطبوعة في الوصل.';
         }
       }
     }, 400);
@@ -242,7 +242,7 @@
       }
 
       if (spinner) spinner.style.display = 'none';
-      if (btnLabel) btnLabel.textContent = '✨ إنشاء الحساب ودخول البوابة';
+      if (btnLabel) btnLabel.textContent = 'إنشاء الحساب ودخول البوابة';
 
       if (successMsg) successMsg.style.display = 'flex';
       if (errorMsg) errorMsg.style.display = 'none';
@@ -375,28 +375,39 @@
           <tr>
             <td style="font-weight:700;">${stu.joinDate || '2026-08-01'}</td>
             <td>${groupName} — قاعة Brainova</td>
-            <td style="text-align:center;"><span class="status-pill status-pill-present">🟢 حاضر (تميز)</span></td>
+            <td style="text-align:center;"><span class="status-pill status-pill-present">حاضر (تميز)</span></td>
             <td>انطلاق البرنامج التدريبي، إتقان تركيب القطع وتثبيت المحرك المؤازر.</td>
           </tr>
           <tr>
             <td style="font-weight:700;">2026-08-10</td>
             <td>${groupName} — قاعة Brainova</td>
-            <td style="text-align:center;"><span class="status-pill status-pill-present">🟢 حاضر (تميز)</span></td>
+            <td style="text-align:center;"><span class="status-pill status-pill-present">حاضر (تميز)</span></td>
             <td>برمجة خوارزمية تتبع المسار باستخدام حساس الأشعة تحت الحمراء IR.</td>
           </tr>
           <tr>
             <td style="font-weight:700;">${todayStr}</td>
             <td>${groupName} — قاعة Brainova</td>
-            <td style="text-align:center;"><span class="status-pill status-pill-present">🟢 حاضر (نشط)</span></td>
+            <td style="text-align:center;"><span class="status-pill status-pill-present">حاضر (نشط)</span></td>
             <td>تحدي حلبة تخطي العقبات الذاتية بحساس الموجات فوق الصوتية Ultrasonic.</td>
           </tr>
         `;
       } else {
         attBody.innerHTML = stuAttendance.map(a => {
-          const pill = a.status === 'present' ? '<span class="status-pill status-pill-present">🟢 حاضر</span>' :
-                       a.status === 'late'    ? '<span class="status-pill status-pill-late">🟡 متأخر</span>' :
-                       a.status === 'excused' ? '<span class="status-pill status-pill-excused">🟣 مبرر</span>' :
-                                                '<span class="status-pill status-pill-absent">🔴 غائب</span>';
+          let pill = '';
+          if (a.status === 'present') {
+            pill = '<span class="status-pill status-pill-present">حاضر</span>';
+          } else if (a.status === 'late') {
+            pill = '<span class="status-pill status-pill-late">متأخر</span>';
+          } else if (a.status === 'excused') {
+            pill = '<span class="status-pill status-pill-excused">مبرر</span>';
+          } else {
+            const isHeld = (a.deductSession === false || a.freezeSession);
+            if (isHeld) {
+              pill = '<span class="status-pill" style="background:rgba(56,189,248,0.15); color:#0284C7; border:1px solid rgba(56,189,248,0.4);">غائب (حصة محفوظة)</span>';
+            } else {
+              pill = '<span class="status-pill status-pill-absent">غائب (مخصومة)</span>';
+            }
+          }
           return `
             <tr>
               <td style="font-weight:700;">${a.date}</td>
@@ -413,12 +424,48 @@
     const skillsGrid = document.getElementById('pSkillsGrid');
     if (skillsGrid) {
       const skills = [
-        { icon: "⚙️", title: "الهندسة الميكانيكية ونقل الحركة", pct: 92, level: "متقدم (92%)", desc: "إتقان تركيب التروس، المحركات المؤازرة (Servo) ومضاعفة عزم الدوران." },
-        { icon: "💻", title: "البرمجة الخوارزمية (Blockly / C++)", pct: 88, level: "جيد جداً (88%)", desc: "بناء الحلقات الشرطية، المتغيرات، والدوال للتحكم في حركة الروبوت." },
-        { icon: "📡", title: "التعامل مع الحساسات الذكية (IoT)", pct: 85, level: "متقدم (85%)", desc: "معايرة حساس المسافة Ultrasonic، حساس الضوء LDR ومستشعر الألوان." },
-        { icon: "🖨️", title: "النمذجة والطباعة ثلاثية الأبعاد 3D", pct: 75, level: "جاهز للتصنيع (75%)", desc: "تصميم قطع الروبوت على Tinkercad وطباعتها بطابعة Bambu Lab A1." },
-        { icon: "🏆", title: "حل المشكلات والتحديات الحرة", pct: 95, level: "ممتاز (95%)", desc: "جاهزية تامة لخوض مسابقات الروبوت الوطنية وتحدي تتبع الخط والمتاهة." },
-        { icon: "🤝", title: "العمل الجماعي وروح الفريق", pct: 96, level: "استثنائي (96%)", desc: "القدرة على قيادة وتوزيع مهام التركيب والبرمجة مع زملاء الفوج." }
+        { 
+          icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`, 
+          title: "الهندسة الميكانيكية ونقل الحركة", 
+          pct: 92, 
+          level: "متقدم (92%)", 
+          desc: "إتقان تركيب التروس، المحركات المؤازرة (Servo) ومضاعفة عزم الدوران." 
+        },
+        { 
+          icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`, 
+          title: "البرمجة الخوارزمية (Blockly / C++)", 
+          pct: 88, 
+          level: "جيد جداً (88%)", 
+          desc: "بناء الحلقات الشرطية، المتغيرات، والدوال للتحكم في حركة الروبوت." 
+        },
+        { 
+          icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>`, 
+          title: "التعامل مع الحساسات الذكية (IoT)", 
+          pct: 85, 
+          level: "متقدم (85%)", 
+          desc: "معايرة حساس المسافة Ultrasonic، حساس الضوء LDR ومستشعر الألوان." 
+        },
+        { 
+          icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`, 
+          title: "النمذجة والطباعة ثلاثية الأبعاد 3D", 
+          pct: 75, 
+          level: "جاهز للتصنيع (75%)", 
+          desc: "تصميم قطع الروبوت على Tinkercad وطباعتها بطابعة Bambu Lab A1." 
+        },
+        { 
+          icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.45 1-1 1H8v2h8v-2h-1c-.55 0-1-.45-1-1v-2.34"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>`, 
+          title: "حل المشكلات والتحديات الحرة", 
+          pct: 95, 
+          level: "ممتاز (95%)", 
+          desc: "جاهزية تامة لخوض مسابقات الروبوت الوطنية وتحدي تتبع الخط والمتاهة." 
+        },
+        { 
+          icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`, 
+          title: "العمل الجماعي وروح الفريق", 
+          pct: 96, 
+          level: "استثنائي (96%)", 
+          desc: "القدرة على قيادة وتوزيع مهام التركيب والبرمجة مع زملاء الفوج." 
+        }
       ];
 
       skillsGrid.innerHTML = skills.map(s => `
@@ -481,7 +528,7 @@
       let notesListHtml = `
         <div class="note-timeline-item" style="border-right: 4px solid var(--cyan-bright);">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
-            <span style="font-weight:700; color:var(--cyan-bright); font-size:0.95rem;">📌 التوجيه والملاحظة الحالية من الأستاذ المشرف</span>
+            <span style="font-weight:700; color:var(--cyan-bright); font-size:0.95rem;">التوجيه والملاحظة الحالية من الأستاذ المشرف</span>
             <span style="font-size:0.75rem; color:var(--text-muted); font-family:monospace;">${activeDate}</span>
           </div>
           <div style="font-size:0.95rem; color:#F8FAFC; line-height:1.8;">${activeNote}</div>
@@ -491,12 +538,12 @@
       // Collect session-by-session notes from attendance history
       const sessionNotes = stuAttendance.filter(a => a.note && a.note.trim() !== '');
       if (sessionNotes.length > 0) {
-        notesListHtml += `<h4 style="margin:24px 0 14px; font-size:0.95rem; color:var(--text-sub); display:flex; align-items:center; gap:8px;"><span>📋</span> سجل التوجيهات والملاحظات السابقة للحصص:</h4>`;
+        notesListHtml += `<h4 style="margin:24px 0 14px; font-size:0.95rem; color:var(--text-sub); display:flex; align-items:center; gap:8px;">سجل التوجيهات والملاحظات السابقة للحصص:</h4>`;
         notesListHtml += sessionNotes.map(sn => `
           <div class="note-timeline-item">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
-              <span style="font-weight:700; color:#fff; font-size:0.88rem;">📅 حصة يوم: ${sn.date} (${sn.groupName || groupName})</span>
-              <span class="status-pill ${sn.status === 'present' ? 'status-pill-present' : (sn.status === 'late' ? 'status-pill-late' : 'status-pill-absent')}">${sn.status === 'present' ? '🟢 حاضر' : (sn.status === 'late' ? '🟡 متأخر' : '🔴 غائب')}</span>
+              <span style="font-weight:700; color:#fff; font-size:0.88rem;">حصة يوم: ${sn.date} (${sn.groupName || groupName})</span>
+              <span class="status-pill ${sn.status === 'present' ? 'status-pill-present' : (sn.status === 'late' ? 'status-pill-late' : 'status-pill-absent')}">${sn.status === 'present' ? 'حاضر' : (sn.status === 'late' ? 'متأخر' : 'غائب')}</span>
             </div>
             <div style="font-size:0.9rem; color:#CBD5E1; line-height:1.7;">${sn.note}</div>
           </div>
@@ -504,7 +551,7 @@
       } else {
         notesListHtml += `
           <div style="margin-top:20px; text-align:center; padding:20px; color:var(--text-muted); font-size:0.85rem;">
-            ✨ يتم تحديث هذا السجل دورياً بكل ملاحظة أو تقييم يكتبه الأستاذ خلال الحصص التدريبية.
+            يتم تحديث هذا السجل دورياً بكل ملاحظة أو تقييم يكتبه الأستاذ خلال الحصص التدريبية.
           </div>
         `;
       }
@@ -530,7 +577,7 @@
         if (navigator.clipboard) {
           e.preventDefault();
           navigator.clipboard.writeText(portalUrl);
-          alert("✅ تم نسخ رابط الدخول السريع إلى الحافظة بنجاح!");
+          alert("تم نسخ رابط الدخول السريع إلى الحافظة بنجاح!");
         }
       };
     }
