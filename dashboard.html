@@ -2797,9 +2797,12 @@
         <div class="cr80-card-header">
           <div class="cr80-brand">
             <img src="assets/images/robot.png" alt="Brainova">
-            <div class="cr80-brand-name">BRAINOVA ROBOTICS</div>
+            <div>
+              <div class="cr80-brand-name">BRAINOVA ROBOTICS</div>
+              <div class="cr80-brand-sub">أكاديمية الروبوتيك والذكاء الاصطناعي</div>
+            </div>
           </div>
-          <span class="cr80-tag">بطاقة تلميذ 2026</span>
+          <span class="cr80-tag">بطاقة طالب معتمدة</span>
         </div>
 
         <div class="cr80-card-body">
@@ -2807,18 +2810,25 @@
           <div class="cr80-meta">
             <div class="cr80-student-name" id="idCardStudentName">نزار تسنيم</div>
             <div class="cr80-level-text" id="idCardLevel">المستوى الأول: التفكير المنطقي</div>
-            <div class="cr80-group-text">الفوج: <strong id="idCardGroup" style="color:#fff;">الفوج أ (مبتدئ)</strong></div>
+            <div class="cr80-group-text">الفوج: <strong id="idCardGroup">الفوج أ (مبتدئ)</strong> <span id="idCardScheduleText" style="color:#0284C7; font-weight:700;"></span></div>
             <div class="cr80-id-text">المعرف: <span id="idCardStudentId">STU-001</span></div>
           </div>
           <div class="cr80-qr-frame">
-            <img id="idCardQrCode" alt="QR" class="cr80-qr-img">
-            <div style="font-size:7px; color:#94A3B8; margin-top:2px;">مسح الحضور</div>
+            <div class="cr80-qr-box">
+              <img id="idCardQrCode" alt="QR" class="cr80-qr-img">
+            </div>
+            <div class="cr80-qr-label">مسح الحضور</div>
           </div>
         </div>
 
         <div class="cr80-card-footer">
-          <span>أكاديمية برينوفا للروبوتيك والذكاء الاصطناعي</span>
-          <span style="font-family:monospace;" dir="ltr">0791 19 46 33</span>
+          <div style="display:flex; flex-direction:column; gap:1px;">
+            <span style="font-weight:800; color:#0369A1;">أكاديمية براينوفا — أم البواقي</span>
+            <span style="font-family:monospace; color:#64748B; font-size:7px;" dir="ltr">07 91 19 46 33</span>
+          </div>
+          <div id="idCardBarcodeBox" style="width:115px; height:24px; opacity:0.9;">
+            <!-- Rendered dynamically -->
+          </div>
         </div>
       </div>
 

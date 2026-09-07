@@ -3617,7 +3617,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- STUDENT ID BADGE CARD GENERATOR (CR80 & A4 BATCH) ---
   let currentIdCardStudentId = null;
 
-  window.generateBarcodeSvg = function(code) {
+  window.generateBarcodeSvg = function(code, color = '#0C4A6E') {
     const bars = [];
     const str = String(code || 'BRAINOVA').toUpperCase();
     let x = 6;
@@ -3626,7 +3626,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const pattern = [(charCode % 3) + 1, ((charCode >> 2) % 3) + 1, ((charCode >> 4) % 2) + 1, 1];
       pattern.forEach((w, idx) => {
         if (idx % 2 === 0) {
-          bars.push(`<rect x="${x}" y="0" width="${w * 1.5}" height="28" fill="#FFFFFF"/>`);
+          bars.push(`<rect x="${x}" y="0" width="${w * 1.5}" height="28" fill="${color}"/>`);
         }
         x += (w * 1.5) + 1.2;
       });
@@ -3648,53 +3648,61 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!qrDataUrl) {
       qrDataUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=2&data=${encodeURIComponent(scanCode)}`;
     }
-    const barcodeSvg = generateBarcodeSvg(stu.id);
+    const barcodeSvg = generateBarcodeSvg(stu.id, '#0C4A6E');
+    const scheduleParts = [];
+    if (stu.day) scheduleParts.push(stu.day);
+    const timeStr = stu.sessionTime || (stu.startTime ? (stu.startTime + ' - ' + (stu.endTime || '')) : '');
+    if (timeStr) scheduleParts.push(timeStr);
+    const scheduleFormatted = scheduleParts.length > 0 ? scheduleParts.join(' • ') : '';
 
     return `
-      <div class="cr80-print-card" style="width:85.6mm; height:54mm; background:linear-gradient(135deg, #0A1324 0%, #0F1D38 100%); color:#FFFFFF; border:1px solid #1E293B; border-radius:3.5mm; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; padding:3.5mm 4.5mm; box-sizing:border-box; position:relative; -webkit-print-color-adjust:exact; print-color-adjust:exact;">
-        <!-- Top Ribbon -->
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(56,189,248,0.25); padding-bottom:2mm;">
+      <div class="cr80-print-card" style="width:85.6mm; height:54mm; background:linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 45%, #BAE6FD 100%); color:#0F172A; border:0.4mm solid #7DD3FC; border-radius:3.5mm; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; padding:3.5mm 4.5mm; box-sizing:border-box; position:relative; -webkit-print-color-adjust:exact; print-color-adjust:exact; font-family:'Cairo', system-ui, sans-serif;">
+        <!-- Top Accent Bar -->
+        <div style="position:absolute; top:0; left:0; right:0; height:1mm; background:linear-gradient(90deg, #0284C7 0%, #0EA5E9 50%, #38BDF8 100%);"></div>
+
+        <!-- Header Ribbon -->
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:0.3mm solid #BAE6FD; padding-bottom:1.8mm; margin-top:0.5mm;">
           <div style="display:flex; align-items:center; gap:2mm;">
-            <div style="width:5.5mm; height:5.5mm; background:#0284C7; border-radius:1mm; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:9pt; color:#fff;">B</div>
+            <div style="width:5.5mm; height:5.5mm; background:#0284C7; border-radius:1.2mm; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:9pt; color:#FFFFFF; box-shadow:0 1px 3px rgba(2,132,199,0.3);">B</div>
             <div>
-              <div style="font-size:7.5pt; font-weight:800; color:#F8FAFC; letter-spacing:0.3px;">BRAINOVA ROBOTICS & AI</div>
-              <div style="font-size:5.5pt; color:#38BDF8; font-weight:600;">بطاقة التلميذ المعتمدة 2026/2027</div>
+              <div style="font-size:7.5pt; font-weight:900; color:#0369A1; letter-spacing:0.3px; line-height:1.1;">BRAINOVA ROBOTICS</div>
+              <div style="font-size:5.2pt; color:#0284C7; font-weight:700; line-height:1.1;">أكاديمية الروبوتيك والذكاء الاصطناعي</div>
             </div>
           </div>
-          <span style="font-size:5.5pt; color:#10B981; border:1px solid rgba(16,185,129,0.4); background:rgba(16,185,129,0.1); padding:0.5mm 1.5mm; border-radius:1mm; font-weight:700;">طالب نشط</span>
+          <span style="font-size:5.5pt; color:#FFFFFF; background:#0284C7; padding:0.6mm 2mm; border-radius:1mm; font-weight:800; letter-spacing:0.2px;">بطاقة طالب معتمدة</span>
         </div>
 
         <!-- Middle Body -->
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:2.5mm; margin:1.5mm 0;">
-          <!-- Photo / Initials & Details -->
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:2.5mm; margin:1.2mm 0;">
+          <!-- Avatar / Initials & Info -->
           <div style="display:flex; align-items:center; gap:2.5mm; flex:1; min-width:0;">
-            <div style="width:14mm; height:16mm; background:rgba(56,189,248,0.12); border:1px solid #0284C7; border-radius:1.5mm; display:flex; align-items:center; justify-content:center; font-size:16pt; font-weight:800; color:#38BDF8; flex-shrink:0;">
+            <div style="width:14.5mm; height:16.5mm; background:linear-gradient(145deg, #0284C7 0%, #38BDF8 100%); border:0.4mm solid #FFFFFF; box-shadow:0 1.5mm 3mm rgba(2,132,199,0.25); border-radius:1.8mm; display:flex; align-items:center; justify-content:center; font-size:17pt; font-weight:900; color:#FFFFFF; flex-shrink:0;">
               ${stu.name ? stu.name.trim().charAt(0) : 'ط'}
             </div>
-            <div style="min-width:0; flex:1;">
-              <div style="font-size:8.5pt; font-weight:800; color:#FFFFFF; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${stu.name}</div>
-              <div style="font-size:6pt; color:#38BDF8; font-weight:700; margin-top:0.5mm;">${stu.level || 'المستوى الأول: الروبوتيك'}</div>
-              <div style="font-size:5.5pt; color:#CBD5E1; margin-top:0.5mm;">الفوج: <strong style="color:#FFF;">${stu.group || 'الفوج أ'}</strong></div>
-              <div style="font-size:5.5pt; color:#94A3B8; margin-top:0.5mm;">الولي: ${stu.parentPhone || '—'}</div>
+            <div style="min-width:0; flex:1; line-height:1.35;">
+              <div style="font-size:8.8pt; font-weight:900; color:#0C4A6E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${stu.name}</div>
+              <div style="font-size:5.8pt; color:#0284C7; font-weight:800; background:rgba(2,132,199,0.1); padding:0.3mm 1.5mm; border-radius:0.8mm; display:inline-block; margin-top:0.4mm;">${stu.level || 'المستوى الأول: الروبوتيك'}</div>
+              <div style="font-size:5.4pt; color:#334155; margin-top:0.4mm;">الفوج: <strong style="color:#0F172A;">${stu.group || 'الفوج أ'}</strong> ${scheduleFormatted ? `<span style="color:#0284C7; font-weight:700;">• ${scheduleFormatted}</span>` : ''}</div>
+              <div style="font-size:5.2pt; color:#64748B; margin-top:0.4mm;">الولي: <span style="font-family:monospace; color:#0369A1; font-weight:700;">${stu.parentPhone || '—'}</span> • المعرف: <strong style="color:#0284C7; font-family:monospace;">${stu.id}</strong></div>
             </div>
           </div>
 
-          <!-- QR Code for Attendance Scanner -->
+          <!-- QR Code Frame for Attendance Scanner -->
           <div style="display:flex; flex-direction:column; align-items:center; flex-shrink:0;">
-            <div style="width:15mm; height:15mm; background:#FFFFFF; padding:0.8mm; border-radius:1.2mm; display:flex; align-items:center; justify-content:center;">
+            <div style="width:15.5mm; height:15.5mm; background:#FFFFFF; padding:0.8mm; border-radius:1.5mm; border:0.35mm solid #7DD3FC; box-shadow:0 1mm 2.5mm rgba(2,132,199,0.15); display:flex; align-items:center; justify-content:center;">
               <img src="${qrDataUrl}" style="width:100%; height:100%; display:block;" alt="QR">
             </div>
-            <span style="font-size:5pt; font-family:monospace; color:#38BDF8; font-weight:700; margin-top:0.5mm;">${stu.id}</span>
+            <span style="font-size:4.8pt; color:#0369A1; font-weight:800; margin-top:0.6mm;">مسح الحضور</span>
           </div>
         </div>
 
         <!-- Bottom Footer with Barcode -->
-        <div style="border-top:1px solid rgba(255,255,255,0.08); padding-top:1.5mm; display:flex; justify-content:space-between; align-items:flex-end;">
-          <div style="font-size:5pt; color:#64748B;">
-            <div>أكاديمية براينوفا — أم البواقي</div>
-            <div style="color:#94A3B8; font-family:monospace; direction:ltr;">0791 19 46 33</div>
+        <div style="border-top:0.3mm solid #BAE6FD; padding-top:1.4mm; display:flex; justify-content:space-between; align-items:flex-end;">
+          <div style="font-size:5pt; color:#475569; font-weight:700; line-height:1.2;">
+            <div style="color:#0369A1; font-weight:800;">أكاديمية براينوفا — أم البواقي</div>
+            <div style="font-family:monospace; color:#64748B; font-size:4.8pt;">07 91 19 46 33</div>
           </div>
-          <div style="width:34mm; opacity:0.85;">
+          <div style="width:33mm; height:5mm; opacity:0.95;">
             ${barcodeSvg}
           </div>
         </div>
@@ -3717,6 +3725,20 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('idCardLevel').textContent = stu.level || 'المستوى الأول: التفكير المنطقي';
     document.getElementById('idCardGroup').textContent = stu.group || 'الفوج أ';
     document.getElementById('idCardStudentId').textContent = `${stu.id}`;
+
+    const schedEl = document.getElementById('idCardScheduleText');
+    if (schedEl) {
+      const scheduleParts = [];
+      if (stu.day) scheduleParts.push(stu.day);
+      const timeStr = stu.sessionTime || (stu.startTime ? (stu.startTime + ' - ' + (stu.endTime || '')) : '');
+      if (timeStr) scheduleParts.push(timeStr);
+      schedEl.textContent = scheduleParts.length > 0 ? ` • ${scheduleParts.join(' ')}` : '';
+    }
+
+    const barcodeBox = document.getElementById('idCardBarcodeBox');
+    if (barcodeBox) {
+      barcodeBox.innerHTML = generateBarcodeSvg(stu.id, '#0C4A6E');
+    }
 
     const scanCode = `BRAINOVA:ID=${stu.id}`;
     const qrImg = document.getElementById('idCardQrCode');
@@ -3763,7 +3785,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <style>
     @page { size: 85.6mm 54mm; margin: 0; }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', system-ui, sans-serif; }
-    body { width: 85.6mm; height: 54mm; margin: 0; padding: 0; background: #0A1324; -webkit-print-color-adjust: exact; print-color-adjust: exact; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+    body { width: 85.6mm; height: 54mm; margin: 0; padding: 0; background: #FFFFFF; -webkit-print-color-adjust: exact; print-color-adjust: exact; overflow: hidden; display: flex; align-items: center; justify-content: center; }
   </style>
 </head>
 <body>
@@ -3773,7 +3795,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (window.electronAPI && window.electronAPI.printDocument) {
       window.electronAPI.printDocument({ html: fullHtml, title: `بطاقة_التلميذ_${stu.name}` });
-      showToast(`تم إرسال بطاقة التلميذ (${stu.name}) للطباعة! �`, 'success');
+      showToast(`تم إرسال بطاقة التلميذ (${stu.name}) للطباعة!`, 'success');
     } else {
       const printWin = window.open('', '_blank');
       if (printWin) {
@@ -3848,7 +3870,7 @@ document.addEventListener('DOMContentLoaded', () => {
     for (const stu of students) {
       const cardHtml = await getStudentBadgeHtml(stu);
       badgesHtmlArray.push(`
-        <div style="page-break-inside:avoid; border:1px dashed #64748B; border-radius:3.5mm; padding:1px; background:#070D19;">
+        <div style="page-break-inside:avoid; border:1px dashed #7DD3FC; border-radius:3.5mm; padding:0; background:#FFFFFF;">
           ${cardHtml}
         </div>
       `);
