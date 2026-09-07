@@ -2830,10 +2830,6 @@ html[dir="ltr"] .dossier-table {
   border-radius: 6px;
   font-weight: 700;
   font-size: 0.72rem;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-.matrix-cell:hover {
-  transform: scale(1.15);
 }
 .matrix-cell--present {
   background: rgba(16, 185, 129, 0.18);

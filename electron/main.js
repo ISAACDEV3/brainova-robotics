@@ -432,6 +432,12 @@ function createMain(splash) {
     } catch(e) {}
   });
 
+  mainWindow.on('unmaximize', () => {
+    try {
+      mainWindow.maximize();
+    } catch(e) {}
+  });
+
   let isReadyToShow = false;
   let isSplashFinished = false;
   let isAppLaunched = false;
@@ -713,7 +719,7 @@ app.on('activate', () => {
 
 // ── IPC: WINDOW CONTROLS ──────────────────────────────────────────────────────
 ipcMain.on('win-minimize',  () => mainWindow && mainWindow.minimize());
-ipcMain.on('win-maximize',  () => mainWindow && (mainWindow.isMaximized() ? mainWindow.unmaximize() : mainWindow.maximize()));
+ipcMain.on('win-maximize',  () => mainWindow && mainWindow.maximize());
 ipcMain.on('win-close',     () => mainWindow && mainWindow.close());
 ipcMain.on('win-hide',      () => mainWindow && mainWindow.hide());
 ipcMain.on('open-main-site',     () => openWindow('index.html', 1300, 800));

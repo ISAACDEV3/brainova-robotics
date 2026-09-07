@@ -118,9 +118,6 @@
             <button onclick="if(window.electronAPI)window.electronAPI.minimize()" title="تصغير" style="width:30px; height:26px; border:1px solid rgba(56,189,248,0.2); border-radius:5px; background:rgba(255,255,255,0.04); color:#94A3B8; cursor:pointer; display:flex; align-items:center; justify-content:center;">
               <svg width="11" height="11" viewBox="0 0 12 12"><rect fill="currentColor" width="10" height="1.6" x="1" y="5.2"/></svg>
             </button>
-            <button onclick="if(window.electronAPI)window.electronAPI.maximize()" title="تكبير / استعادة" style="width:30px; height:26px; border:1px solid rgba(56,189,248,0.2); border-radius:5px; background:rgba(255,255,255,0.04); color:#94A3B8; cursor:pointer; display:flex; align-items:center; justify-content:center;">
-              <svg width="11" height="11" viewBox="0 0 12 12"><rect fill="none" stroke="currentColor" stroke-width="1.3" width="9" height="9" x="1.5" y="1.5" rx="1"/></svg>
-            </button>
             <button onclick="if(window.electronAPI)window.electronAPI.close()" title="إغلاق البرنامج" style="width:30px; height:26px; border:1px solid rgba(239,68,68,0.3); border-radius:5px; background:rgba(239,68,68,0.12); color:#F87171; cursor:pointer; display:flex; align-items:center; justify-content:center;">
               <svg width="11" height="11" viewBox="0 0 12 12"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M2.5 2.5l7 7m0-7l-7 7"/></svg>
             </button>
@@ -2123,10 +2120,10 @@
                 <input type="text" id="dossierMatrixSearch" class="form-input" placeholder="تصفية الطلاب في المصفوفة..." style="padding-right:32px; height:34px; font-size:0.82rem; width:100%;" oninput="renderGroupDossierMatrix()">
               </div>
               <div style="display:flex; align-items:center; gap:6px; font-size:0.75rem; color:#94A3B8;">
-                <span class="matrix-cell matrix-cell--present" style="width:20px;height:20px;font-size:0.65rem;">✓</span> حاضر
-                <span class="matrix-cell matrix-cell--late" style="width:20px;height:20px;font-size:0.65rem; margin-right:6px;">⏱</span> متأخر
-                <span class="matrix-cell matrix-cell--absent" style="width:20px;height:20px;font-size:0.65rem; margin-right:6px;">✕</span> غائب (مخصوم)
-                <span class="matrix-cell matrix-cell--held" style="width:20px;height:20px;font-size:0.65rem; margin-right:6px;">🔒</span> غائب (محفوظ)
+                <span class="matrix-cell matrix-cell--present" style="width:20px;height:20px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span> حاضر
+                <span class="matrix-cell matrix-cell--late" style="width:20px;height:20px; margin-right:6px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span> متأخر
+                <span class="matrix-cell matrix-cell--absent" style="width:20px;height:20px; margin-right:6px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span> غائب (مخصوم)
+                <span class="matrix-cell matrix-cell--held" style="width:20px;height:20px; margin-right:6px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="10" x="4" y="11" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span> غائب (محفوظ)
               </div>
             </div>
             <div style="display:flex; gap:8px;">

@@ -6249,18 +6249,18 @@ document.addEventListener('DOMContentLoaded', () => {
         totalAtt++;
         if (record.status === 'present') {
           presCount++;
-          return `<td style="text-align:center;"><span class="matrix-cell matrix-cell--present" title="حاضر في ${d}${record.note ? ` (${record.note})` : ''}">✓</span></td>`;
+          return `<td style="text-align:center;"><span class="matrix-cell matrix-cell--present" title="حاضر في ${d}${record.note ? ` (${record.note})` : ''}">${UI_ICONS.check(11)}</span></td>`;
         } else if (record.status === 'late') {
           lateCount++;
-          return `<td style="text-align:center;"><span class="matrix-cell matrix-cell--late" title="متأخر في ${d}${record.note ? ` (${record.note})` : ''}">⏱</span></td>`;
+          return `<td style="text-align:center;"><span class="matrix-cell matrix-cell--late" title="متأخر في ${d}${record.note ? ` (${record.note})` : ''}">${UI_ICONS.clock(11)}</span></td>`;
         } else {
           const isHold = record.holdAbsence === true || record.deductSession === false;
           if (isHold) {
             absHeld++;
-            return `<td style="text-align:center;"><span class="matrix-cell matrix-cell--held" title="غائب (حصة محفوظة للتعويض) في ${d}${record.note ? ` (${record.note})` : ''}">🔒</span></td>`;
+            return `<td style="text-align:center;"><span class="matrix-cell matrix-cell--held" title="غائب (حصة محفوظة للتعويض) في ${d}${record.note ? ` (${record.note})` : ''}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="10" x="4" y="11" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></td>`;
           } else {
             absDeduct++;
-            return `<td style="text-align:center;"><span class="matrix-cell matrix-cell--absent" title="غائب (مخصوم) في ${d}${record.note ? ` (${record.note})` : ''}">✕</span></td>`;
+            return `<td style="text-align:center;"><span class="matrix-cell matrix-cell--absent" title="غائب (مخصوم) في ${d}${record.note ? ` (${record.note})` : ''}">${UI_ICONS.x(11)}</span></td>`;
           }
         }
       }).join('');
@@ -6371,7 +6371,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tot++;
         if (record.status === 'present') {
           pres++;
-          return `<td style="border: 1px solid #94A3B8; padding: 3px; font-size: 9px; text-align:center; font-weight:700; color:#059669;">✓</td>`;
+          return `<td style="border: 1px solid #94A3B8; padding: 3px; font-size: 9px; text-align:center; font-weight:700; color:#059669;">ح</td>`;
         } else if (record.status === 'late') {
           late++;
           return `<td style="border: 1px solid #94A3B8; padding: 3px; font-size: 8.5px; text-align:center; font-weight:700; color:#D97706;">ت</td>`;
@@ -6379,7 +6379,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const isHold = record.holdAbsence === true || record.deductSession === false;
           if (isHold) {
             absH++;
-            return `<td style="border: 1px solid #94A3B8; padding: 3px; font-size: 8.5px; text-align:center; font-weight:700; color:#7C3AED;">ح</td>`;
+            return `<td style="border: 1px solid #94A3B8; padding: 3px; font-size: 8.5px; text-align:center; font-weight:700; color:#7C3AED;">م</td>`;
           } else {
             absD++;
             return `<td style="border: 1px solid #94A3B8; padding: 3px; font-size: 8.5px; text-align:center; font-weight:700; color:#DC2626;">غ</td>`;
@@ -6445,10 +6445,10 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 
   <div class="legend">
-    <span style="color:#059669;">✓ حاضر</span>
-    <span style="color:#D97706;">ت متأخر</span>
-    <span style="color:#DC2626;">غ غائب (مخصوم)</span>
-    <span style="color:#7C3AED;">ح غائب محفوظ للتعويض</span>
+    <span style="color:#059669;">ح: حاضر</span>
+    <span style="color:#D97706;">ت: متأخر</span>
+    <span style="color:#DC2626;">غ: غائب (مخصوم)</span>
+    <span style="color:#7C3AED;">م: غائب محفوظ للتعويض</span>
   </div>
 
   <table class="table">
