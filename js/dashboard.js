@@ -1499,8 +1499,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="payment-badge" style="background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid rgba(56,189,248,0.35); font-weight:800; font-size:0.75rem;">
               📘 درس ${attendedUnpaid} حصص
             </span>
-            <span class="payment-badge overdue" style="font-weight:800; font-size:0.72rem; white-space:nowrap;" title="${stu.debtNotes || ''}">
-              ⚠️ متأخر عن دفع ${dSessions} حصص تدريبية
+            <span class="payment-badge overdue" style="font-weight:800; font-size:0.74rem; white-space:nowrap;" title="${stu.debtNotes || ''}">
+              ⚠️ متأخر عن دفع ${dSessions} حصص تدريبية (${dAmt.toLocaleString()} دج)
             </span>
           </div>
         `;
@@ -1514,11 +1514,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       let paymentTimelineBadge = '';
       if (hasDebtStatus) {
-        paymentTimelineBadge = `
-          <div style="margin-top:4px; font-size:0.75rem; color:#EF4444; font-weight:700; line-height:1.35;">
-            متأخر عن دفع ${dSessions} حصص تدريبية (${dAmt.toLocaleString()} دج)
-          </div>
-        `;
+        paymentTimelineBadge = ''; // No duplicate line: already clearly shown in sessionsBadge above
       } else if (timeline.hasPayment) {
         if (timeline.status === 'active') {
           paymentTimelineBadge = `
@@ -1559,7 +1555,7 @@ document.addEventListener('DOMContentLoaded', () => {
               </a>
               ${(() => {
                 if (hasDebtStatus) {
-                  return `<span style="display:inline-flex; align-items:center; gap:3px; background:rgba(239,68,68,0.22); border:1px solid rgba(239,68,68,0.6); color:#FCA5A5; padding:2px 8px; border-radius:12px; font-size:0.68rem; font-weight:800; white-space:nowrap;" title="درس الطالب ${attendedUnpaid} حصص — متأخر عن دفع ${dSessions} حصص تدريبية (${dAmt.toLocaleString()} دج)">⚠️ متأخر عن دفع ${dSessions} حصص تدريبية</span>`;
+                  return ''; // Clean name: debt is exclusively and clearly shown in Subscription & Payment column
                 }
                 const isOverdue = (timeline.status === 'overdue') || (balance < 0) || (sessions <= 0 && !timeline.hasPayment);
                 if (isOverdue && sessions <= 0) {
@@ -1570,10 +1566,13 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             ${(() => {
               const rk = calculateStudentRetentionRisk(stu);
-              if (rk.level === 'high') {
-                return `<div style="margin-top:3px;"><span class="risk-pill-high" title="${rk.reasons.join(' • ')}">⚠️ ${rk.reasons[0] || 'خطر انقطاع'}</span></div>`;
-              } else if (rk.level === 'medium') {
-                return `<div style="margin-top:3px;"><span class="risk-pill-medium" title="${rk.reasons.join(' • ')}">🟡 ${rk.reasons[0] || 'متابعة'}</span></div>`;
+              const nonDebtReasons = (rk.reasons || []).filter(r => !r.includes('تأخر تجديد') && !r.includes('غير مسددة'));
+              if (nonDebtReasons.length > 0) {
+                if (rk.level === 'high') {
+                  return `<div style="margin-top:3px;"><span class="risk-pill-high" title="${nonDebtReasons.join(' • ')}">⚠️ ${nonDebtReasons[0]}</span></div>`;
+                } else if (rk.level === 'medium') {
+                  return `<div style="margin-top:3px;"><span class="risk-pill-medium" title="${nonDebtReasons.join(' • ')}">🟡 ${nonDebtReasons[0]}</span></div>`;
+                }
               }
               return '';
             })()}
