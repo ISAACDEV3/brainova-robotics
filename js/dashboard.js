@@ -2698,332 +2698,428 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- STUDENT PROFILE MODAL ---
     // --- STUDENT PROFILE MODAL (ORGANIZED DOSSIER) ---
     // --- STUDENT PROFILE MODAL (HIGH-DENSITY ORGANIZED DOSSIER) ---
-  function openStudentProfile(studentId) {
+  // --- STUDENT PROFILE MODAL (EXECUTIVE STUDENT DOSSIER) ---
+  function openStudentProfile(studentId, activeTab = 'sessions', sessionFilter = 'all') {
     const stu = getData('brainova_students').find(s => s.id === studentId);
     if (!stu) return;
 
-    const allPayments = getData('brainova_payments');
-    const payments = allPayments.filter(p => p.studentId === studentId);
-    const attendance = getData('brainova_attendance').filter(a => a.studentId === studentId);
-
-    const totalAtt = attendance.length;
-    const presentCount = attendance.filter(a => a.status === 'present' || a.status === 'late').length;
-    const attRate = totalAtt > 0 ? Math.round((presentCount / totalAtt) * 100) : 100;
-    const balance = Number(stu.balance) || 0;
-    const sessions = Number(stu.sessionsRemaining) || 0;
-
-    const timeline = getStudentPaymentTimeline(studentId, stu, allPayments);
-
-    // Sort attendance by date descending
-    const sortedAttendance = [...attendance].sort((a, b) => {
-      const dateA = parseBrainovaDate(a.date) || new Date(0);
-      const dateB = parseBrainovaDate(b.date) || new Date(0);
+    const allPayments = getData('brainova_payments') || [];
+    const payments = allPayments.filter(p => p.studentId === studentId).sort((a, b) => {
+      const dateA = parseBrainovaDate(a.date || a.paidAtIso) || new Date(0);
+      const dateB = parseBrainovaDate(b.date || b.paidAtIso) || new Date(0);
       return dateB - dateA;
     });
 
+    const allAttendance = getData('brainova_attendance') || [];
+    const attendance = allAttendance.filter(a => a.studentId === studentId || (stu.name && a.studentName === stu.name));
+
+    // Sort chronologically ascending for mathematical calculation
+    const chronologicalAttendance = [...attendance].sort((a, b) => {
+      const dateA = parseBrainovaDate(a.date) || new Date(0);
+      const dateB = parseBrainovaDate(b.date) || new Date(0);
+      return dateA - dateB;
+    });
+
+    const totalSessions = chronologicalAttendance.length;
+    const presentCount = chronologicalAttendance.filter(a => a.status === 'present').length;
+    const lateCount = chronologicalAttendance.filter(a => a.status === 'late').length;
+    const absentCount = chronologicalAttendance.filter(a => a.status === 'absent').length;
+    const attendedCount = presentCount + lateCount;
+    const attRate = totalSessions > 0 ? Math.round((attendedCount / totalSessions) * 100) : 100;
+
+    const balance = Number(stu.balance) || 0;
+    const sessionsRemaining = Number(stu.sessionsRemaining) || 0;
+    const fee = Number(stu.monthlyFee) || 5000;
+    const perSession = Math.round(fee / 4);
+
+    const hasDebtStatus = !!(stu.hasDebt || Number(stu.debtAmount) > 0 || Number(stu.unpaidMonths) > 0 || Number(stu.unpaidSessions) > 0 || (stu.unpaidAttendedSessions && stu.unpaidAttendedSessions > 0));
+    const dMonths = Number(stu.unpaidMonths) || 0;
+    const unpaidDebtSessions = Number(stu.unpaidSessions) || (dMonths > 0 ? dMonths * 4 : (stu.unpaidAttendedSessions || (hasDebtStatus ? 4 : 0)));
+    const debtAmount = Number(stu.debtAmount) || (unpaidDebtSessions * perSession) || Math.abs(balance);
+
+    const timeline = getStudentPaymentTimeline(studentId, stu, allPayments);
+
+    // Correlate sessions with payments and debts:
+    // If student attended M sessions, and currently has U unpaid debt sessions:
+    // Then the first (M - U) attended sessions were covered by subscriptions, and the last U are unpaid debt!
+    const coveredAttendedCount = Math.max(0, attendedCount - (hasDebtStatus ? unpaidDebtSessions : 0));
+
+    let runningAttendedIndex = 0;
+    const mappedSessions = chronologicalAttendance.map((att, idx) => {
+      const sessionNumber = idx + 1;
+      let coverageBadge = '';
+      let isDebtSession = false;
+
+      if (att.status === 'absent') {
+        coverageBadge = '<span class="coverage-neutral">لم تُخصم (غياب) ⚪</span>';
+      } else {
+        runningAttendedIndex++;
+        if (runningAttendedIndex <= coveredAttendedCount) {
+          coverageBadge = '<span class="coverage-paid">مغطاة بالاشتراك ✅</span>';
+        } else {
+          isDebtSession = true;
+          const debtSeq = runningAttendedIndex - coveredAttendedCount;
+          coverageBadge = `<span class="coverage-debt">غير مسددة (دين: حصة ${debtSeq}) ⚠️</span>`;
+        }
+      }
+
+      return {
+        ...att,
+        sessionNumber,
+        coverageBadge,
+        isDebtSession
+      };
+    });
+
+    // Display list: newest first (descending)
+    let displaySessions = [...mappedSessions].reverse();
+    if (sessionFilter === 'present') {
+      displaySessions = displaySessions.filter(s => s.status === 'present');
+    } else if (sessionFilter === 'late') {
+      displaySessions = displaySessions.filter(s => s.status === 'late');
+    } else if (sessionFilter === 'absent') {
+      displaySessions = displaySessions.filter(s => s.status === 'absent');
+    } else if (sessionFilter === 'debt') {
+      displaySessions = displaySessions.filter(s => s.isDebtSession);
+    }
+
     const content = document.getElementById('studentProfileContent');
+    if (!content) return;
+
     content.innerHTML = `
-      <!-- Hero Top Banner -->
-      <div class="profile-hero-card">
-        <div class="profile-hero-left">
-          <div class="profile-avatar-box">${stu.name.trim().charAt(0)}</div>
-          <div>
-            <div class="profile-name-title">${stu.name}</div>
-            <div class="profile-tags-row">
-              <span class="status-pill status-pill--active"><span class="pill-dot"></span> ${stu.group || 'الفوج أ'}</span>
-              ${stu.day ? `<span class="status-pill" style="background:rgba(245,158,11,0.15); color:#FBBF24; border:1px solid rgba(245,158,11,0.3); font-weight:700;">📅 يوم الدراسة: ${stu.day}</span>` : ''}
-              ${(stu.sessionTime || (stu.startTime ? (stu.startTime + ' - ' + (stu.endTime || '')) : '')) ? `<span class="status-pill" style="background:rgba(0,188,212,0.12); color:#00E5FF; border:1px solid rgba(0,188,212,0.3); font-weight:700;">🕒 توقيت الحصة: ${stu.sessionTime || (stu.startTime + ' - ' + (stu.endTime || ''))}</span>` : ''}
-              <span class="status-pill" style="background:rgba(56,189,248,0.1); color:#38BDF8; border:1px solid rgba(56,189,248,0.25);">${stu.level || 'المستوى الأول'}</span>
-              <span style="font-family:monospace; font-size:0.72rem; color:var(--color-text-dim); background:rgba(255,255,255,0.05); padding:1px 6px; border-radius:4px;">ID: ${stu.id}</span>
+      <!-- 1. Dossier Header -->
+      <div class="dossier-header">
+        <div class="dossier-header-left">
+          <div class="dossier-avatar">${stu.name.trim().charAt(0)}</div>
+          <div class="dossier-title-box">
+            <div class="dossier-name">${stu.name}</div>
+            <div class="dossier-badges-row">
+              <span class="dossier-tag">ID: <code style="font-family:var(--font-mono); color:#38BDF8;">${stu.id}</code></span>
+              <span class="dossier-tag">الفوج: <strong>${stu.group || 'غير محدد'}</strong></span>
+              ${stu.day ? `<span class="dossier-tag dossier-tag--gold">📅 يوم الدراسة: ${stu.day}</span>` : ''}
+              ${(stu.sessionTime || (stu.startTime ? (stu.startTime + ' - ' + (stu.endTime || '')) : '')) ? `<span class="dossier-tag dossier-tag--accent">🕒 التوقيت: ${stu.sessionTime || (stu.startTime + ' - ' + (stu.endTime || ''))}</span>` : ''}
+              <span class="dossier-tag">${stu.level || 'المستوى الأول'}</span>
             </div>
           </div>
         </div>
-
-        <div class="profile-hero-kpi">
-          <span style="font-size:0.7rem; color:var(--color-text-dim); font-weight:600;">الرصيد المالي الحالي</span>
-          <span class="profile-kpi-val" style="color:${balance < 0 ? '#EF4444' : '#10B981'};">${balance.toLocaleString()} دج</span>
-          <span style="font-size:0.72rem; color:#38BDF8; font-weight:700;">${sessions} حصص متبقية</span>
-        </div>
-      </div>
-
-      <!-- 1. Academic & Guardian Information -->
-      <div class="profile-section-heading">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        البيانات الشخصية وولي الأمر
-      </div>
-      <div class="profile-info-grid">
-        <div class="profile-info-cell">
-          <div class="profile-cell-lbl">ولي الأمر</div>
-          <div class="profile-cell-val">${stu.parentName || 'غير مسجل'}</div>
-        </div>
-        <div class="profile-info-cell">
-          <div class="profile-cell-lbl">رقم هاتف الولي</div>
-          <div class="profile-cell-val">
-            <a href="tel:${stu.parentPhone}" dir="ltr" style="color:#38BDF8; font-family:monospace;">${stu.parentPhone || '—'}</a>
-          </div>
-        </div>
-        <div class="profile-info-cell">
-          <div class="profile-cell-lbl">الأستاذ المؤطر</div>
-          <div class="profile-cell-val">${stu.educator || 'غير محدد'}</div>
-        </div>
-        <div class="profile-info-cell">
-          <div class="profile-cell-lbl">نسبة الالتزام بالحضور</div>
-          <div class="profile-cell-val" style="color:#10B981;">${attRate}% (${presentCount}/${totalAtt} حصة)</div>
-        </div>
-      </div>
-
-      ${(stu.hasDebt || Number(stu.debtAmount) > 0 || Number(stu.unpaidMonths) > 0 || Number(stu.unpaidSessions) > 0) ? `
-        <div style="background:rgba(239, 68, 68, 0.12); border:1.5px solid rgba(239, 68, 68, 0.55); border-radius:var(--radius-sm); padding:14px 16px; margin-bottom:14px;">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div style="color:#F87171; font-weight:800; font-size:0.95rem; display:flex; align-items:center; gap:6px;">
-              <span>⚠️</span> حالة المستحقات المالية (دين متأخر معلق)
+        <div>
+          ${hasDebtStatus ? `
+            <div class="dossier-status-pill dossier-status-pill--debt">
+              <span>⚠️</span> متأخر عن دفع ${unpaidDebtSessions} حصص تدريبية (${debtAmount.toLocaleString()} دج)
             </div>
-            <span class="payment-badge overdue" style="font-size:0.75rem; font-weight:800; padding:3px 10px;">⚠️ متأخر عن دفع ${stu.unpaidSessions || 4} حصص تدريبية</span>
+          ` : (sessionsRemaining > 0 ? `
+            <div class="dossier-status-pill dossier-status-pill--active">
+              <span>✅</span> اشتراك سارٍ (متبقي ${sessionsRemaining} حصص)
+            </div>
+          ` : `
+            <div class="dossier-status-pill dossier-status-pill--neutral">
+              <span>⏳</span> نفدت الحصص — بانتظار التجديد
+            </div>
+          `)}
+        </div>
+      </div>
+
+      <!-- 2. Executive 4-KPI Ribbon -->
+      <div class="dossier-kpi-grid">
+        <div class="dossier-kpi-card">
+          <div class="dossier-kpi-lbl">معدل الحضور والالتزام</div>
+          <div class="dossier-kpi-val" style="color:${attRate >= 80 ? '#10B981' : (attRate >= 60 ? '#F59E0B' : '#EF4444')};">
+            ${attRate}%
           </div>
-          <div style="margin-top:10px; font-size:0.86rem; color:#FCA5A5; line-height:1.7;">
-            الحصص التي درسها الطالب: <strong style="color:#FFF; background:#0284C7; padding:2px 8px; border-radius:4px; font-weight:800;">درس ${stu.unpaidAttendedSessions || stu.unpaidSessions || 4} حصص</strong><br>
-            الحالة: <strong style="color:#FFF; background:#DC2626; padding:2px 8px; border-radius:4px; font-weight:800;">⚠️ متأخر عن دفع ${(stu.unpaidMonths && Number(stu.unpaidMonths) > 0) ? `${stu.unpaidMonths} شهر (${stu.unpaidSessions || (stu.unpaidMonths * 4)} حصص)` : `${stu.unpaidSessions || 4} حصص تدريبية`}</strong><br>
-            المبلغ الإجمالي المستحق للدفع: <strong style="font-size:1.15rem; color:#EF4444; font-family:monospace; font-weight:900;">${Number(stu.debtAmount || 0).toLocaleString()} دج</strong>
-            ${stu.debtNotes ? `<div style="margin-top:8px; color:#E2E8F0; font-size:0.8rem; background:rgba(0,0,0,0.3); padding:6px 10px; border-radius:4px;">📌 ملاحظات الإدارة / الولي: <em>${stu.debtNotes}</em></div>` : ''}
+          <div class="dossier-kpi-sub">${presentCount} حاضر • ${lateCount} متأخر • ${absentCount} غائب (${totalSessions} أسابيع)</div>
+        </div>
+
+        <div class="dossier-kpi-card">
+          <div class="dossier-kpi-lbl">الحصص الفعلية والتغطية</div>
+          <div class="dossier-kpi-val" style="color:#38BDF8;">
+            ${attendedCount} <span style="font-size:0.75rem; font-weight:600; color:#94A3B8;">حصص مدروسة</span>
           </div>
-          <div style="display:flex; gap:8px; margin-top:12px; border-top:1px dashed rgba(239,68,68,0.35); padding-top:10px; flex-wrap:wrap;">
-            <button type="button" class="btn btn--small" onclick="closeStudentProfileModal(); openPrintDebtNoticeModal('${stu.id}')" style="background:#DC2626; color:#FFF; font-size:0.8rem; font-weight:800; border:none; padding:6px 12px; border-radius:6px; cursor:pointer;">
-              🖨️ طباعة إشعار تأخر في الدفع (وصل دين 0 دج)
+          <div class="dossier-kpi-sub">${coveredAttendedCount} مغطاة • ${hasDebtStatus ? `${unpaidDebtSessions} غير مسددة (دين)` : 'لا توجد ديون معلقة'}</div>
+        </div>
+
+        <div class="dossier-kpi-card">
+          <div class="dossier-kpi-lbl">الرصيد المالي الحالي</div>
+          <div class="dossier-kpi-val" style="color:${hasDebtStatus ? '#EF4444' : (balance > 0 ? '#10B981' : '#F8FAFC')};">
+            ${hasDebtStatus ? `-${debtAmount.toLocaleString()} دج` : `${balance.toLocaleString()} دج`}
+          </div>
+          <div class="dossier-kpi-sub">القسط: ${fee.toLocaleString()} دج / شهر (${perSession.toLocaleString()} دج/حصة)</div>
+        </div>
+
+        <div class="dossier-kpi-card">
+          <div class="dossier-kpi-lbl">دورة الاشتراك والتجديد</div>
+          <div class="dossier-kpi-val" style="font-size:0.88rem; font-weight:700; color:${timeline.status === 'overdue' ? '#EF4444' : (timeline.status === 'due_soon' ? '#F59E0B' : '#10B981')};">
+            ${timeline.statusLabel}
+          </div>
+          <div class="dossier-kpi-sub">آخر تسديد: ${timeline.lastDateStr || 'لم يسدد بعد'}</div>
+        </div>
+      </div>
+
+      <!-- 3. Overdue Debt Action Banner -->
+      ${hasDebtStatus ? `
+        <div class="dossier-debt-banner">
+          <div class="dossier-debt-info">
+            <div class="dossier-debt-title">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              مستحقات مالية معلقة — تأخر في دفع الاشتراك
+            </div>
+            <div class="dossier-debt-text">
+              درس الطالب <strong>${stu.unpaidAttendedSessions || unpaidDebtSessions} حصص تدريبية</strong> دون تسديد مسبق. إجمالي المبلغ المستحق للدفع: <strong style="color:#FFF; font-family:var(--font-mono);">${debtAmount.toLocaleString()} دج</strong>.
+              ${stu.debtNotes ? `<div style="margin-top:4px; color:#E2E8F0; font-size:0.75rem;">📌 ملاحظات الولي / الإدارة: <em>${stu.debtNotes}</em></div>` : ''}
+            </div>
+          </div>
+          <div class="dossier-debt-actions">
+            <button type="button" class="btn btn--small" onclick="closeStudentProfileModal(); openRecordPaymentModal('${stu.id}', 'paid')" style="background:#059669; color:#FFF; font-weight:700;">
+              💳 تسديد الحصص وإصدار وصل
             </button>
-            <button type="button" class="btn btn--small" onclick="closeStudentProfileModal(); openRecordPaymentModal('${stu.id}', 'paid')" style="background:#059669; color:#FFF; font-size:0.8rem; font-weight:800; border:none; padding:6px 12px; border-radius:6px; cursor:pointer;">
-              💳 تسديد الحصص وإلغاء حالة التأخر
+            <button type="button" class="btn btn--outline btn--small" onclick="closeStudentProfileModal(); openPrintDebtNoticeModal('${stu.id}')" style="color:#EF4444; border-color:rgba(239,68,68,0.4);">
+              🖨️ طباعة إشعار دين (0 دج)
+            </button>
+            <button type="button" class="btn btn--outline btn--small" onclick="closeStudentProfileModal(); openWhatsAppDispatchModal('${stu.id}')" style="color:#25D366; border-color:rgba(37,211,102,0.4);">
+              📲 إشعار الولي واتساب
             </button>
           </div>
         </div>
       ` : ''}
 
-      <!-- 2. MONTHLY PAYMENT & RENEWAL TRACKER -->
-      <div class="profile-section-heading">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
-        تتبع الاشتراك الشهري وتاريخ التسديد
-        <span class="payment-badge ${timeline.badgeClass}" style="margin-right:auto; font-size:0.75rem;">${timeline.statusLabel}</span>
-      </div>
-      <div style="background:rgba(15,23,42,0.6); border:1px solid ${timeline.status === 'overdue' ? 'rgba(239,68,68,0.4)' : (timeline.status === 'due_soon' ? 'rgba(245,158,11,0.4)' : 'rgba(56,189,248,0.25)')}; border-radius:var(--radius-sm); padding:14px; margin-bottom:14px;">
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:10px; margin-bottom:10px;">
-          <div style="background:rgba(255,255,255,0.02); padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
-            <div style="font-size:0.7rem; color:var(--color-text-dim);">🕒 تاريخ آخر تسديد</div>
-            <div style="font-size:0.85rem; font-weight:800; color:#F8FAFC; margin-top:2px;">${timeline.lastDateStr}</div>
-          </div>
-
-          <div style="background:rgba(255,255,255,0.02); padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
-            <div style="font-size:0.7rem; color:var(--color-text-dim);">⏳ المدة المنقضية</div>
-            <div style="font-size:0.85rem; font-weight:800; color:#38BDF8; margin-top:2px;">${timeline.elapsedText}</div>
-          </div>
-
-          <div style="background:rgba(255,255,255,0.02); padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
-            <div style="font-size:0.7rem; color:var(--color-text-dim);">📅 موعد التجديد القادم</div>
-            <div style="font-size:0.85rem; font-weight:800; color:${timeline.status === 'overdue' ? '#EF4444' : '#10B981'}; margin-top:2px;">${timeline.renewalDateStr}</div>
-          </div>
-
-          <div style="background:rgba(255,255,255,0.02); padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
-            <div style="font-size:0.7rem; color:var(--color-text-dim);">💰 آخر مبلغ سُدد</div>
-            <div style="font-size:0.85rem; font-weight:800; color:#10B981; margin-top:2px;">${timeline.lastAmount > 0 ? timeline.lastAmount.toLocaleString() + ' دج' : '—'}</div>
-          </div>
-        </div>
-
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:10px;">
-          <div style="font-size:0.8rem; color:${timeline.status === 'overdue' ? '#F87171' : (timeline.status === 'due_soon' ? '#FBBF24' : '#34D399')}; font-weight:700;">
-            📌 ${timeline.renewalSummary}
-          </div>
-          <button type="button" class="btn btn--primary btn--small" onclick="closeStudentProfileModal(); openRecordPaymentModal('${stu.id}')" style="font-size:0.75rem;">
-            💳 تسجيل تجديد الاشتراك
-          </button>
-        </div>
-      </div>
-
-      <!-- 3. DETAILED SESSIONS ATTENDANCE LOG WITH DATES -->
-      <div class="profile-section-heading" style="justify-content:space-between;">
-        <div style="display:flex; align-items:center; gap:6px;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          سجل الحصص التي درسها التلميذ بالتاريخ
-          <span class="status-pill" style="background:rgba(16,185,129,0.1); color:#10B981; border:1px solid rgba(16,185,129,0.25); font-size:0.72rem;">درس ${presentCount} حصص</span>
-        </div>
-        <button type="button" class="btn btn--primary btn--small" onclick="openAddStudentSessionModal('${stu.id}')" style="font-size:0.75rem; padding:4px 8px; background:#0284C7;">
-          ➕ تسجيل حصة حضور بالتاريخ
+      <!-- 4. Segmented Dossier Tabs -->
+      <div class="dossier-nav-tabs">
+        <button type="button" class="dossier-tab-btn ${activeTab === 'sessions' ? 'active' : ''}" onclick="window.switchDossierTab('${stu.id}', 'sessions')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          سجل الحصص والأسابيع (${totalSessions})
+        </button>
+        <button type="button" class="dossier-tab-btn ${activeTab === 'payments' ? 'active' : ''}" onclick="window.switchDossierTab('${stu.id}', 'payments')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+          المعاملات المالية والوصولات (${payments.length})
+        </button>
+        <button type="button" class="dossier-tab-btn ${activeTab === 'guardian' ? 'active' : ''}" onclick="window.switchDossierTab('${stu.id}', 'guardian')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          بيانات التلميذ والولي
+        </button>
+        <button type="button" class="dossier-tab-btn ${activeTab === 'notes' ? 'active' : ''}" onclick="window.switchDossierTab('${stu.id}', 'notes')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          الملاحظات والتقييم التربوي
         </button>
       </div>
 
-      ${sortedAttendance.length === 0 ? `
-        <div style="text-align:center; padding:18px; background:rgba(255,255,255,0.02); border:1px dashed var(--color-border); border-radius:8px; color:var(--color-text-dim); font-size:0.82rem; margin-bottom:14px;">
-          لا توجد حصص مسجلة بعد لهذا التلميذ.
-          <br>
-          <button type="button" class="btn btn--outline btn--small" style="margin-top:8px;" onclick="openAddStudentSessionModal('${stu.id}')">
-            ➕ تسجيل أول حصة بالتاريخ الآن
+      <!-- TAB 1: DETAILED SESSIONS LEDGER -->
+      <div class="dossier-tab-pane ${activeTab === 'sessions' ? 'active' : ''}" id="dossier-pane-sessions">
+        <div class="dossier-toolbar">
+          <div class="dossier-filters-group">
+            <span style="font-size:0.73rem; color:var(--text-muted); font-weight:700;">تصفية:</span>
+            <button type="button" class="dossier-filter-pill ${sessionFilter === 'all' ? 'active' : ''}" onclick="window.filterDossierSessions('${stu.id}', 'all')">
+              الكل (${totalSessions})
+            </button>
+            <button type="button" class="dossier-filter-pill ${sessionFilter === 'present' ? 'active' : ''}" onclick="window.filterDossierSessions('${stu.id}', 'present')">
+              حاضر (${presentCount})
+            </button>
+            <button type="button" class="dossier-filter-pill ${sessionFilter === 'late' ? 'active' : ''}" onclick="window.filterDossierSessions('${stu.id}', 'late')">
+              متأخر (${lateCount})
+            </button>
+            <button type="button" class="dossier-filter-pill ${sessionFilter === 'absent' ? 'active' : ''}" onclick="window.filterDossierSessions('${stu.id}', 'absent')">
+              غائب (${absentCount})
+            </button>
+            ${hasDebtStatus ? `
+              <button type="button" class="dossier-filter-pill ${sessionFilter === 'debt' ? 'active' : ''}" onclick="window.filterDossierSessions('${stu.id}', 'debt')" style="border-color:rgba(239,68,68,0.4); color:#FCA5A5;">
+                غير مسددة / دين (${unpaidDebtSessions})
+              </button>
+            ` : ''}
+          </div>
+
+          <button type="button" class="btn btn--primary btn--small" onclick="openAddStudentSessionModal('${stu.id}')">
+            + إضافة حصة بالتاريخ
           </button>
         </div>
-      ` : `
-        <div style="max-height:220px; overflow-y:auto; border:1px solid var(--color-border); border-radius:8px; margin-bottom:14px;">
-          <table style="width:100%; border-collapse:collapse; font-size:0.78rem; text-align:right;">
-            <thead>
-              <tr style="background:rgba(255,255,255,0.04); border-bottom:1px solid var(--color-border); color:#94A3B8;">
-                <th style="padding:6px 8px; width:28px;">#</th>
-                <th style="padding:6px 8px;">التاريخ واليوم</th>
-                <th style="padding:6px 8px;">التوقيت والفوج</th>
-                <th style="padding:6px 8px;">الحالة</th>
-                <th style="padding:6px 8px;">موضوع الدرس / المشروع</th>
-                <th style="padding:6px 8px; text-align:center;">علامة التسديد</th>
-                <th style="padding:6px 8px; text-align:center; width:36px;">حذف</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${sortedAttendance.map((att, idx) => {
-                const dayName = getArabicDayName(att.date);
-                let statusBadge = '';
-                let rowBorder = 'border-right:3px solid #10B981; background:rgba(16,185,129,0.02);';
-                if (att.status === 'present') {
-                  statusBadge = '<span class="badge-status-present">حاضر</span>';
-                  rowBorder = 'border-right:3px solid #10B981; background:rgba(16,185,129,0.03);';
-                } else if (att.status === 'late') {
-                  statusBadge = '<span class="badge-status-late">متأخر</span>';
-                  rowBorder = 'border-right:3px solid #F59E0B; background:rgba(245,158,11,0.05);';
-                } else {
-                  statusBadge = '<span class="badge-status-absent">غائب</span>';
-                  rowBorder = 'border-right:3px solid #EF4444; background:rgba(239,68,68,0.07);';
-                }
 
-                // 1. Check if payment was made on this date
-                const matchedPayment = payments.find(p => {
-                  const pDate = parseBrainovaDate(p.date || p.paidAtIso);
-                  const aDate = parseBrainovaDate(att.date);
-                  return pDate && aDate && pDate.toDateString() === aDate.toDateString();
-                });
+        ${displaySessions.length === 0 ? `
+          <div style="text-align:center; padding:24px; background:#111827; border:1px dashed var(--border-card); border-radius:8px; color:var(--text-sub); font-size:0.82rem; margin-bottom:14px;">
+            لا توجد حصص مسجلة مطابقة لمعايير التصفية الحالية.
+            <br>
+            <button type="button" class="btn btn--outline btn--small" style="margin-top:10px;" onclick="openAddStudentSessionModal('${stu.id}')">
+              ➕ تسجيل أول حصة بالتاريخ الآن
+            </button>
+          </div>
+        ` : `
+          <div class="dossier-table-shell">
+            <table class="dossier-table">
+              <thead>
+                <tr>
+                  <th style="width:34px;">#</th>
+                  <th>التاريخ واليوم</th>
+                  <th>التوقيت والفوج</th>
+                  <th style="text-align:center;">حالة الحضور</th>
+                  <th style="text-align:center;">التغطية المالية</th>
+                  <th>موضوع الدرس / الملاحظات</th>
+                  <th style="text-align:center; width:40px;">حذف</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${displaySessions.map(att => {
+                  const dayName = getArabicDayName(att.date);
+                  let statusBadge = '';
+                  if (att.status === 'present') {
+                    statusBadge = '<span class="dossier-badge-present">حاضر</span>';
+                  } else if (att.status === 'late') {
+                    statusBadge = '<span class="dossier-badge-late">متأخر</span>';
+                  } else {
+                    statusBadge = '<span class="dossier-badge-absent">غائب</span>';
+                  }
 
-                // 2. Next payment after this session date
-                const attDateObj = parseBrainovaDate(att.date);
-                const nextPayment = payments
-                  .filter(p => {
-                    const pDate = parseBrainovaDate(p.paidAtIso || p.date);
-                    return pDate && attDateObj && (pDate.getTime() >= attDateObj.getTime());
-                  })
-                  .sort((a, b) => (parseBrainovaDate(a.date || a.paidAtIso) - parseBrainovaDate(b.date || b.paidAtIso)))[0];
-
-                // 3. Format exact payment date and time string
-                let exactTimeStr = '';
-                if (att.paidAt) {
-                  exactTimeStr = format24hDateTime(att.paidAt);
-                }
-
-                let paymentMarkerHtml = '';
-                if (att.paidMarker === 'paid_next') {
-                  const displayTime = exactTimeStr || (nextPayment ? (nextPayment.date || nextPayment.paidAtIso) : '') || (att.date ? att.date + ' • الحصة التالية' : '');
-                  const receiptExtra = nextPayment ? `<span style="font-size:0.67rem; color:#94A3B8; display:block;">وصل #${nextPayment.opNumber || nextPayment.id} • ${Number(nextPayment.amountPaid).toLocaleString()} دج</span>` : '';
-
-                  paymentMarkerHtml = `
-                    <div style="display:inline-flex; flex-direction:column; align-items:center; gap:2px;">
-                      <div style="display:inline-flex; align-items:center; gap:4px;">
-                        <span class="payment-badge paid" style="background:rgba(16,185,129,0.2); border:1px solid #10B981; color:#34D399; font-weight:800; font-size:0.72rem; padding:2px 8px; border-radius:4px;" title="تم تسجيل أنه دفع في الحصة التالية">
-                          💳 دفع في الحصة التالية
-                        </span>
-                        <button type="button" style="background:none; border:none; color:#94A3B8; cursor:pointer; font-size:0.75rem;" onclick="toggleSessionPaymentMarker('${att.id}', '${stu.id}')" title="تغيير علامة التسديد">
-                          🔄
+                  return `
+                    <tr>
+                      <td style="font-family:var(--font-mono); color:var(--text-muted);">${att.sessionNumber}</td>
+                      <td style="font-weight:700; color:#F8FAFC;">
+                        ${dayName ? dayName + ' ' : ''}${att.date}
+                      </td>
+                      <td style="color:var(--text-sub);">
+                        ${att.sessionTime || '—'} <span style="font-size:0.7rem; color:var(--color-primary);">(${att.groupName || stu.group || 'الفوج'})</span>
+                      </td>
+                      <td style="text-align:center;">
+                        ${statusBadge}
+                      </td>
+                      <td style="text-align:center;">
+                        ${att.coverageBadge}
+                      </td>
+                      <td style="color:#CBD5E1; font-size:0.77rem;">
+                        ${att.note && att.note.trim() ? att.note : '<span style="color:var(--text-dim);">—</span>'}
+                      </td>
+                      <td style="text-align:center;">
+                        <button type="button" style="background:none; border:none; color:#EF4444; cursor:pointer; font-size:0.85rem;" title="حذف الحصة وتحديث الرصيد" onclick="deleteStudentSessionRecord('${att.id}', '${stu.id}')">
+                          🗑️
                         </button>
-                      </div>
-                      ${displayTime ? `<span style="font-size:0.69rem; color:#38BDF8; font-weight:700; font-family:monospace; direction:ltr; display:inline-block;" title="التاريخ والوقت الدقيق للدفع">🕒 ${displayTime}</span>` : ''}
-                      ${receiptExtra}
-                    </div>
+                      </td>
+                    </tr>
                   `;
-                } else if (att.paidMarker === 'paid_this' || matchedPayment) {
-                  const displayTime = exactTimeStr || (matchedPayment ? (matchedPayment.date || matchedPayment.paidAtIso) : '') || att.date;
-                  const amt = matchedPayment ? `<span style="font-size:0.67rem; color:#94A3B8; display:block;">وصل #${matchedPayment.opNumber || matchedPayment.id} • ${Number(matchedPayment.amountPaid).toLocaleString()} دج</span>` : '';
-
-                  paymentMarkerHtml = `
-                    <div style="display:inline-flex; flex-direction:column; align-items:center; gap:2px;">
-                      <div style="display:inline-flex; align-items:center; gap:4px;">
-                        <span class="payment-badge paid" style="background:rgba(56,189,248,0.2); border:1px solid #38BDF8; color:#38BDF8; font-weight:800; font-size:0.72rem; padding:2px 8px; border-radius:4px;" title="سدد في هذه الحصة">
-                          💰 سدد في هذه الحصة
-                        </span>
-                        <button type="button" style="background:none; border:none; color:#94A3B8; cursor:pointer; font-size:0.75rem;" onclick="toggleSessionPaymentMarker('${att.id}', '${stu.id}')" title="تغيير علامة التسديد">
-                          🔄
-                        </button>
-                      </div>
-                      ${displayTime ? `<span style="font-size:0.69rem; color:#10B981; font-weight:700; font-family:monospace; direction:ltr; display:inline-block;" title="التاريخ والوقت الدقيق للدفع">🕒 ${displayTime}</span>` : ''}
-                      ${amt}
-                    </div>
-                  `;
-                } else {
-                  paymentMarkerHtml = `
-                    <button type="button" class="btn btn--outline btn--small" style="padding:1px 6px; font-size:0.68rem; color:#94A3B8; border-color:rgba(255,255,255,0.15);" onclick="toggleSessionPaymentMarker('${att.id}', '${stu.id}')" title="انقر لوضع علامة أنه دفع في الحصة التالية بالتاريخ والوقت">
-                      + تحديد كـ دفع
-                    </button>
-                  `;
-                }
-
-                return `
-                  <tr style="border-bottom:1px solid rgba(255,255,255,0.03); ${rowBorder}">
-                    <td style="padding:6px 8px; color:var(--color-text-dim); font-family:monospace;">${sortedAttendance.length - idx}</td>
-                    <td style="padding:6px 8px; font-weight:700; color:#F1F5F9;">
-                      ${dayName ? dayName + ' ' : ''}${att.date}
-                    </td>
-                    <td style="padding:6px 8px; color:#94A3B8;">
-                      ${att.sessionTime || '—'} <span style="font-size:0.7rem; color:var(--color-primary);">(${att.groupName || stu.group || 'الفوج'})</span>
-                    </td>
-                    <td style="padding:6px 8px;">
-                      ${statusBadge}
-                    </td>
-                    <td style="padding:6px 8px; color:#CBD5E1;">
-                      ${(att.note && att.note.trim() && !att.note.includes('حصة تدريبية') && att.note !== 'الحصة الافتتاحية الأولى') ? att.note : '<span style="color:#64748B;">—</span>'}
-                    </td>
-                    <td style="padding:6px 8px; text-align:center;">
-                      ${paymentMarkerHtml}
-                    </td>
-                    <td style="padding:6px 8px; text-align:center;">
-                      <button type="button" style="background:none; border:none; color:#EF4444; cursor:pointer; font-size:0.85rem;" title="حذف الحصة" onclick="deleteStudentSessionRecord('${att.id}', '${stu.id}')">
-                        🗑️
-                      </button>
-                    </td>
-                  </tr>
-                `;
-              }).join('')}
-            </tbody>
-          </table>
-        </div>
-      `}
-
-      <!-- 4. Recent Receipts History -->
-      <div class="profile-section-heading">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
-        سجل الوصولات المالية الصادرة (${payments.length})
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        `}
       </div>
-      ${payments.length === 0 ? '<div style="color:var(--color-text-dim); font-size:0.78rem; margin-bottom:14px;">لا توجد وصولات مسجلة بعد.</div>' : `
-        <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:14px;">
-          ${payments.slice(0, 4).map(p => `
-            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.02); padding:6px 10px; border-radius:6px; border:1px solid var(--color-border); font-size:0.8rem;">
-              <div>
-                <strong style="color:var(--color-primary); font-family:monospace;">#${p.opNumber || p.id}</strong> — ${p.date} (${Number(p.amountPaid).toLocaleString()} دج)
-              </div>
-              <button class="btn btn--outline btn--small" onclick="openReceiptModal('${p.id}')">🖨️ طباعة الوصل</button>
+
+      <!-- TAB 2: FINANCIAL TRANSACTIONS & RECEIPTS -->
+      <div class="dossier-tab-pane ${activeTab === 'payments' ? 'active' : ''}" id="dossier-pane-payments">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div style="font-size:0.8rem; color:var(--text-sub);">
+            إجمالي الوصولات المسجلة: <strong>${payments.length} وصل</strong>
+          </div>
+          <button type="button" class="btn btn--primary btn--small" onclick="closeStudentProfileModal(); openRecordPaymentModal('${stu.id}')">
+            + تسجيل دفعة جديدة
+          </button>
+        </div>
+
+        ${payments.length === 0 ? `
+          <div style="text-align:center; padding:24px; background:#111827; border:1px dashed var(--border-card); border-radius:8px; color:var(--text-sub); font-size:0.82rem;">
+            لا توجد وصولات مالية مسجلة لهذا التلميذ حتى الآن.
+          </div>
+        ` : `
+          <div class="dossier-table-shell" style="max-height:280px;">
+            <table class="dossier-table">
+              <thead>
+                <tr>
+                  <th>رقم الوصل</th>
+                  <th>تاريخ التسديد</th>
+                  <th>المبلغ المسدد</th>
+                  <th>طريقة الدفع</th>
+                  <th>الفترة / الحصص المغطاة</th>
+                  <th style="text-align:center;">طباعة الوصل</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${payments.map(p => {
+                  const methodStr = p.method === 'cash' ? 'نقداً (Cash)' : (p.method === 'card' ? 'بطاقة بنكية' : (p.method === 'transfer' ? 'تحويل بنكي' : (p.method || 'نقداً')));
+                  return `
+                    <tr>
+                      <td style="font-family:var(--font-mono); font-weight:700; color:var(--color-primary);">#${p.opNumber || p.id}</td>
+                      <td style="color:#F8FAFC;">${p.date || (p.paidAtIso ? p.paidAtIso.split('T')[0] : '—')}</td>
+                      <td style="font-weight:800; color:#10B981; font-family:var(--font-mono);">${Number(p.amountPaid || 0).toLocaleString()} دج</td>
+                      <td style="color:var(--text-sub);">${methodStr}</td>
+                      <td style="color:#CBD5E1;">${p.notes || p.period || 'اشتراك دورة روبوتيك'}</td>
+                      <td style="text-align:center;">
+                        <button type="button" class="btn btn--outline btn--small" onclick="openReceiptModal('${p.id}')">
+                          🖨️ طباعة
+                        </button>
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        `}
+      </div>
+
+      <!-- TAB 3: GUARDIAN & STUDENT INFORMATION -->
+      <div class="dossier-tab-pane ${activeTab === 'guardian' ? 'active' : ''}" id="dossier-pane-guardian">
+        <div class="dossier-info-grid">
+          <div class="dossier-info-card">
+            <div class="dossier-info-lbl">ولي الأمر (الاسم الكامل)</div>
+            <div class="dossier-info-val">${stu.parentName || 'غير مسجل'}</div>
+          </div>
+          <div class="dossier-info-card">
+            <div class="dossier-info-lbl">رقم هاتف الولي</div>
+            <div class="dossier-info-val" style="display:flex; align-items:center; justify-content:space-between;">
+              <a href="tel:${stu.parentPhone}" dir="ltr" style="color:#38BDF8; font-family:var(--font-mono);">${stu.parentPhone || '—'}</a>
+              ${stu.parentPhone ? `
+                <a href="https://wa.me/${stu.parentPhone.replace(/\D/g, '').replace(/^0/, '213')}" target="_blank" class="btn btn--outline btn--small" style="color:#25D366; border-color:rgba(37,211,102,0.3); padding:2px 8px; font-size:0.72rem;">
+                  واتساب
+                </a>
+              ` : ''}
             </div>
-          `).join('')}
+          </div>
+          <div class="dossier-info-card">
+            <div class="dossier-info-lbl">الأستاذ المؤطر / المدرب</div>
+            <div class="dossier-info-val">${stu.educator || 'غير محدد'}</div>
+          </div>
+          <div class="dossier-info-card">
+            <div class="dossier-info-lbl">الفوج وتوقيت الدراسة</div>
+            <div class="dossier-info-val">${stu.group || 'غير محدد'} • ${stu.day || ''} (${stu.sessionTime || (stu.startTime ? stu.startTime + ' - ' + (stu.endTime || '') : '—')})</div>
+          </div>
+          <div class="dossier-info-card">
+            <div class="dossier-info-lbl">تاريخ التسجيل بالمنصة</div>
+            <div class="dossier-info-val" style="color:var(--text-sub);">${stu.registrationDate || 'غير محدد'}</div>
+          </div>
+          <div class="dossier-info-card">
+            <div class="dossier-info-lbl">المستوى التعليمي والمسار</div>
+            <div class="dossier-info-val" style="color:var(--color-primary);">${stu.level || 'المستوى الأول'}</div>
+          </div>
         </div>
-      `}
-
-      <!-- 5. Educational Notes -->
-      <div class="profile-section-heading">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-        ملاحظات وتوجيهات تربوية خاصة بالتلميذ
       </div>
-      <div style="background:rgba(245,158,11,0.03); border:1px solid rgba(245,158,11,0.2); border-radius:var(--radius-sm); padding:12px; margin-bottom:14px;">
-        <textarea id="profileStudentNote" rows="2" class="form-input" placeholder="اكتب الملاحظات التربوية للتلميذ وتطوره في الروبوتيك..." style="width:100%; resize:vertical; font-size:0.82rem; margin-bottom:6px;">${stu.teacherNote || ''}</textarea>
-        <div style="display:flex; justify-content:flex-end;">
-          <button type="button" class="btn btn--primary btn--small" onclick="saveStudentTeacherNote('${stu.id}')">
-            💾 حفظ الملاحظة التربوية
+
+      <!-- TAB 4: PEDAGOGICAL NOTES & EVALUATION -->
+      <div class="dossier-tab-pane ${activeTab === 'notes' ? 'active' : ''}" id="dossier-pane-notes">
+        <div style="background:#111827; border:1px solid var(--border-card); border-radius:8px; padding:14px; margin-bottom:14px;">
+          <div style="font-size:0.78rem; font-weight:700; color:#F8FAFC; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+            <span>📝</span> الملاحظات البيداغوجية وسلوك الطالب في الورشة
+          </div>
+          <textarea id="profileStudentNote" rows="3" class="form-input" placeholder="اكتب الملاحظات التربوية للتلميذ وتطوره في الروبوتيك والتفكير المنطقي..." style="width:100%; resize:vertical; font-size:0.82rem; margin-bottom:8px;">${stu.teacherNote || ''}</textarea>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <button type="button" class="btn btn--outline btn--small" onclick="closeStudentProfileModal(); openPedagogicalReportModal('${stu.id}')" style="color:#10B981; border-color:rgba(16,185,129,0.35);">
+              📊 إصدار بطاقة التقييم الشهري
+            </button>
+            <button type="button" class="btn btn--primary btn--small" onclick="saveStudentTeacherNote('${stu.id}')">
+              💾 حفظ الملاحظة التربوية
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Footer Actions -->
+      <div class="dossier-footer-actions">
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button type="button" class="btn btn--outline" onclick="closeStudentProfileModal()">إغلاق</button>
+          <button type="button" class="btn btn--outline" style="color:#38BDF8;" onclick="closeStudentProfileModal(); openTransferGroupModal('${stu.id}');">🔄 نقل الفوج</button>
+          <button type="button" class="btn btn--outline" style="color:#F59E0B;" onclick="closeStudentProfileModal(); openEditStudentModal('${stu.id}');">✏️ تعديل البيانات</button>
+          <button type="button" class="btn btn--outline" onclick="closeStudentProfileModal(); openStudentIdCard('${stu.id}');">🪪 بطاقة التلميذ</button>
+          <button type="button" class="btn btn--outline" style="color:#25D366; border-color:rgba(37,211,102,0.3);" onclick="closeStudentProfileModal(); openWhatsAppDispatchModal('${stu.id}');">📲 واتساب الولي</button>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn btn--outline" onclick="window.printStudentDossier('${stu.id}')">
+            🖨️ طباعة كشف الطالب
+          </button>
+          <button type="button" class="btn btn--primary" onclick="closeStudentProfileModal(); openRecordPaymentModal('${stu.id}');">
+            + تسجيل دفعة جديدة
           </button>
         </div>
-      </div>
-
-      <!-- Actions Footer -->
-      <div class="modal__actions">
-        <button type="button" class="btn btn--outline" onclick="closeStudentProfileModal()">إغلاق</button>
-        <button type="button" class="btn btn--outline" style="color:#38BDF8; border-color:rgba(56,189,248,0.35);" onclick="closeStudentProfileModal(); openTransferGroupModal('${stu.id}');">🔄 نقل الفوج</button>
-        <button type="button" class="btn btn--outline" style="color:#F59E0B; border-color:rgba(245,158,11,0.35);" onclick="closeStudentProfileModal(); openEditStudentModal('${stu.id}');">✏️ تعديل البيانات</button>
-        <button type="button" class="btn btn--outline" onclick="closeStudentProfileModal(); openStudentIdCard('${stu.id}');">🪪 بطاقة التلميذ</button>
-        <button type="button" class="btn btn--outline" style="color:#25D366; border-color:rgba(37,211,102,0.3);" onclick="closeStudentProfileModal(); openWhatsAppDispatchModal('${stu.id}');">📲 واتساب الولي</button>
-        <button type="button" class="btn btn--primary" onclick="closeStudentProfileModal(); openRecordPaymentModal('${stu.id}');">+ تسجيل دفعة</button>
       </div>
     `;
 
@@ -3031,6 +3127,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (modalEl) modalEl.classList.add('active');
   }
   window.openStudentProfile = openStudentProfile;
+
+  window.switchDossierTab = function(studentId, tabName) {
+    openStudentProfile(studentId, tabName, 'all');
+  };
+
+  window.filterDossierSessions = function(studentId, filterName) {
+    openStudentProfile(studentId, 'sessions', filterName);
+  };
 
   function closeStudentProfileModal() {
     const modalEl = document.getElementById('studentProfileModal');
@@ -3224,13 +3328,177 @@ document.addEventListener('DOMContentLoaded', () => {
     const students = getData('brainova_students');
     const stu = students.find(s => s.id === studentId);
     if (stu && (record.status === 'present' || record.status === 'late')) {
-      stu.sessionsRemaining = (stu.sessionsRemaining || 0) + 1;
+      if (stu.unpaidAttendedSessions && stu.unpaidAttendedSessions > 0) {
+        stu.unpaidAttendedSessions = Math.max(0, stu.unpaidAttendedSessions - 1);
+        if (stu.unpaidSessions) stu.unpaidSessions = Math.max(0, stu.unpaidSessions - 1);
+        const fee = Number(stu.monthlyFee) || 5000;
+        const perSession = Math.round(fee / 4);
+        stu.debtAmount = Math.max(0, (stu.unpaidSessions || 0) * perSession);
+        stu.balance = -Math.abs(stu.debtAmount);
+        if (stu.unpaidSessions === 0 && stu.debtAmount === 0) {
+          stu.hasDebt = false;
+        }
+      } else {
+        stu.sessionsRemaining = (stu.sessionsRemaining || 0) + 1;
+      }
       saveData('brainova_students', students);
     }
 
-    showToast('تم حذف الحصة واسترجاع الرصيد بنجاح!', 'success');
+    showToast('✅ تم حذف الحصة وتحديث رصيد وسجل التلميذ بدقة!', 'success');
     openStudentProfile(studentId);
     renderActiveView();
+  };
+
+  // Official Printable Student Academic & Financial Statement (Dossier)
+  window.printStudentDossier = function(studentId) {
+    const stu = getData('brainova_students').find(s => s.id === studentId);
+    if (!stu) return;
+
+    const allAttendance = getData('brainova_attendance') || [];
+    const attendance = allAttendance
+      .filter(a => a.studentId === studentId || (stu.name && a.studentName === stu.name))
+      .sort((a, b) => (parseBrainovaDate(a.date) || 0) - (parseBrainovaDate(b.date) || 0));
+
+    const totalSessions = attendance.length;
+    const presentCount = attendance.filter(a => a.status === 'present').length;
+    const lateCount = attendance.filter(a => a.status === 'late').length;
+    const absentCount = attendance.filter(a => a.status === 'absent').length;
+    const attendedCount = presentCount + lateCount;
+    const attRate = totalSessions > 0 ? Math.round((attendedCount / totalSessions) * 100) : 100;
+
+    const hasDebtStatus = !!(stu.hasDebt || Number(stu.debtAmount) > 0 || Number(stu.unpaidMonths) > 0 || Number(stu.unpaidSessions) > 0 || (stu.unpaidAttendedSessions && stu.unpaidAttendedSessions > 0));
+    const dMonths = Number(stu.unpaidMonths) || 0;
+    const unpaidDebtSessions = Number(stu.unpaidSessions) || (dMonths > 0 ? dMonths * 4 : (stu.unpaidAttendedSessions || (hasDebtStatus ? 4 : 0)));
+    const fee = Number(stu.monthlyFee) || 5000;
+    const perSession = Math.round(fee / 4);
+    const debtAmount = Number(stu.debtAmount) || (unpaidDebtSessions * perSession) || Math.abs(Number(stu.balance) || 0);
+
+    const coveredAttendedCount = Math.max(0, attendedCount - (hasDebtStatus ? unpaidDebtSessions : 0));
+
+    let runningAttendedIndex = 0;
+    const sessionsRows = attendance.map((att, idx) => {
+      const dayName = getArabicDayName(att.date);
+      let statusText = att.status === 'present' ? 'حاضر' : (att.status === 'late' ? 'متأخر' : 'غائب');
+      let covText = '';
+      if (att.status === 'absent') {
+        covText = 'لم تُخصم (غياب)';
+      } else {
+        runningAttendedIndex++;
+        if (runningAttendedIndex <= coveredAttendedCount) {
+          covText = 'مغطاة بالاشتراك';
+        } else {
+          const debtSeq = runningAttendedIndex - coveredAttendedCount;
+          covText = `غير مسددة (دين: حصة ${debtSeq})`;
+        }
+      }
+
+      return `
+        <tr>
+          <td style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center;">${idx + 1}</td>
+          <td style="padding:6px 8px; border:1px solid #cbd5e1;">${dayName ? dayName + ' ' : ''}${att.date}</td>
+          <td style="padding:6px 8px; border:1px solid #cbd5e1;">${att.sessionTime || '—'}</td>
+          <td style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center; font-weight:bold;">${statusText}</td>
+          <td style="padding:6px 8px; border:1px solid #cbd5e1; text-align:center;">${covText}</td>
+          <td style="padding:6px 8px; border:1px solid #cbd5e1;">${att.note || '—'}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const printWin = window.open('', '_blank', 'width=880,height=900');
+    if (!printWin) {
+      showToast('يرجى السماح بفتح النوافذ المنبثقة للطباعة', 'warning');
+      return;
+    }
+
+    printWin.document.write(`
+      <!DOCTYPE html>
+      <html lang="ar" dir="rtl">
+      <head>
+        <meta charset="UTF-8">
+        <title>كشف متابعة وحضور التلميذ — ${stu.name}</title>
+        <style>
+          @page { size: A4 portrait; margin: 15mm; }
+          body { font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 20px; color: #0f172a; line-height: 1.5; font-size: 13px; }
+          .hdr { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-bottom: 16px; }
+          .title { font-size: 20px; font-weight: 800; color: #0284c7; }
+          .sub { font-size: 12px; color: #64748b; }
+          .meta-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+          .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+          .kpi-cell { background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; text-align: center; }
+          .kpi-lbl { font-size: 11px; color: #475569; }
+          .kpi-val { font-size: 16px; font-weight: 800; color: #0f172a; margin-top: 2px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+          th { background: #e2e8f0; border: 1px solid #cbd5e1; padding: 8px; font-size: 12px; }
+          .stamp-row { display: flex; justify-content: space-between; margin-top: 30px; padding: 0 30px; }
+          @media print { .no-print { display: none; } }
+        </style>
+      </head>
+      <body>
+        <div class="no-print" style="margin-bottom: 15px; text-align: left;">
+          <button onclick="window.print()" style="padding: 8px 16px; background: #0284c7; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">🖨️ طباعة الكشف (A4)</button>
+        </div>
+        <div class="hdr">
+          <div>
+            <div class="title">أكاديمية BRAINOVA ROBOTICS</div>
+            <div class="sub">كشف رسمي للمتابعة الأكاديمية وسجل الحضور والاشتراكات</div>
+          </div>
+          <div style="text-align: left; font-size: 12px; color: #64748b;">
+            تاريخ الاستخراج: ${new Date().toLocaleDateString('ar-DZ')}<br>
+            المعرف: ${stu.id}
+          </div>
+        </div>
+
+        <div class="meta-box">
+          <div><strong>اسم التلميذ:</strong> ${stu.name}</div>
+          <div><strong>الفوج والمستوى:</strong> ${stu.group || 'غير محدد'} (${stu.level || 'المستوى الأول'})</div>
+          <div><strong>ولي الأمر:</strong> ${stu.parentName || 'غير مسجل'} (${stu.parentPhone || '—'})</div>
+          <div><strong>الأستاذ المؤطر:</strong> ${stu.educator || 'غير محدد'}</div>
+        </div>
+
+        <div class="kpi-row">
+          <div class="kpi-cell">
+            <div class="kpi-lbl">نسبة الالتزام بالحضور</div>
+            <div class="kpi-val">${attRate}%</div>
+          </div>
+          <div class="kpi-cell">
+            <div class="kpi-lbl">الحصص الفعلية</div>
+            <div class="kpi-val">${attendedCount} من أصل ${totalSessions}</div>
+          </div>
+          <div class="kpi-cell">
+            <div class="kpi-lbl">التغطية بالاشتراك</div>
+            <div class="kpi-val">${coveredAttendedCount} مغطاة</div>
+          </div>
+          <div class="kpi-cell">
+            <div class="kpi-lbl">المستحقات والديون</div>
+            <div class="kpi-val" style="color:${hasDebtStatus ? '#dc2626' : '#16a34a'};">${hasDebtStatus ? debtAmount.toLocaleString() + ' دج' : '0 دج'}</div>
+          </div>
+        </div>
+
+        <h3 style="margin-bottom: 6px; font-size: 14px;">سجل الحصص التفصيلي أسبوعياً:</h3>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 35px;">#</th>
+              <th>التاريخ واليوم</th>
+              <th>التوقيت</th>
+              <th>حالة الحضور</th>
+              <th>التغطية المالية</th>
+              <th>الملاحظات والدرس المشروح</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${sessionsRows || '<tr><td colspan="6" style="text-align:center; padding:12px;">لا توجد حصص مسجلة بعد</td></tr>'}
+          </tbody>
+        </table>
+
+        <div class="stamp-row">
+          <div><strong>توقيع الأستاذ المؤطر:</strong><br><br>____________________</div>
+          <div><strong>ختم وتوقيع إدارة الأكاديمية:</strong><br><br>____________________</div>
+        </div>
+      </body>
+      </html>
+    `);
+    printWin.document.close();
   };
 
   // Save Teacher Note to Student for Parent Portal
