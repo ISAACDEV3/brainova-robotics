@@ -81,12 +81,12 @@
 
     /* 80mm POS Thermal Slip (Compact A4 / Thermal Compatible) */
     .receipt-wrapper {
-      width: 80mm;
+      width: 76mm;
       max-width: 100%;
       background: #ffffff;
       border: 1.5px dashed #64748b;
-      border-radius: 8px;
-      padding: 14px 16px;
+      border-radius: 6px;
+      padding: 10px 12px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
       position: relative;
     }
@@ -215,6 +215,11 @@
       line-height: 1.4;
     }
 
+    @page {
+      size: auto;
+      margin: 4mm;
+    }
+
     /* Print Media Rules */
     @media print {
       body {
@@ -232,10 +237,12 @@
         box-shadow: none !important;
         border: 1.5px dashed #64748b !important;
         border-radius: 0 !important;
-        width: 80mm !important;
-        padding: 8px 10px !important;
+        width: 76mm !important;
+        max-width: 76mm !important;
+        padding: 6px 8px !important;
         margin: 0 auto !important;
-        page-break-inside: avoid;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
@@ -273,6 +280,8 @@
         <img id="rcptWhatsAppQrCode" src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=1&data=https://wa.me/213791194633" style="width:58px; height:58px; border-radius:4px; border:1px solid #cbd5e1;" alt="WhatsApp QR">
         <span style="font-size:8.5px; font-weight:800; color:#0f172a; margin-top:2px; text-align:center; white-space:nowrap;">واتساب الأكاديمية</span>
       </div>
+    </div>
+
     <table class="receipt-table">
       <tr>
         <th>رقم العملية</th>
@@ -317,10 +326,6 @@
       <tr id="rcptAmountPaidRow">
         <th>المبلغ المدفوع</th>
         <td class="highlight-amount" id="rcptAmount">5,000 دج</td>
-      </tr>
-      <tr id="rcptAmountWordsRow">
-        <th>المبلغ كتابة</th>
-        <td id="rcptAmountWords" style="font-size:8.5px; color:#475569; font-weight:700;">خمسة آلاف دينار جزائري فقط</td>
       </tr>
       <tr>
         <th>الرصيد والحصص</th>
@@ -380,8 +385,8 @@
         const opNum = pay.opNumber || (pay.id ? pay.id.replace('REC-', '') : '94789');
         const amount = Number(pay.amountPaid || 5000);
         
-        document.getElementById('rcptCode').textContent = opNum;
-        document.getElementById('rcptOpNumber').textContent = opNum;
+        document.getElementById('rcptCode').textContent = '#' + opNum;
+        document.getElementById('rcptOpNumber').textContent = '#' + opNum;
         document.getElementById('rcptStudentName').textContent = (student && student.name) || pay.studentName || '—';
         document.getElementById('rcptParentName').textContent = (student && student.parentName) || pay.parentName || 'ولي أمر التلميذ';
         document.getElementById('rcptLevelGroup').textContent = (pay.level || 'المستوى الأول') + ' • ' + (pay.group || 'الفوج أ');
@@ -498,10 +503,7 @@
         document.getElementById('rcptMethod').textContent = pay.method || (pay.status === 'unpaid' ? 'غير مدفوع (دين معلق)' : 'نقداً (Cash)');
 
         const isUnpaid = pay.status === 'unpaid' || pay.isDebt || Number(pay.amountPaid) === 0;
-        const elTypeBadge = document.getElementById('rcptTypeBadge');
-        const elStatus = document.getElementById('rcptPaymentStatus');
         const elAmount = document.getElementById('rcptAmount');
-        const elWords = document.getElementById('rcptAmountWords');
         const elDueRow = document.getElementById('rcptDueAmountRow');
         const elDue = document.getElementById('rcptDueAmount');
         const elUnpaidPeriodRow = document.getElementById('rcptUnpaidPeriodRow');
@@ -511,11 +513,9 @@
         const unpaidSessions = pay.unpaidSessions || (student && student.unpaidSessions) || (student && student.unpaidAttendedSessions) || 4;
         const unpaidPeriodText = pay.unpaidPeriodText || (student && student.debtNotes) || `${unpaidSessions} حصص غير مدفوعة (درسها الطالب)`;
 
-        const elWordsRow = document.getElementById('rcptAmountWordsRow');
-
         if (isUnpaid) {
           if (elAmount) {
-            elAmount.innerHTML = `<span style="color:#dc2626; font-weight:900; font-size:13px; text-decoration:line-through;">0 دج (غير مدفوع)</span>`;
+            elAmount.innerHTML = `<span style="color:#dc2626; font-weight:900; font-size:12px; text-decoration:line-through;">0 دج (غير مدفوع)</span>`;
           }
           if (elDueRow) elDueRow.style.display = '';
           if (elDue) elDue.textContent = `${debtAmount.toLocaleString()} دج`;
@@ -527,10 +527,6 @@
             elValidity.style.color = '#dc2626';
           }
 
-          if (elWordsRow) {
-            elWordsRow.style.display = 'none';
-          }
-
           document.getElementById('rcptBalance').textContent = `⚠️ دين معلق: ${debtAmount.toLocaleString()} دج`;
         } else {
           if (elAmount) {
@@ -539,19 +535,13 @@
           if (elDueRow) elDueRow.style.display = 'none';
           if (elUnpaidPeriodRow) elUnpaidPeriodRow.style.display = 'none';
 
-          if (elWordsRow) {
-            elWordsRow.style.display = '';
-          }
-
-          // Words tafqeet
-          if (amount === 5000) elWords.textContent = 'خمسة آلاف دينار جزائري فقط (5,000 دج)';
-          else if (amount === 8000) elWords.textContent = 'ثمانية آلاف دينار جزائري فقط (باقة طفلين - 8,000 دج)';
-          else if (amount === 11000) elWords.textContent = 'أحد عشر ألف دينار جزائري فقط (باقة 3 أطفال - 11,000 دج)';
-          else elWords.textContent = amount.toLocaleString() + ' دينار جزائري فقط';
-
-          const remainingSessions = (student && student.sessionsRemaining !== undefined) ? student.sessionsRemaining : (pay.sessionsPurchased || 4);
-          const balance = (student && student.balance !== undefined && student.balance >= 0) ? student.balance : amount;
-          document.getElementById('rcptBalance').textContent = remainingSessions + ' حصص متبقية / ' + Number(balance).toLocaleString() + ' دج';
+          const remainingSessions = (pay && pay.sessionsRemaining !== undefined)
+            ? pay.sessionsRemaining
+            : ((student && student.sessionsRemaining !== undefined) ? student.sessionsRemaining : (pay.sessionsPurchased || 4));
+          const balance = (pay && pay.currentBalance !== undefined && pay.currentBalance >= 0)
+            ? pay.currentBalance
+            : ((student && student.balance !== undefined && student.balance >= 0) ? student.balance : amount);
+          document.getElementById('rcptBalance').textContent = remainingSessions + ' حصص متاحة / ' + Number(balance).toLocaleString() + ' دج';
         }
 
         // Auto trigger Google Chrome print preview

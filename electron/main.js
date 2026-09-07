@@ -647,16 +647,12 @@ ipcMain.on('print-receipt', (event, payload) => {
     const amountNum = isUnpaid ? 0 : Number((pay && pay.amountPaid) || 5000);
     const amountStr = isUnpaid ? '0 دج (غير مدفوع)' : `${amountNum.toLocaleString()} دج`;
 
-    let wordsTafqeet = isUnpaid ? `المبلغ المطلوب: ${debtAmountNum.toLocaleString()} دينار جزائري (غير مسددة)` : `${amountNum.toLocaleString()} دينار جزائري فقط`;
-    if (!isUnpaid) {
-      if (amountNum === 2000) wordsTafqeet = 'ألفان دينار جزائري فقط';
-      else if (amountNum === 5000) wordsTafqeet = 'خمسة آلاف دينار جزائري فقط (5,000 دج)';
-      else if (amountNum === 8000) wordsTafqeet = 'ثمانية آلاف دينار جزائري فقط (باقة طفلين - 8,000 دج)';
-      else if (amountNum === 11000) wordsTafqeet = 'أحد عشر ألف دينار جزائري فقط (باقة 3 أطفال - 11,000 دج)';
-    }
-
-    const remainingSessions = (stu && stu.sessionsRemaining !== undefined) ? stu.sessionsRemaining : ((pay && pay.sessionsPurchased) || 4);
-    const balanceNum = (stu && stu.balance !== undefined) ? stu.balance : amountNum;
+    const remainingSessions = (pay && pay.sessionsRemaining !== undefined)
+      ? pay.sessionsRemaining
+      : ((stu && stu.sessionsRemaining !== undefined) ? stu.sessionsRemaining : ((pay && pay.sessionsPurchased) || 4));
+    const balanceNum = (pay && pay.currentBalance !== undefined && pay.currentBalance >= 0)
+      ? pay.currentBalance
+      : ((stu && stu.balance !== undefined && stu.balance >= 0) ? stu.balance : amountNum);
     const balanceStr = isUnpaid ? `⚠️ دين معلق: ${debtAmountNum.toLocaleString()} دج` : `${remainingSessions} حصص متاحة / ${Number(balanceNum).toLocaleString()} دج`;
 
     // Subscription Validity, First Session Date, and Expected Renewal Date
@@ -765,12 +761,12 @@ ipcMain.on('print-receipt', (event, payload) => {
     .btn-action:hover { background: #0369a1; }
     .btn-secondary { background: rgba(255, 255, 255, 0.1); color: #f1f5f9; }
     .receipt-wrapper {
-      width: 80mm;
+      width: 76mm;
       max-width: 100%;
       background: #ffffff;
       border: 1.5px dashed #64748b;
       border-radius: 6px;
-      padding: 12px 14px;
+      padding: 10px 12px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
       position: relative;
     }
@@ -780,7 +776,7 @@ ipcMain.on('print-receipt', (event, payload) => {
       justify-content: center;
       gap: 8px;
       margin-bottom: 8px;
-      font-size: 9px;
+      font-size: 8.5px;
       color: #94a3b8;
       font-weight: 700;
     }
@@ -788,51 +784,57 @@ ipcMain.on('print-receipt', (event, payload) => {
       content: ''; flex: 1; height: 1px; border-bottom: 1px dashed #cbd5e1;
     }
     .receipt-header {
-      text-align: center;
       border-bottom: 2px dashed #94a3b8;
       padding-bottom: 8px;
       margin-bottom: 8px;
+      width: 100%;
     }
     .receipt-brand-row {
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 4px;
+      justify-content: space-between;
+      gap: 6px;
+      width: 100%;
     }
-    .receipt-logo-icon { width: 36px; height: 36px; object-fit: contain; }
-    .receipt-brand-title { font-size: 14.5px; font-weight: 900; color: #0f172a; letter-spacing: 0.5px; line-height: 1.1; }
+    .receipt-logo-icon { width: 36px; height: 36px; object-fit: contain; flex-shrink: 0; }
+    .receipt-brand-title { font-size: 13.5px; font-weight: 900; color: #0f172a; letter-spacing: 0.5px; line-height: 1.15; }
     .receipt-brand-title span { color: #0284c7; }
-    .receipt-sub { font-size: 9px; color: #475569; font-weight: 700; margin-top: 2px; }
+    .receipt-sub { font-size: 8px; color: #475569; font-weight: 700; margin-top: 1px; }
     .receipt-code-badge {
       display: inline-block;
       background: #f1f5f9;
       border: 1px solid #cbd5e1;
       border-radius: 4px;
-      padding: 2px 10px;
-      font-size: 12px;
+      padding: 1px 7px;
+      font-size: 11px;
       font-weight: 900;
-      letter-spacing: 2px;
+      letter-spacing: 1.5px;
       font-family: 'JetBrains Mono', monospace;
       color: #0f172a;
-      margin: 5px 0 2px;
+      margin-top: 3px;
     }
-    .receipt-table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 11px; }
+    .receipt-table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 10.5px; table-layout: fixed; }
     .receipt-table tr { border-bottom: 1px solid #e2e8f0; }
-    .receipt-table th { background: #f8fafc; color: #475569; padding: 5px 6px; font-weight: 800; width: 36%; text-align: right; border: 1px solid #e2e8f0; }
-    .receipt-table td { padding: 5px 6px; color: #0f172a; font-weight: 700; border: 1px solid #e2e8f0; }
+    .receipt-table th { background: #f8fafc; color: #475569; padding: 4px 6px; font-weight: 800; width: 38%; text-align: right; border: 1px solid #e2e8f0; font-size: 10px; }
+    .receipt-table td { padding: 4px 6px; color: #0f172a; font-weight: 700; border: 1px solid #e2e8f0; width: 62%; font-size: 10.5px; }
     .highlight-amount { font-size: 14px; font-weight: 900; color: #059669; font-family: 'JetBrains Mono', 'Cairo', monospace; }
-    .highlight-words { font-size: 9px; color: #065f46; font-weight: 800; background: #f0fdf4; }
-    .receipt-footer { text-align: center; border-top: 2px dashed #94a3b8; padding-top: 8px; margin-top: 8px; font-size: 8.5px; color: #475569; line-height: 1.4; }
+    .receipt-footer { text-align: center; border-top: 2px dashed #94a3b8; padding-top: 6px; margin-top: 8px; font-size: 8px; color: #475569; line-height: 1.35; width: 100%; }
+    @page {
+      size: auto;
+      margin: 4mm;
+    }
     @media print {
       body { background: #ffffff !important; padding: 0 !important; margin: 0 !important; display: block !important; }
       .screen-actions-bar { display: none !important; }
       .receipt-wrapper {
         box-shadow: none !important;
         border: 1.5px dashed #64748b !important;
-        width: 80mm !important;
-        padding: 8px 10px !important;
+        width: 76mm !important;
+        max-width: 76mm !important;
+        padding: 6px 8px !important;
         margin: 0 auto !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
@@ -852,41 +854,44 @@ ipcMain.on('print-receipt', (event, payload) => {
 
   <div class="receipt-wrapper">
     <div class="scissor-guide">✂️ خط قص الوصل (80 مم) ✂️</div>
-    <div class="receipt-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px dashed #94a3b8; padding-bottom:8px; margin-bottom:8px;">
-      <div style="display:flex; align-items:center; gap:8px; text-align:right;">
-        ${robotDataUri ? `<img src="${robotDataUri}" alt="Brainova" class="receipt-logo-icon">` : ''}
-        <div>
-          <div class="receipt-brand-title">BRAINOVA <span>ROBOTICS</span></div>
-          <div class="receipt-sub">أكاديمية الروبوتيك والذكاء الاصطناعي — أم البواقي</div>
-          <div class="receipt-code-badge" style="margin-top:4px;">${opNum}</div>
+    <div class="receipt-header">
+      <div class="receipt-brand-row">
+        <div style="display:flex; align-items:center; gap:6px; text-align:right;">
+          ${robotDataUri ? `<img src="${robotDataUri}" alt="Brainova" class="receipt-logo-icon">` : ''}
+          <div>
+            <div class="receipt-brand-title">BRAINOVA <span>ROBOTICS</span></div>
+            <div class="receipt-sub">أكاديمية الروبوتيك والذكاء الاصطناعي — أم البواقي</div>
+            <div class="receipt-code-badge">وصل رقم: #${opNum}</div>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0;">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=1&data=https://wa.me/213791194633" style="width:50px; height:50px; border:1px solid #cbd5e1; border-radius:4px;" alt="WhatsApp QR">
+          <span style="font-size:7.5px; font-weight:800; color:#0f172a; margin-top:2px; text-align:center; white-space:nowrap;">واتساب الأكاديمية</span>
         </div>
       </div>
-      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0;">
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=1&data=https://wa.me/213791194633" style="width:58px; height:58px; border:1px solid #cbd5e1; border-radius:4px;" alt="WhatsApp QR">
-        <span style="font-size:8.5px; font-weight:800; color:#0f172a; margin-top:2px; text-align:center; white-space:nowrap;">واتساب الأكاديمية</span>
-      </div>
+    </div>
+
     <table class="receipt-table">
-      <tr><th>رقم العملية</th><td style="font-family:'JetBrains Mono', monospace; font-weight:900;">${opNum}</td></tr>
-      <tr><th>اسم التلميذ</th><td style="font-size:12px; font-weight:900; color:#0f172a;">${stuName}</td></tr>
+      <tr><th>رقم العملية</th><td style="font-family:'JetBrains Mono', monospace; font-weight:900;">#${opNum}</td></tr>
+      <tr><th>اسم التلميذ</th><td style="font-size:11.5px; font-weight:900; color:#0f172a;">${stuName}</td></tr>
       <tr><th>ولي الأمر</th><td>${parentName}</td></tr>
       <tr><th>المستوى والفوج</th><td>${levelGroup}</td></tr>
       ${isUnpaid ? `
         <tr><th style="color:#dc2626;">الحصص / الفترة غير المدفوعة</th><td style="color:#dc2626; font-weight:800;">${unpaidPeriodText}</td></tr>
-        <tr><th style="color:#dc2626;">المبلغ المستحق للدفع</th><td style="color:#dc2626; font-size:13px; font-weight:900; font-family:'JetBrains Mono', monospace;">${debtAmountNum.toLocaleString()} دج</td></tr>
+        <tr><th style="color:#dc2626;">المبلغ المستحق للدفع</th><td style="color:#dc2626; font-size:12px; font-weight:900; font-family:'JetBrains Mono', monospace;">${debtAmountNum.toLocaleString()} دج</td></tr>
       ` : ''}
       <tr><th>صلاحية الاشتراك</th><td style="color:${isUnpaid ? '#dc2626' : '#0284c7'}; font-weight:800;">${isUnpaid ? unpaidPeriodText : validityStr}</td></tr>
       <tr><th>تاريخ استحقاق التجديد</th><td style="color:#d97706; font-weight:800; font-family:'JetBrains Mono', monospace;">${renewalDateStr}</td></tr>
       <tr><th>تاريخ العملية</th><td style="font-family:'JetBrains Mono', monospace;">${dateStr}</td></tr>
       <tr><th>طريقة الدفع</th><td style="color:#0284c7; font-weight:800;">${isUnpaid ? 'غير مدفوع (دين معلق)' : payMethod}</td></tr>
       <tr><th>المبلغ المدفوع</th><td>${isUnpaid ? `<span style="color:#dc2626; font-weight:900; text-decoration:line-through;">0 دج (غير مدفوع)</span>` : `<span class="highlight-amount">${amountStr}</span>`}</td></tr>
-      ${!isUnpaid ? `<tr><th>المبلغ كتابة</th><td style="font-size:8.5px; color:#475569; font-weight:700;">${wordsTafqeet}</td></tr>` : ''}
       <tr><th>الرصيد والحصص</th><td>${balanceStr}</td></tr>
     </table>
 
     <div class="receipt-footer">
       <div>الهاتف: <strong style="font-family:'JetBrains Mono', monospace;" dir="ltr">07 91 19 46 33</strong> • البريد: <strong>brainovarobotics@gmail.com</strong></div>
       <div style="font-weight:800; color:#0f172a; margin-top:2px;">يرجى الاحتفاظ بهذا الوصل فهو يثبت عملية التسديد</div>
-      <div style="font-family:'JetBrains Mono', monospace; font-size:7.5px; color:#94a3b8; margin-top:2px;">BRAINOVA POS ENGINE · VALIDATED</div>
+      <div style="font-family:'JetBrains Mono', monospace; font-size:7px; color:#94a3b8; margin-top:2px;">BRAINOVA POS ENGINE · VALIDATED</div>
     </div>
   </div>
 

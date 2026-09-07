@@ -2936,10 +2936,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const unpaidPeriodText = payment.unpaidPeriod || (payment.unpaidSessions ? `${payment.unpaidSessions} حصص درسها الطالب ولم تسدد` : 'حصص دراسية غير مسددة');
 
     const elOpNum = document.getElementById('rcptOpNumber');
-    if (elOpNum) elOpNum.textContent = opNum;
+    if (elOpNum) elOpNum.textContent = '#' + opNum;
 
     const elOpNumCell = document.getElementById('rcptOpNumberCell');
-    if (elOpNumCell) elOpNumCell.textContent = opNum;
+    if (elOpNumCell) elOpNumCell.textContent = '#' + opNum;
 
     const elStudent = document.getElementById('rcptStudentName');
     if (elStudent) elStudent.textContent = (stu && stu.name) || payment.studentName || '—';
@@ -3047,16 +3047,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const elWordsRow = document.getElementById('rcptAmountWordsRow');
-    const elWords = document.getElementById('rcptAmountWords');
-    if (isUnpaid) {
-      if (elWordsRow) elWordsRow.style.display = 'none';
-    } else {
-      if (elWordsRow) elWordsRow.style.display = 'table-row';
-      if (elWords) {
-        elWords.textContent = convertAmountToArabicWords(exactAmount);
-        elWords.style.color = '#475569';
-      }
-    }
+    if (elWordsRow) elWordsRow.style.display = 'none';
 
     const elCurrentBalance = document.getElementById('rcptCurrentBalance');
     if (elCurrentBalance) {
@@ -3064,8 +3055,12 @@ document.addEventListener('DOMContentLoaded', () => {
         elCurrentBalance.textContent = `متأخر عن الدفع (مطلوب تسديد دين: ${debtAmount.toLocaleString()} دج)`;
         elCurrentBalance.style.color = '#DC2626';
       } else {
-        const remainingSessions = (stu && stu.sessionsRemaining !== undefined) ? stu.sessionsRemaining : (payment.sessionsPurchased || 4);
-        const balanceAmount = (stu && stu.balance !== undefined) ? stu.balance : exactAmount;
+        const remainingSessions = (payment && payment.sessionsRemaining !== undefined)
+          ? payment.sessionsRemaining
+          : ((stu && stu.sessionsRemaining !== undefined) ? stu.sessionsRemaining : (payment.sessionsPurchased || 4));
+        const balanceAmount = (payment && payment.currentBalance !== undefined && payment.currentBalance >= 0)
+          ? payment.currentBalance
+          : ((stu && stu.balance !== undefined && stu.balance >= 0) ? stu.balance : exactAmount);
         elCurrentBalance.textContent = `${remainingSessions} حصص متاحة / ${Number(balanceAmount).toLocaleString()} دج`;
         elCurrentBalance.style.color = '#0F172A';
       }
