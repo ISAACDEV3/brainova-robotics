@@ -2542,16 +2542,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const elLevelGroup = document.getElementById('rcptLevelGroup');
     if (elLevelGroup) elLevelGroup.textContent = `${(stu && stu.level) || payment.level || 'المستوى الأول'} • ${(stu && stu.group) || payment.group || 'الفوج أ'}`;
 
-    // Dynamic Badge
-    const elBadge = document.getElementById('rcptBadgeContainer');
-    if (elBadge) {
-      if (isUnpaid) {
-        elBadge.innerHTML = `<div style="display:inline-block; padding:5px 12px; background:#FEF2F2; color:#DC2626; border:1.5px solid #FCA5A5; border-radius:9999px; font-weight:800; font-size:11.5px; letter-spacing:0.3px;">⚠️ إشعار دين وتأخر في الدفع — غير مدفوع</div>`;
-      } else {
-        elBadge.innerHTML = `<div style="display:inline-block; padding:5px 12px; background:#ECFDF5; color:#059669; border:1.5px solid #A7F3D0; border-radius:9999px; font-weight:800; font-size:11.5px; letter-spacing:0.3px;">وصل دفع رسمي — تم التسديد بنجاح ✅</div>`;
-      }
-    }
-
     // Unpaid period row & Debt amount row
     const elUnpaidPeriodRow = document.getElementById('rcptUnpaidPeriodRow');
     const elUnpaidPeriod = document.getElementById('rcptUnpaidPeriod');

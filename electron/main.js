@@ -853,15 +853,6 @@ ipcMain.on('print-receipt', (event, payload) => {
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=1&data=https://wa.me/213791194633" style="width:58px; height:58px; border:1px solid #cbd5e1; border-radius:4px;" alt="WhatsApp QR">
         <span style="font-size:8.5px; font-weight:800; color:#0f172a; margin-top:2px; text-align:center; white-space:nowrap;">واتساب الأكاديمية</span>
       </div>
-    </div>
-
-    <div style="text-align:center; margin-bottom:8px;">
-      ${isUnpaid 
-        ? `<div style="background:#fee2e2; border:1.5px solid #ef4444; color:#b91c1c; font-weight:900; font-size:11px; padding:3px 8px; border-radius:4px;">⚠️ إشعار دين وتأخر في الدفع — غير مدفوع</div>`
-        : `<div style="background:#f0fdf4; border:1.5px solid #22c55e; color:#15803d; font-weight:900; font-size:11px; padding:3px 8px; border-radius:4px;">وصل دفع رسمي — تم التسديد بنجاح ✅</div>`
-      }
-    </div>
-
     <table class="receipt-table">
       <tr><th>رقم العملية</th><td style="font-family:'JetBrains Mono', monospace; font-weight:900;">${opNum}</td></tr>
       <tr><th>اسم التلميذ</th><td style="font-size:12px; font-weight:900; color:#0f172a;">${stuName}</td></tr>
