@@ -5473,7 +5473,9 @@ document.addEventListener('DOMContentLoaded', () => {
           <div style="display:flex; justify-content:space-between; align-items:center; border-top: 1px solid var(--color-border); padding-top: 8px; gap:6px; flex-wrap:wrap;">
             <span style="font-size:0.78rem; color:var(--color-text-muted);">الطلاب: <strong style="color:var(--color-text);">${studentCount} / ${g.maxStudents || 12}</strong></span>
             <div style="display:inline-flex; gap:6px; flex-wrap:wrap;">
+              <button type="button" class="btn btn--primary btn--small" style="font-size:0.75rem; padding:5px 10px; background:#0284C7; border-color:#0284C7; font-weight:700;" onclick="openGroupDossierModal('${encodeURIComponent(g.name)}')">${UI_ICONS.file(12)} ملف الفوج</button>
               <button type="button" class="btn btn--primary btn--small" style="font-size:0.75rem; padding:5px 10px;" onclick="openQuickGroupAttendanceModal('${encodeURIComponent(g.name)}')">تسجيل الحضور</button>
+              <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px; color:#A855F7; border-color:rgba(168,85,247,0.4); background:rgba(168,85,247,0.08); font-weight:700;" onclick="openGroupMakeupSessionModal('${encodeURIComponent(g.name)}')">${UI_ICONS.plus(12)} حصة تعويضية</button>
               <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px; color:#F59E0B; border-color:rgba(245,158,11,0.4);" onclick="openEditGroupModal('${g.id}')">${UI_ICONS.edit(12)} تعديل الفوج</button>
               <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px;" onclick="printGroupMonthlyAttendanceSheet('${encodeURIComponent(g.name)}')">طباعة القائمة</button>
               <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px;" onclick="openBatchBadgesModal('${encodeURIComponent(g.name)}')">بطاقات الفوج</button>
@@ -5629,8 +5631,662 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // ==========================================
-  // QUICK GROUP ATTENDANCE LOGIC (DIRECTLY IN GROUPS VIEW)
+  // =========================================================
+  // GROUP DOSSIER SYSTEM (ملف الفوج الشامل وسجل الحالات)
+  // =========================================================
+  window.__currentDossierGroupName = '';
+
+  window.openGroupDossierModal = function(encodedGroupName) {
+    const rawGroupName = decodeURIComponent(encodedGroupName || '').trim();
+    if (!rawGroupName) return;
+
+    window.__currentDossierGroupName = rawGroupName;
+
+    const allGroups = getData('brainova_groups') || [];
+    const matchedGroup = allGroups.find(g => g.name === rawGroupName || g.id === rawGroupName) || {
+      name: rawGroupName,
+      level: 'دورة الروبوتيك',
+      educator: '',
+      educatorName: '',
+      room: '',
+      ageCategory: '8 - 11 سنة',
+      maxStudents: 12
+    };
+
+    const allAttendance = getData('brainova_attendance') || [];
+    const schedules = getData('brainova_schedule') || [];
+    const sch = schedules.find(s => s.groupId === matchedGroup.id || isStudentInGroup({ group: s.groupName }, rawGroupName));
+    const cycle = getGroupWeeklyCycleInfo(rawGroupName, allAttendance);
+
+    // Header info
+    const titleEl = document.getElementById('groupDossierTitle');
+    if (titleEl) titleEl.textContent = `ملف فوج: ${rawGroupName}`;
+
+    const levelBadge = document.getElementById('groupDossierLevelBadge');
+    if (levelBadge) levelBadge.textContent = matchedGroup.level || 'دورة الروبوتيك';
+
+    const eduEl = document.getElementById('dossierEducator');
+    if (eduEl) eduEl.textContent = matchedGroup.educator || matchedGroup.educatorName || (sch ? (sch.educator || sch.educatorName) : '') || 'غير محدد';
+
+    const roomEl = document.getElementById('dossierRoom');
+    if (roomEl) roomEl.textContent = matchedGroup.room || (sch ? sch.room : '') || 'غير محدد';
+
+    const ageEl = document.getElementById('dossierAgeCategory');
+    if (ageEl) ageEl.textContent = matchedGroup.ageCategory || '8 - 11 سنة';
+
+    const schEl = document.getElementById('dossierSchedule');
+    if (schEl) schEl.textContent = `${sch ? sch.day : (matchedGroup.day || 'السبت')} • ${sch ? `${sch.startTime} - ${sch.endTime}` : (matchedGroup.timeSlot || '14:00 - 16:00')}`;
+
+    const nextEl = document.getElementById('dossierNextSession');
+    if (nextEl) nextEl.textContent = `${cycle.nextDayName} ${cycle.nextSessionDate || '—'}`;
+
+    const searchInput = document.getElementById('dossierStudentSearch');
+    if (searchInput) searchInput.value = '';
+
+    renderGroupDossierTable();
+
+    const modal = document.getElementById('groupDossierModal');
+    if (modal) modal.classList.add('active');
+  };
+
+  window.closeGroupDossierModal = function() {
+    const modal = document.getElementById('groupDossierModal');
+    if (modal) modal.classList.remove('active');
+  };
+
+  window.openAddStudentForCurrentDossierGroup = function() {
+    const grp = window.__currentDossierGroupName;
+    closeGroupDossierModal();
+    openAddStudentModal();
+    const groupSelect = document.getElementById('newStudentGroup');
+    if (groupSelect && grp) {
+      groupSelect.value = grp;
+      onStudentGroupSelectChange();
+    }
+  };
+
+  window.renderGroupDossierTable = function() {
+    const groupName = window.__currentDossierGroupName;
+    if (!groupName) return;
+
+    const allStudents = getData('brainova_students') || [];
+    let groupStudents = allStudents.filter(s => isStudentInGroup(s, groupName));
+
+    const query = document.getElementById('dossierStudentSearch')?.value.trim().toLowerCase() || '';
+    if (query) {
+      groupStudents = groupStudents.filter(s => 
+        (s.name && s.name.toLowerCase().includes(query)) ||
+        (s.id && s.id.toLowerCase().includes(query)) ||
+        (s.parentPhone && s.parentPhone.includes(query)) ||
+        (s.parentName && s.parentName.toLowerCase().includes(query))
+      );
+    }
+
+    const allPayments = getData('brainova_payments') || [];
+    const allAttendance = getData('brainova_attendance') || [];
+    const groupAtt = allAttendance.filter(a => isStudentInGroup({ group: a.groupName }, groupName));
+
+    // Calculate Group KPIs
+    const allStudentsInGroup = allStudents.filter(s => isStudentInGroup(s, groupName));
+    const allGroups = getData('brainova_groups') || [];
+    const matchedGroup = allGroups.find(g => g.name === groupName || g.id === groupName);
+    const capacity = matchedGroup?.maxStudents || 12;
+
+    let totalPaidCount = 0;
+    let totalOverdueCount = 0;
+    let totalDebtDZD = 0;
+    let totalAttPresent = 0;
+    let totalAttRecorded = 0;
+
+    allStudentsInGroup.forEach(stu => {
+      const remaining = Number(stu.sessionsRemaining) || 0;
+      const balance = Number(stu.balance) || 0;
+      if (remaining > 0 && balance >= 0) {
+        totalPaidCount++;
+      } else {
+        totalOverdueCount++;
+        if (balance < 0) totalDebtDZD += Math.abs(balance);
+      }
+    });
+
+    groupAtt.forEach(a => {
+      totalAttRecorded++;
+      if (a.status === 'present' || a.status === 'late') {
+        totalAttPresent++;
+      }
+    });
+
+    const groupAttRate = totalAttRecorded > 0 ? Math.round((totalAttPresent / totalAttRecorded) * 100) : 100;
+    const uniqueSessionDates = [...new Set(groupAtt.map(a => a.date))];
+    const makeupSessionsCount = [...new Set(groupAtt.filter(a => a.sessionType === 'makeup' || (a.note && a.note.includes('تعويض'))).map(a => a.date))].length;
+
+    // Update KPI Badges
+    const countEl = document.getElementById('dossierStudentsCount');
+    if (countEl) countEl.textContent = allStudentsInGroup.length;
+
+    const capEl = document.getElementById('dossierCapacityRatio');
+    if (capEl) capEl.textContent = `/ ${capacity}`;
+
+    const paidEl = document.getElementById('dossierPaidCount');
+    if (paidEl) paidEl.textContent = totalPaidCount;
+
+    const overdueEl = document.getElementById('dossierOverdueCount');
+    if (overdueEl) overdueEl.textContent = totalOverdueCount;
+
+    const debtEl = document.getElementById('dossierDebtAmount');
+    if (debtEl) debtEl.textContent = totalDebtDZD > 0 ? `${totalDebtDZD.toLocaleString()} دج` : '0 دج';
+
+    const rateEl = document.getElementById('dossierAttendanceRate');
+    if (rateEl) rateEl.textContent = `${groupAttRate}%`;
+
+    const sessEl = document.getElementById('dossierCompletedSessionsCount');
+    if (sessEl) sessEl.textContent = `${uniqueSessionDates.length} حصص`;
+
+    const makeupEl = document.getElementById('dossierMakeupCount');
+    if (makeupEl) makeupEl.textContent = makeupSessionsCount;
+
+    // Render Table Body
+    const tbody = document.getElementById('groupDossierTableBody');
+    if (!tbody) return;
+
+    if (groupStudents.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" style="text-align:center; padding:32px 14px; color:var(--color-text-muted);">
+            لا توجد سجلات طلاب تطابق البحث في هذا الفوج.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = groupStudents.map(stu => {
+      const remaining = Number(stu.sessionsRemaining) || 0;
+      const balance = Number(stu.balance) || 0;
+      const cleanPhone = (stu.parentPhone || '').replace(/\D/g, '');
+      const waPhone = cleanPhone.startsWith('0') ? '213' + cleanPhone.slice(1) : cleanPhone;
+
+      // Student age
+      let ageStr = '—';
+      if (stu.birthDate) {
+        const bd = new Date(stu.birthDate);
+        if (!isNaN(bd.getTime())) {
+          const diffYear = Math.floor((new Date() - bd) / (365.25 * 24 * 60 * 60 * 1000));
+          ageStr = `${diffYear} سنة`;
+        }
+      }
+
+      // Student Attendance records in this group
+      const stuAtt = groupAtt.filter(a => a.studentId === stu.id || a.studentName === stu.name);
+      const presCount = stuAtt.filter(a => a.status === 'present').length;
+      const lateCount = stuAtt.filter(a => a.status === 'late').length;
+      const absDeducted = stuAtt.filter(a => a.status === 'absent' && a.holdAbsence !== true).length;
+      const absHold = stuAtt.filter(a => a.status === 'absent' && a.holdAbsence === true).length;
+      const totalAtt = stuAtt.length;
+      const stuRate = totalAtt > 0 ? Math.round(((presCount + lateCount) / totalAtt) * 100) : 100;
+
+      // Financial status badge
+      let finStatusHtml = '';
+      if (remaining > 0 && balance >= 0) {
+        finStatusHtml = `<span class="status-pill status-pill--active" style="font-size:0.7rem; padding:2px 8px;">ساري المفعول</span>`;
+      } else if (remaining === 0 && balance >= 0) {
+        finStatusHtml = `<span class="status-pill" style="background:rgba(245,158,11,0.15); color:#F59E0B; border:1px solid rgba(245,158,11,0.3); font-size:0.7rem; padding:2px 8px;">استحقاق التجديد</span>`;
+      } else {
+        finStatusHtml = `<span class="status-pill status-pill--danger" style="font-size:0.7rem; padding:2px 8px;">متأخر في السداد</span>`;
+      }
+
+      if (balance < 0) {
+        finStatusHtml += `<br><strong style="color:#EF4444; font-size:0.72rem;">دين: ${Math.abs(balance).toLocaleString()} دج</strong>`;
+      }
+
+      // Pedagogical / Administrative Tag
+      let pedTagHtml = '';
+      if (absHold > 0) {
+        pedTagHtml += `<span style="background:rgba(168,85,247,0.18); color:#C084FC; border:1px solid rgba(168,85,247,0.35); font-size:0.68rem; font-weight:700; padding:1px 6px; border-radius:4px; display:inline-block; margin-bottom:3px;">يحتاج تعويض (${absHold})</span><br>`;
+      }
+      if (stuRate < 70 && totalAtt >= 3) {
+        pedTagHtml += `<span style="background:rgba(239,68,68,0.15); color:#EF4444; border:1px solid rgba(239,68,68,0.3); font-size:0.68rem; font-weight:700; padding:1px 6px; border-radius:4px; display:inline-block; margin-bottom:3px;">غياب متكرر (${100 - stuRate}%)</span><br>`;
+      } else if (absHold === 0 && remaining > 0) {
+        pedTagHtml += `<span style="background:rgba(16,185,129,0.12); color:#10B981; border:1px solid rgba(16,185,129,0.25); font-size:0.68rem; font-weight:700; padding:1px 6px; border-radius:4px; display:inline-block; margin-bottom:3px;">منتظم وملتزم</span><br>`;
+      }
+
+      const noteText = stu.notes || stu.healthNotes || '—';
+
+      // Rate progress color
+      const progressColor = stuRate >= 85 ? '#10B981' : (stuRate >= 70 ? '#F59E0B' : '#EF4444');
+
+      return `
+        <tr>
+          <td><span style="font-family:monospace; font-weight:700; color:var(--color-primary); font-size:0.78rem;">${stu.id}</span></td>
+          <td>
+            <a href="#" onclick="closeGroupDossierModal(); openStudentProfile('${stu.id}'); return false;" style="color:#fff; font-weight:700; text-decoration:none; display:inline-block;" title="عرض الملف الشخصي الكامل">
+              ${stu.name}
+            </a>
+            <div style="font-size:0.72rem; color:var(--color-text-muted); margin-top:2px;">
+              ${ageStr} • ${stu.level || ''}
+            </div>
+          </td>
+          <td>
+            <div style="font-weight:600; color:#F8FAFC; font-size:0.8rem;">${stu.parentName || 'ولي الأمر'}</div>
+            <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
+              <a href="tel:${stu.parentPhone}" dir="ltr" style="font-size:0.78rem; color:var(--color-primary); font-family:monospace; text-decoration:none;">${stu.parentPhone || '—'}</a>
+              ${cleanPhone ? `
+                <a href="https://wa.me/${waPhone}" target="_blank" style="color:#10B981; display:inline-flex; align-items:center;" title="مراسلة واتساب">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2m.01 1.67c2.2 0 4.26.86 5.82 2.42a8.225 8.225 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.39-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.196 8.196 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24m4.52 11.64c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.02-1.25-.75-.67-1.26-1.5-1.41-1.75-.15-.25-.02-.39.11-.51.11-.11.25-.29.38-.44.13-.14.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.34-.76-1.84-.2-.49-.4-.42-.56-.43h-.47c-.17 0-.44.06-.67.31-.23.25-.87.85-.87 2.08s.89 2.42 1.01 2.59c.13.17 1.75 2.67 4.24 3.75.59.26 1.05.41 1.41.53.6.19 1.14.16 1.57.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.07-.1-.23-.17-.48-.29"/></svg>
+                </a>
+              ` : ''}
+            </div>
+          </td>
+          <td>
+            ${finStatusHtml}
+          </td>
+          <td>
+            <div style="font-weight:700; color:${remaining > 0 ? '#10B981' : '#EF4444'}; font-size:0.84rem;">
+              ${remaining > 0 ? `${remaining} حصص متبقية` : 'نفدت الحصص'}
+            </div>
+            <small style="color:var(--color-text-muted); font-size:0.72rem;">سجل الحصص: ${totalAtt} حصة</small>
+          </td>
+          <td>
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:3px;">
+              <span style="font-weight:700; color:${progressColor}; font-size:0.82rem;">${stuRate}%</span>
+              <div style="width:50px; height:5px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden;">
+                <div style="width:${stuRate}%; height:100%; background:${progressColor};"></div>
+              </div>
+            </div>
+            <div style="font-size:0.7rem; color:var(--color-text-muted);">
+              حضور: <strong>${presCount}</strong> • تأخر: <strong>${lateCount}</strong> • غياب: <strong>${absDeducted}</strong>${absHold > 0 ? ` • <span style="color:#C084FC; font-weight:700;">محفوظ: ${absHold}</span>` : ''}
+            </div>
+          </td>
+          <td style="max-width:180px;">
+            ${pedTagHtml}
+            <div style="font-size:0.72rem; color:var(--color-text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${noteText}">
+              ${noteText}
+            </div>
+          </td>
+          <td style="text-align: center; white-space: nowrap;">
+            <div style="display:inline-flex; gap:4px;">
+              <button type="button" class="btn btn--outline btn--small" style="padding:3px 6px; font-size:0.72rem;" onclick="closeGroupDossierModal(); openStudentProfile('${stu.id}')" title="ملف الطالب">${UI_ICONS.user(12)}</button>
+              <button type="button" class="btn btn--outline btn--small" style="padding:3px 6px; font-size:0.72rem; color:#10B981; border-color:rgba(16,185,129,0.4);" onclick="closeGroupDossierModal(); openRecordPaymentModal('${stu.id}')" title="تسجيل دفع">${UI_ICONS.money(12)}</button>
+              <button type="button" class="btn btn--outline btn--small" style="padding:3px 6px; font-size:0.72rem; color:#25D366; border-color:rgba(37,211,102,0.4);" onclick="closeGroupDossierModal(); openWhatsAppDispatch('${stu.id}')" title="إرسال واتساب للولي">${UI_ICONS.whatsapp(12)}</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  };
+
+  window.printCurrentGroupDossier = function() {
+    const groupName = window.__currentDossierGroupName;
+    if (!groupName) return;
+
+    const allGroups = getData('brainova_groups') || [];
+    const matchedGroup = allGroups.find(g => g.name === groupName || g.id === groupName) || {
+      name: groupName,
+      level: 'دورة الروبوتيك',
+      educator: '',
+      educatorName: '',
+      room: '',
+      ageCategory: '8 - 11 سنة',
+      maxStudents: 12
+    };
+
+    const allStudents = getData('brainova_students') || [];
+    const groupStudents = allStudents.filter(s => isStudentInGroup(s, groupName));
+    groupStudents.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ar'));
+
+    const allAttendance = getData('brainova_attendance') || [];
+    const groupAtt = allAttendance.filter(a => isStudentInGroup({ group: a.groupName }, groupName));
+    const schedules = getData('brainova_schedule') || [];
+    const sch = schedules.find(s => s.groupId === matchedGroup.id || isStudentInGroup({ group: s.groupName }, groupName));
+
+    const printDate = new Date().toLocaleDateString('ar-DZ', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    let rowsHtml = '';
+    groupStudents.forEach((stu, idx) => {
+      const remaining = Number(stu.sessionsRemaining) || 0;
+      const balance = Number(stu.balance) || 0;
+      const stuAtt = groupAtt.filter(a => a.studentId === stu.id || a.studentName === stu.name);
+      const presCount = stuAtt.filter(a => a.status === 'present').length;
+      const lateCount = stuAtt.filter(a => a.status === 'late').length;
+      const absDeducted = stuAtt.filter(a => a.status === 'absent' && a.holdAbsence !== true).length;
+      const absHold = stuAtt.filter(a => a.status === 'absent' && a.holdAbsence === true).length;
+      const totalAtt = stuAtt.length;
+      const stuRate = totalAtt > 0 ? Math.round(((presCount + lateCount) / totalAtt) * 100) : 100;
+
+      let payStatus = remaining > 0 ? 'ساري المفعول' : 'مستحق التجديد';
+      if (balance < 0) payStatus += ` (دين: ${Math.abs(balance).toLocaleString()} دج)`;
+
+      let noteSummary = stu.notes || stu.healthNotes || '';
+      if (absHold > 0) noteSummary = `[يحتاج تعويض ${absHold} حصة] ` + noteSummary;
+
+      rowsHtml += `
+        <tr>
+          <td>${idx + 1}</td>
+          <td style="font-family:monospace; font-weight:700;">${stu.id}</td>
+          <td style="font-weight:700; text-align:right;">${stu.name}</td>
+          <td style="text-align:right;">${stu.parentName || 'ولي الأمر'}<br><span dir="ltr" style="font-family:monospace; font-size:10px;">${stu.parentPhone || '—'}</span></td>
+          <td><strong>${payStatus}</strong></td>
+          <td style="font-weight:700;">${remaining} حصص</td>
+          <td>ح:${presCount} | ت:${lateCount} | غ:${absDeducted}${absHold > 0 ? ` | ح:${absHold}` : ''}</td>
+          <td style="font-weight:700;">${stuRate}%</td>
+          <td style="text-align:right; font-size:10px;">${noteSummary}</td>
+          <td></td>
+        </tr>
+      `;
+    });
+
+    const printHtml = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>ملف الفوج وسجل الحالات الشامل — ${groupName}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    @page { size: A4 landscape; margin: 10mm; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { font-family: 'Cairo', Tahoma, sans-serif; color: #0F172A; background: #fff; margin: 0; padding: 10px; font-size: 11px; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0284C7; padding-bottom: 10px; margin-bottom: 12px; }
+    .title { font-size: 18px; font-weight: 900; color: #0284C7; margin: 0; }
+    .meta-box { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; background: #F8FAFC; border: 1px solid #CBD5E1; padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; font-size: 11px; }
+    .table { width: 100%; border-collapse: collapse; border: 1.5px solid #0F172A; }
+    .table th { background: #0F172A; color: #fff; border: 1px solid #334155; padding: 6px 4px; font-size: 10.5px; text-align: center; }
+    .table td { border: 1px solid #94A3B8; padding: 5px 4px; text-align: center; font-size: 10px; vertical-align: middle; }
+    .signatures { display: flex; justify-content: space-between; margin-top: 24px; padding: 0 40px; }
+    .sig-box { text-align: center; width: 220px; border-top: 1px dashed #64748B; padding-top: 8px; font-weight: 700; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1 class="title">أكاديمية براينوفا للروبوتيك والذكاء الاصطناعي — BRAINOVA ROBOTICS</h1>
+      <div style="font-size:13px; font-weight:700; color:#334155; margin-top:2px;">الملف البيداغوجي الشامل للفوج وسجل حالات الطلاب (Group Dossier)</div>
+    </div>
+    <div style="text-align:left; font-size:10.5px; color:#64748B;">
+      <div>تاريخ الاستخراج: <strong>${printDate}</strong></div>
+      <div>الحالة: <strong>معتمد رسمياً</strong></div>
+    </div>
+  </div>
+
+  <div class="meta-box">
+    <div>اسم الفوج: <strong>${groupName}</strong></div>
+    <div>المستوى: <strong>${matchedGroup.level || 'دورة الروبوتيك'}</strong></div>
+    <div>المدرب المشرف: <strong>${matchedGroup.educator || matchedGroup.educatorName || 'غير محدد'}</strong></div>
+    <div>القاعة: <strong>${matchedGroup.room || 'غير محدد'}</strong></div>
+    <div>التوقيت: <strong>${sch ? sch.day : (matchedGroup.day || 'السبت')} (${sch ? `${sch.startTime} - ${sch.endTime}` : (matchedGroup.timeSlot || '14:00 - 16:00')})</strong></div>
+  </div>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th style="width:28px;">#</th>
+        <th style="width:65px;">ID</th>
+        <th>اسم التلميذ الكامل</th>
+        <th>ولي الأمر ورقم الهاتف</th>
+        <th>حالة الاشتراك المالي</th>
+        <th>الرصيد المتبقي</th>
+        <th>سجل الحضور</th>
+        <th>نسبة الالتزام</th>
+        <th>الحالة البيداغوجية والملاحظات</th>
+        <th style="width:80px;">ملاحظة الولي / التوقيع</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rowsHtml}
+    </tbody>
+  </table>
+
+  <div class="signatures">
+    <div class="sig-box">
+      توقيع وختم الأستاذ / المدرب المشرف
+    </div>
+    <div class="sig-box">
+      توقيع وختم إدارة الأكاديمية
+    </div>
+  </div>
+
+  <script>
+    window.onload = function() {
+      setTimeout(function() {
+        window.print();
+      }, 500);
+    };
+  </script>
+</body>
+</html>`;
+
+    if (window.electronAPI && window.electronAPI.printDocument) {
+      window.electronAPI.printDocument({
+        title: `ملف فوج ${groupName}`,
+        html: printHtml
+      });
+      showToast(`جاري فتح ملف الفوج (${groupName}) للطباعة الرسمية...`, 'success');
+    } else {
+      const w = window.open('', '_blank');
+      if (w) {
+        w.document.write(printHtml);
+        w.document.close();
+      } else {
+        showToast('يرجى السماح بالنوافذ المنبثقة لطباعة الملف', 'error');
+      }
+    }
+  };
+
+  window.exportGroupDossierCSV = function() {
+    const groupName = window.__currentDossierGroupName;
+    if (!groupName) return;
+
+    const allStudents = getData('brainova_students') || [];
+    const groupStudents = allStudents.filter(s => isStudentInGroup(s, groupName));
+    const allAttendance = getData('brainova_attendance') || [];
+    const groupAtt = allAttendance.filter(a => isStudentInGroup({ group: a.groupName }, groupName));
+
+    const headers = ['ID', 'اسم التلميذ', 'المستوى', 'ولي الأمر', 'رقم الهاتف', 'الحصص المتبقية', 'الرصيد دج', 'حالة الاشتراك', 'نسبة الحضور', 'غياب محفوظ للتعويض', 'ملاحظات'];
+    const rows = groupStudents.map(stu => {
+      const remaining = Number(stu.sessionsRemaining) || 0;
+      const balance = Number(stu.balance) || 0;
+      const stuAtt = groupAtt.filter(a => a.studentId === stu.id || a.studentName === stu.name);
+      const presCount = stuAtt.filter(a => a.status === 'present').length;
+      const lateCount = stuAtt.filter(a => a.status === 'late').length;
+      const absHold = stuAtt.filter(a => a.status === 'absent' && a.holdAbsence === true).length;
+      const stuRate = stuAtt.length > 0 ? Math.round(((presCount + lateCount) / stuAtt.length) * 100) : 100;
+      const statusText = remaining > 0 ? 'ساري المفعول' : 'مستحق التجديد';
+
+      return [
+        stu.id,
+        `"${(stu.name || '').replace(/"/g, '""')}"`,
+        `"${(stu.level || '').replace(/"/g, '""')}"`,
+        `"${(stu.parentName || '').replace(/"/g, '""')}"`,
+        `"${(stu.parentPhone || '').replace(/"/g, '""')}"`,
+        remaining,
+        balance,
+        `"${statusText}"`,
+        `"${stuRate}%"`,
+        absHold,
+        `"${(stu.notes || '').replace(/"/g, '""')}"`
+      ].join(',');
+    });
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `ملف_فوج_${groupName.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    showToast(`تم تصدير ملف الفوج (${groupName}) بصيغة CSV بنجاح!`, 'success');
+  };
+
+  // =========================================================
+  // GROUP MAKEUP SESSION SYSTEM (حصة تعويضية للفوج)
+  // =========================================================
+  window.__currentMakeupGroupName = '';
+
+  window.openGroupMakeupSessionModal = function(encodedGroupName) {
+    const rawGroupName = decodeURIComponent(encodedGroupName || '').trim();
+    if (!rawGroupName) return;
+
+    window.__currentMakeupGroupName = rawGroupName;
+
+    const allGroups = getData('brainova_groups') || [];
+    const matchedGroup = allGroups.find(g => g.name === rawGroupName || g.id === rawGroupName);
+    const allAttendance = getData('brainova_attendance') || [];
+
+    const nameInput = document.getElementById('groupMakeupNameInput');
+    if (nameInput) nameInput.value = rawGroupName;
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const dateInput = document.getElementById('groupMakeupDateInput');
+    if (dateInput) dateInput.value = todayStr;
+
+    const timeInput = document.getElementById('groupMakeupTimeInput');
+    if (timeInput) timeInput.value = matchedGroup?.timeSlot || '10:00 - 12:00';
+
+    const reasonInput = document.getElementById('groupMakeupReasonInput');
+    if (reasonInput) reasonInput.value = 'تعويض حصة سابقة';
+
+    // Populate rooms
+    const rooms = getData('brainova_rooms') || [];
+    const roomSelect = document.getElementById('groupMakeupRoomInput');
+    if (roomSelect) {
+      roomSelect.innerHTML = rooms.map(r => `<option value="${r.name}" ${matchedGroup?.room === r.name ? 'selected' : ''}>${r.name}</option>`).join('') ||
+        `<option value="قاعة الروبوتيك الرئيسية">قاعة الروبوتيك الرئيسية</option>`;
+    }
+
+    // Populate students list with checkboxes & highlight uncompensated absences
+    const allStudents = getData('brainova_students') || [];
+    const groupStudents = allStudents.filter(s => isStudentInGroup(s, rawGroupName));
+    const groupAtt = allAttendance.filter(a => isStudentInGroup({ group: a.groupName }, rawGroupName));
+
+    const listEl = document.getElementById('groupMakeupStudentsList');
+    if (listEl) {
+      if (groupStudents.length === 0) {
+        listEl.innerHTML = `<span style="font-size:0.78rem; color:var(--color-text-muted);">لا يوجد طلاب مسجلين في هذا الفوج.</span>`;
+      } else {
+        listEl.innerHTML = groupStudents.map(s => {
+          const absHoldCount = groupAtt.filter(a => (a.studentId === s.id || a.studentName === s.name) && a.status === 'absent' && a.holdAbsence === true).length;
+          return `
+            <label style="display:flex; align-items:center; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.04); cursor:pointer; font-size:0.8rem; color:#F8FAFC;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" class="makeup-stu-check" data-student-id="${s.id}" data-student-name="${s.name}" data-parent-phone="${s.parentPhone || ''}" checked style="accent-color:#7C3AED; width:15px; height:15px;">
+                <span><strong>${s.name}</strong> <small style="color:#94A3B8;">(${s.id})</small></span>
+              </div>
+              <div>
+                ${absHoldCount > 0 ? `<span style="background:rgba(168,85,247,0.2); color:#C084FC; font-size:0.7rem; font-weight:700; padding:1px 6px; border-radius:4px;">لديه ${absHoldCount} غياب محفوظ للتعويض</span>` : ''}
+              </div>
+            </label>
+          `;
+        }).join('');
+      }
+    }
+
+    const modal = document.getElementById('groupMakeupSessionModal');
+    if (modal) modal.classList.add('active');
+  };
+
+  window.closeGroupMakeupSessionModal = function() {
+    const modal = document.getElementById('groupMakeupSessionModal');
+    if (modal) modal.classList.remove('active');
+  };
+
+  window.toggleAllMakeupStudents = function(checked) {
+    document.querySelectorAll('.makeup-stu-check').forEach(cb => cb.checked = checked);
+  };
+
+  window.submitGroupMakeupSession = async function(e) {
+    if (e) e.preventDefault();
+    const groupName = window.__currentMakeupGroupName;
+    if (!groupName) return;
+
+    const dateVal = document.getElementById('groupMakeupDateInput')?.value || '';
+    const timeVal = document.getElementById('groupMakeupTimeInput')?.value || '';
+    const roomVal = document.getElementById('groupMakeupRoomInput')?.value || '';
+    const reasonVal = document.getElementById('groupMakeupReasonInput')?.value || 'تعويض حصة سابقة';
+    const notifyWhatsApp = document.getElementById('groupMakeupWhatsAppToggle')?.checked || false;
+
+    if (!dateVal || !timeVal) {
+      showToast('يرجى تحديد تاريخ وتوقيت الحصة التعويضية', 'error');
+      return;
+    }
+
+    const checkedBoxes = Array.from(document.querySelectorAll('.makeup-stu-check:checked'));
+    if (checkedBoxes.length === 0) {
+      showToast('يرجى تحديد تلميذ واحد على الأقل للمشاركة في الحصة التعويضية', 'warning');
+      return;
+    }
+
+    // 1. Record makeup session in brainova_schedule
+    const schedules = getData('brainova_schedule') || [];
+    const newSessionEntry = {
+      id: 'sch_makeup_' + Date.now(),
+      groupId: groupName,
+      groupName: groupName,
+      day: getArabicDayName(dateVal),
+      date: dateVal,
+      startTime: timeVal.split('-')[0]?.trim() || timeVal,
+      endTime: timeVal.split('-')[1]?.trim() || '',
+      room: roomVal,
+      type: 'makeup',
+      note: reasonVal,
+      studentIds: checkedBoxes.map(cb => cb.dataset.studentId),
+      createdAt: new Date().toISOString()
+    };
+    schedules.push(newSessionEntry);
+    saveData('brainova_schedule', schedules);
+
+    // 2. Dispatch WhatsApp notification to parents if selected
+    let notifiedCount = 0;
+    if (notifyWhatsApp) {
+      const dateArabicDay = getArabicDayName(dateVal);
+      const isBotConnected = window.__waGatewayState && window.__waGatewayState.connected;
+
+      for (const cb of checkedBoxes) {
+        const studentName = cb.dataset.studentName || '';
+        const rawPhone = cb.dataset.parentPhone || '';
+        if (!rawPhone || rawPhone === '—' || rawPhone.trim() === '') continue;
+
+        const messageText = `السلام عليكم ولي أمر التلميذ(ة) *${studentName}* المحترم،\nتحية طيبة من إدارة أكاديمية براينوفا للروبوتيك.\nنعلمكم ببرمجة *حصة تعويضية خاصة* لفوج: *${groupName}*\nالموعد: يوم *${dateArabicDay}* الموافق لـ *${dateVal}*\nالتوقيت: من الساعة *${timeVal}*\nالمكان: *${roomVal}*\nالسبب والموضوع: *${reasonVal}*\nنرجو الحرص على حضور التلميذ في الموعد المحدد. شكراً لتعاونكم وثقتكم.`;
+
+        if (window.electronAPI && window.electronAPI.whatsapp && isBotConnected) {
+          try {
+            await window.electronAPI.whatsapp.sendMessage(rawPhone, messageText);
+            notifiedCount++;
+          } catch (err) {
+            console.warn('Makeup session WA send error:', err);
+          }
+        }
+      }
+
+      if (notifiedCount > 0 && typeof addWaGuardianLog === 'function') {
+        addWaGuardianLog(`تم إرسال إشعار الحصة التعويضية لفوج (${groupName}) إلى ${notifiedCount} ولي أمر.`);
+      }
+    }
+
+    closeGroupMakeupSessionModal();
+    showToast(`تمت جدولة الحصة التعويضية لفوج (${groupName}) يوم ${dateVal} بنجاح!${notifiedCount > 0 ? ` وتم إرسال ${notifiedCount} إشعار واتساب للأولياء.` : ''}`, 'success');
+    renderActiveView();
+  };
+
+  window.openQuickAttendanceFromMakeup = function() {
+    const groupName = window.__currentMakeupGroupName;
+    const dateVal = document.getElementById('groupMakeupDateInput')?.value || '';
+    const timeVal = document.getElementById('groupMakeupTimeInput')?.value || '';
+
+    closeGroupMakeupSessionModal();
+    openQuickGroupAttendanceModal(encodeURIComponent(groupName), timeVal);
+
+    setTimeout(() => {
+      const typeSelect = document.getElementById('quickAttSessionType');
+      if (typeSelect) {
+        typeSelect.value = 'makeup';
+        if (typeof onQuickAttSessionTypeChange === 'function') {
+          onQuickAttSessionTypeChange();
+        }
+      }
+      const dateInput = document.getElementById('quickAttDate');
+      if (dateInput && dateVal) {
+        dateInput.value = dateVal;
+      }
+    }, 120);
+  };
   // ==========================================
   window.__quickAttGroupName = '';
   window.__quickAttDraft = {};
