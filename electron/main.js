@@ -385,6 +385,7 @@ function createSplash() {
     center: true,
     resizable: false,
     hasShadow: true,
+    show: true,
     webPreferences: { nodeIntegration: false, contextIsolation: true }
   });
   splash.loadFile(path.join(__dirname, 'splash.html'));
@@ -413,9 +414,6 @@ function createMain(splash) {
     }
   });
 
-  // Maximize the window immediately so it fills the entire screen
-  mainWindow.maximize();
-
   mainWindow.loadFile(path.join(__dirname, '..', 'dashboard.html'));
 
   // Ensure external links and print receipts open in user's default browser (Google Chrome, etc.)
@@ -434,14 +432,27 @@ function createMain(splash) {
     } catch(e) {}
   });
 
-  mainWindow.once('ready-to-show', () => {
-    setTimeout(() => {
-      if (splash && !splash.isDestroyed()) splash.close();
-      try { mainWindow.maximize(); } catch(e) {}
-      mainWindow.show();
-      mainWindow.focus();
-      performAutoBackup();
-      setupAutoUpdater();
+  let isReadyToShow = false;
+  let isSplashFinished = false;
+  let isAppLaunched = false;
+
+  function launchMainWindow() {
+    if (isAppLaunched) return;
+    if (!isReadyToShow || !isSplashFinished) return;
+    isAppLaunched = true;
+
+    if (splash && !splash.isDestroyed()) {
+      splash.close();
+    }
+
+    try {
+      mainWindow.maximize();
+    } catch(e) {}
+    mainWindow.show();
+    mainWindow.focus();
+
+    performAutoBackup();
+    setupAutoUpdater();
 
       // Initialize WhatsApp Automation Bot
       try {
@@ -559,8 +570,18 @@ function createMain(splash) {
           }
         } catch(e) {}
       } catch (csErr) {}
-    }, 2200);
+  }
+
+  mainWindow.once('ready-to-show', () => {
+    isReadyToShow = true;
+    launchMainWindow();
   });
+
+  // Ensure splash card is displayed first and finishes its complete loading sequence (~2450ms)
+  setTimeout(() => {
+    isSplashFinished = true;
+    launchMainWindow();
+  }, 2450);
 
   mainWindow.on('close', () => {
     performAutoBackup();
