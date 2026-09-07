@@ -37,6 +37,20 @@ document.addEventListener('DOMContentLoaded', () => {
     bot: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 9h.01"/><path d="M15 9h.01"/><path d="M10 15h4"/></svg>`
   };
   window.UI_ICONS = UI_ICONS;
+
+  // ==========================================
+  // SECURITY & HTML SANITIZATION UTILITIES
+  // ==========================================
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+  window.escapeHtml = escapeHtml;
   
   // ==========================================
   // 1. IN-MEMORY HIGH PERFORMANCE CACHE
@@ -130,24 +144,55 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch(e) {}
   }
 
+  const __corruptedKeys = {};
+
   function getData(key) {
     if (MemoryCache[key] !== undefined) return MemoryCache[key];
     try {
-      MemoryCache[key] = JSON.parse(localStorage.getItem(key) || 'null');
-      if (MemoryCache[key] === null) MemoryCache[key] = [];
+      const raw = localStorage.getItem(key);
+      if (raw === null || raw === undefined || raw === '') {
+        MemoryCache[key] = [];
+        return MemoryCache[key];
+      }
+      const parsed = JSON.parse(raw);
+      MemoryCache[key] = (parsed === null || parsed === undefined) ? [] : parsed;
     } catch(e) {
+      console.error(`[Brainova Critical] فشل تحليل JSON للمفتاح "${key}" من localStorage:`, e);
+      __corruptedKeys[key] = true;
       MemoryCache[key] = [];
+      // Emergency recovery from persistent electron-store
+      if (window.electronAPI && window.electronAPI.store) {
+        window.electronAPI.store.get(key).then(diskVal => {
+          if (diskVal !== null && diskVal !== undefined && Array.isArray(diskVal) && diskVal.length > 0) {
+            console.warn(`[Brainova Recovery] تم استرجاع بيانات ${key} من التخزين الدائم على القرص بنجاح.`);
+            delete __corruptedKeys[key];
+            MemoryCache[key] = diskVal;
+            try { localStorage.setItem(key, JSON.stringify(diskVal)); } catch(_) {}
+            if (typeof renderCurrentView === 'function') renderCurrentView();
+          }
+        }).catch(err => console.error('[Brainova Recovery Error]:', err));
+      }
     }
     return MemoryCache[key];
   }
   window.getData = getData;
 
   function saveData(key, data) {
+    // Safety guard: if key was flagged as corrupted and incoming data is empty array, protect disk from silent wipe
+    if (__corruptedKeys[key] && Array.isArray(data) && data.length === 0) {
+      console.warn(`[Brainova Guard] منع الكتابة الفارغة للمفتاح ${key} لحماية قاعدة البيانات من التصفير العرضي.`);
+      return;
+    }
+    if (Array.isArray(data) && data.length > 0) {
+      delete __corruptedKeys[key];
+    }
     MemoryCache[key] = data;
     // Sync to localStorage (fast, synchronous UI layer)
     try {
       localStorage.setItem(key, JSON.stringify(data));
-    } catch(e){}
+    } catch(e){
+      console.error('[Brainova] localStorage setItem error:', e);
+    }
     // Sync to electron-store (persistent disk storage, fire-and-forget)
     if (window.electronAPI && window.electronAPI.store) {
       window.electronAPI.store.set(key, data);
@@ -7584,15 +7629,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
     saveData('brainova_students', students);
     closeTransferGroupModal();
-    showToast(`تم نقل التلميذ (${stu.name}) من فوج (${oldGroupName}) إلى فوج (${targetGroupName}) بنجاح! �`, 'success');
+    showToast(`تم نقل التلميذ (${stu.name}) من فوج (${oldGroupName}) إلى فوج (${targetGroupName}) بنجاح!`, 'success');
     renderActiveView();
   };
 
   window.deleteStudent = function(id) {
-    if (confirm('هل أنت متأكد من حذف هذا الطالب؟')) {
-      const students = getData('brainova_students').filter(s => s.id !== id);
-      saveData('brainova_students', students);
-      showToast('toast_updated', 'success');
+    if (!id) return;
+    const allStudents = getData('brainova_students') || [];
+    const targetStudent = allStudents.find(s => s.id === id);
+    const studentName = targetStudent ? (targetStudent.name || 'الطالب') : 'الطالب';
+
+    if (confirm(`هل أنت متأكد من حذف الطالب (${studentName}) نهائياً؟\nسيتم حذف بياناته وسجلات حضوره مع الحفاظ التام على قيود الصندوق المالي.`)) {
+      // 1. Remove student from brainova_students
+      const updatedStudents = allStudents.filter(s => s.id !== id);
+      saveData('brainova_students', updatedStudents);
+
+      // 2. Cascade delete linked attendance records
+      const allAttendance = getData('brainova_attendance') || [];
+      const updatedAttendance = allAttendance.filter(a => a.studentId !== id);
+      if (updatedAttendance.length !== allAttendance.length) {
+        saveData('brainova_attendance', updatedAttendance);
+      }
+
+      // 3. Gracefully decouple payments (keep cash drawer and financial ledger intact)
+      const allPayments = getData('brainova_payments') || [];
+      let paymentsChanged = false;
+      const updatedPayments = allPayments.map(p => {
+        if (p.studentId === id) {
+          paymentsChanged = true;
+          return {
+            ...p,
+            studentDeleted: true,
+            studentName: p.studentName ? (p.studentName.includes('(طالب محذوف)') ? p.studentName : `${p.studentName} (طالب محذوف)`) : 'طالب محذوف'
+          };
+        }
+        return p;
+      });
+      if (paymentsChanged) {
+        saveData('brainova_payments', updatedPayments);
+      }
+
+      // 4. Cascade delete linked registrations if any
+      const allRegistrations = getData('brainova_registrations');
+      if (Array.isArray(allRegistrations) && allRegistrations.length > 0) {
+        const updatedRegistrations = allRegistrations.filter(r => r.studentId !== id);
+        if (updatedRegistrations.length !== allRegistrations.length) {
+          saveData('brainova_registrations', updatedRegistrations);
+        }
+      }
+
+      showToast(`تم حذف الطالب (${studentName}) وتنظيف سجلات الحضور المرتبطة به بنجاح.`, 'success');
       renderActiveView();
     }
   };

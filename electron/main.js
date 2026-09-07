@@ -61,8 +61,18 @@ function performAutoBackup() {
     const today = new Date().toISOString().slice(0, 10);
     const backupFile = path.join(backupDir, `auto-backup-${today}.brainova`);
     const data = JSON.stringify(store.store, null, 2);
-    fs.writeFileSync(backupFile, data, 'utf8');
-    console.log('[Brainova AutoBackup] تم حفظ نسخة احتياطية يومية في:', backupFile);
+    // Atomic write: write to unique temporary file first, then replace destination
+    const tmpFile = path.join(backupDir, `auto-backup-${today}.${Date.now()}.${Math.random().toString(36).substring(2, 7)}.tmp`);
+    fs.writeFileSync(tmpFile, data, 'utf8');
+    try {
+      fs.renameSync(tmpFile, backupFile);
+    } catch (renameErr) {
+      if (fs.existsSync(backupFile)) {
+        try { fs.unlinkSync(backupFile); } catch(e){}
+      }
+      fs.renameSync(tmpFile, backupFile);
+    }
+    console.log('[Brainova AutoBackup] تم حفظ نسخة احتياطية يومية ذرية في:', backupFile);
 
     // Keep only last 15 backups
     const files = fs.readdirSync(backupDir)
@@ -156,81 +166,145 @@ function getLocalIP() {
 // ── PARENT HTTP SERVER ────────────────────────────────────────────────────────
 function startParentServer() {
   const appPath = app.getAppPath();
+  const safeAppPath = path.resolve(appPath);
   const mimeTypes = {
-    '.html': 'text/html; charset=utf-8',
-    '.css':  'text/css',
-    '.js':   'application/javascript',
-    '.png':  'image/png',
-    '.jpg':  'image/jpeg',
-    '.ico':  'image/x-icon',
-    '.json': 'application/json'
+    '.html':  'text/html; charset=utf-8',
+    '.css':   'text/css',
+    '.js':    'application/javascript',
+    '.png':   'image/png',
+    '.jpg':   'image/jpeg',
+    '.jpeg':  'image/jpeg',
+    '.svg':   'image/svg+xml',
+    '.ico':   'image/x-icon',
+    '.woff2': 'font/woff2',
+    '.woff':  'font/woff',
+    '.ttf':   'font/ttf'
   };
 
   parentServer = http.createServer((req, res) => {
-    const url = new URL(req.url, `http://localhost:${PARENT_PORT}`);
+    // Security headers for local portal
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+
+    let url;
+    try {
+      url = new URL(req.url, `http://localhost:${PARENT_PORT}`);
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Bad Request');
+      return;
+    }
     const pathname = url.pathname;
 
     // ── REST API ─────────────────────────────────────────────────────────────
     if (pathname === '/api/student') {
-      const u = url.searchParams.get('u');
-      const p = url.searchParams.get('p');
+      const u = (url.searchParams.get('u') || '').trim();
+      const p = (url.searchParams.get('p') || '').trim();
+      if (!u || !p) {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ ok: false, error: 'Missing username or password' }));
+        return;
+      }
       const students = store.get('brainova_students', []);
       const stu = students.find(s =>
-        (s.username || '').toLowerCase() === (u || '').toLowerCase() &&
-        (s.password || '') === (p || '')
+        (s.username || '').toLowerCase() === u.toLowerCase() &&
+        (s.password || '') === p
       );
-      res.writeHead(stu ? 200 : 401, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(stu ? { ok: true, student: stu } : { ok: false }));
+      res.writeHead(stu ? 200 : 401, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify(stu ? { ok: true, student: stu } : { ok: false, error: 'Invalid credentials' }));
       return;
     }
 
     if (pathname === '/api/payments') {
       const id = url.searchParams.get('studentId');
+      if (!id || typeof id !== 'string' || id.trim() === '') {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ ok: false, error: 'Missing required studentId parameter' }));
+        return;
+      }
+      const cleanId = id.trim();
       const payments = store.get('brainova_payments', []);
-      const filtered = id ? payments.filter(p => p.studentId === id) : payments;
-      res.writeHead(200, { 'Content-Type': 'application/json' });
+      const filtered = payments.filter(p => p.studentId === cleanId);
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify(filtered));
       return;
     }
 
     if (pathname === '/api/attendance') {
       const id = url.searchParams.get('studentId');
+      if (!id || typeof id !== 'string' || id.trim() === '') {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ ok: false, error: 'Missing required studentId parameter' }));
+        return;
+      }
+      const cleanId = id.trim();
       const att = store.get('brainova_attendance', []);
-      const filtered = id ? att.filter(a => a.studentId === id) : att;
-      res.writeHead(200, { 'Content-Type': 'application/json' });
+      const filtered = att.filter(a => a.studentId === cleanId);
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify(filtered));
       return;
     }
 
     if (pathname === '/api/receipt') {
       const pid = url.searchParams.get('id') || url.searchParams.get('op');
+      if (!pid || typeof pid !== 'string' || pid.trim() === '') {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ ok: false, error: 'Missing required payment ID parameter' }));
+        return;
+      }
+      const cleanPid = pid.trim();
       const payments = store.get('brainova_payments', []);
-      const pay = pid ? payments.find(p => p.id === pid || p.opNumber === pid || p.id === 'REC-' + pid) : payments[payments.length - 1];
+      const pay = payments.find(p => p.id === cleanPid || String(p.opNumber) === cleanPid || p.id === 'REC-' + cleanPid);
       const students = store.get('brainova_students', []);
       const stu = pay ? students.find(s => s.id === pay.studentId) : null;
       res.writeHead(pay ? 200 : 404, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify(pay ? { ok: true, payment: pay, student: stu } : { ok: false }));
+      res.end(JSON.stringify(pay ? { ok: true, payment: pay, student: stu } : { ok: false, error: 'Receipt not found' }));
       return;
     }
 
-    // ── FILE SERVING ─────────────────────────────────────────────────────────
-    let filePath;
-    if (pathname === '/' || pathname === '/parent.html') {
-      filePath = path.join(appPath, 'parent.html');
-    } else {
-      filePath = path.join(appPath, pathname);
+    // ── FILE SERVING (PATH TRAVERSAL DEFENSE & MIME WHITELIST) ───────────────
+    let reqPath;
+    try {
+      reqPath = decodeURIComponent(pathname);
+    } catch {
+      reqPath = pathname;
     }
 
-    const ext = path.extname(filePath).toLowerCase();
-    const mime = mimeTypes[ext] || 'application/octet-stream';
+    if (reqPath === '/' || reqPath === '/parent.html') {
+      reqPath = 'parent.html';
+    } else {
+      reqPath = reqPath.replace(/^[/\\]+/, '');
+    }
+
+    const resolvedPath = path.resolve(safeAppPath, reqPath);
+
+    // Path traversal defense: ensure resolvedPath strictly belongs to safeAppPath
+    if (!resolvedPath.startsWith(safeAppPath + path.sep) && resolvedPath !== safeAppPath) {
+      res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Access Denied: Path Traversal Detected');
+      return;
+    }
+
+    const ext = path.extname(resolvedPath).toLowerCase();
+    // Only serve allowed static asset types (strictly blocks .json, .env, .brainova, .exe, etc.)
+    if (!mimeTypes[ext]) {
+      res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Forbidden File Type');
+      return;
+    }
 
     try {
-      const data = fs.readFileSync(filePath);
-      res.writeHead(200, { 'Content-Type': mime });
+      if (!fs.existsSync(resolvedPath) || fs.statSync(resolvedPath).isDirectory()) {
+        res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('Not Found');
+        return;
+      }
+      const data = fs.readFileSync(resolvedPath);
+      res.writeHead(200, { 'Content-Type': mimeTypes[ext] });
       res.end(data);
     } catch {
-      res.writeHead(404, { 'Content-Type': 'text/plain' });
-      res.end('Not Found');
+      res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Internal Server Error');
     }
   });
 
@@ -532,6 +606,21 @@ app.whenReady().then(() => {
   startParentServer();
   const splash = createSplash();
   createMain(splash);
+
+  // Periodic auto-backup every 2 hours while application is running
+  setInterval(() => {
+    try {
+      performAutoBackup();
+    } catch (e) {
+      console.error('[Brainova Periodic Backup Error]:', e);
+    }
+  }, 2 * 60 * 60 * 1000);
+});
+
+app.on('before-quit', () => {
+  try {
+    performAutoBackup();
+  } catch (e) {}
 });
 
 app.on('window-all-closed', () => {
