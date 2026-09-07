@@ -1531,13 +1531,13 @@ document.addEventListener('DOMContentLoaded', () => {
       let sessionsBadge = '';
       if (hasDebtStatus) {
         sessionsBadge = `
-          <div style="display:flex; flex-direction:column; gap:4px;">
-            <span class="payment-badge" style="background:rgba(2,132,199,0.12); color:#38BDF8; border:1px solid rgba(2,132,199,0.3); padding:3px 8px; border-radius:5px; font-weight:800; font-size:0.75rem; display:inline-flex; align-items:center; gap:5px;">
+          <div style="display:flex; flex-direction:column; gap:4px; line-height:1.4;">
+            <div style="color:#38BDF8; font-weight:800; font-size:0.78rem; display:inline-flex; align-items:center; gap:5px;">
               ${UI_ICONS.book(13)} درس ${attendedUnpaid} حصص
-            </span>
-            <span class="payment-badge overdue" style="background:rgba(239,68,68,0.16); color:#EF4444; border:1px solid rgba(239,68,68,0.45); padding:3px 8px; border-radius:5px; font-weight:800; font-size:0.74rem; white-space:nowrap; display:inline-flex; align-items:center; gap:5px;" title="${stu.debtNotes || ''}">
+            </div>
+            <div style="color:#EF4444; font-weight:800; font-size:0.78rem; white-space:nowrap; display:inline-flex; align-items:center; gap:5px;" title="${stu.debtNotes || ''}">
               ${UI_ICONS.alert(13)} متأخر عن دفع ${dSessions} حصص تدريبية (${dAmt.toLocaleString()} دج)
-            </span>
+            </div>
           </div>
         `;
       } else if (sessions > 0) {
