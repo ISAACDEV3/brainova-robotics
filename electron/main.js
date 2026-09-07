@@ -43,7 +43,7 @@ if (!store.has('brainova_users')) {
   ]);
 }
 
-let mainWindow, tray, parentServer;
+let mainWindow, tray, parentServer, isAppLaunched = false;
 let currentUser = { id: 'admin-001', username: 'admin', role: 'admin', name: 'إدارة الأكاديمية' };
 const PARENT_PORT = 3055;
 
@@ -449,7 +449,7 @@ function createMain(splash) {
 
   let isReadyToShow = false;
   let isSplashFinished = false;
-  let isAppLaunched = false;
+  isAppLaunched = false;
 
   function launchMainWindow() {
     if (isAppLaunched) return;
@@ -463,16 +463,17 @@ function createMain(splash) {
       try { splash.destroy(); } catch(e) {}
     }
 
-    // 2. Wait 350ms to ensure Windows DWM has fully cleared the splash window before revealing mainWindow
+    // 2. Wait 250ms to ensure Windows DWM has fully cleared the splash window before revealing mainWindow
     setTimeout(() => {
       if (mainWindow && !mainWindow.isDestroyed()) {
+        try { mainWindow.maximize(); } catch(e) {}
         mainWindow.show();
         mainWindow.focus();
 
         performAutoBackup();
         setupAutoUpdater();
       }
-    }, 350);
+    }, 250);
 
       // Initialize WhatsApp Automation Bot
       try {
@@ -593,6 +594,11 @@ function createMain(splash) {
   }
 
   mainWindow.once('ready-to-show', () => {
+    isReadyToShow = true;
+    launchMainWindow();
+  });
+
+  ipcMain.once('app-rendered-ready', () => {
     isReadyToShow = true;
     launchMainWindow();
   });
@@ -728,10 +734,16 @@ app.on('activate', () => {
 
 // ── IPC: WINDOW CONTROLS ──────────────────────────────────────────────────────
 ipcMain.on('win-minimize',        () => mainWindow && mainWindow.minimize());
-ipcMain.on('win-maximize',        () => mainWindow && mainWindow.maximize());
-ipcMain.on('win-unmaximize',      () => mainWindow && mainWindow.unmaximize());
+ipcMain.on('win-maximize',        () => {
+  if (!mainWindow || !isAppLaunched) return;
+  mainWindow.maximize();
+});
+ipcMain.on('win-unmaximize',      () => {
+  if (!mainWindow || !isAppLaunched) return;
+  mainWindow.unmaximize();
+});
 ipcMain.on('win-toggle-maximize', () => {
-  if (!mainWindow) return;
+  if (!mainWindow || !isAppLaunched) return;
   if (mainWindow.isMaximized()) {
     mainWindow.unmaximize();
   } else {
@@ -741,7 +753,7 @@ ipcMain.on('win-toggle-maximize', () => {
 ipcMain.on('win-close',           () => mainWindow && mainWindow.close());
 ipcMain.on('win-hide',            () => mainWindow && mainWindow.hide());
 ipcMain.on('open-main-site',      () => openWindow('index.html', 1300, 800));
-ipcMain.handle('win-is-maximized', () => mainWindow ? mainWindow.isMaximized() : false);
+ipcMain.handle('win-is-maximized', () => (mainWindow && isAppLaunched) ? mainWindow.isMaximized() : false);
 ipcMain.handle('open-external', async (_, url) => {
   try {
     if (url && (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('mailto:') || url.startsWith('tel:'))) {

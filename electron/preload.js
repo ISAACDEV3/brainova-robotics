@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openParentPortal:    () => ipcRenderer.send('open-parent-portal'),
   openMainSite:        () => ipcRenderer.send('open-main-site'),
   openExternal:        (url) => ipcRenderer.invoke('open-external', url),
+  appReady:            () => ipcRenderer.send('app-rendered-ready'),
   platform:            process.platform,
 
   // ── Printing (Native Windows Print Dialog & Receipt Preview)

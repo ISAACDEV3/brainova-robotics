@@ -4,9 +4,6 @@
    ================================================ */
 
 document.addEventListener('DOMContentLoaded', () => {
-  if (window.electronAPI && window.electronAPI.maximize) {
-    try { window.electronAPI.maximize(); } catch(e) {}
-  }
 
   // ==========================================
   // VECTOR SVG ICONS LIBRARY (REPLACES ALL EMOJIS)
@@ -268,6 +265,10 @@ document.addEventListener('DOMContentLoaded', () => {
         window.triggerLocalLock();
       }
     } catch(e) {}
+    // Notify Electron that initial data and UI views are 100% rendered
+    if (window.electronAPI && window.electronAPI.appReady) {
+      window.electronAPI.appReady();
+    }
   });
 
 
