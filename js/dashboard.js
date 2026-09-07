@@ -4753,7 +4753,7 @@ document.addEventListener('DOMContentLoaded', () => {
       banner.style.display = 'block';
     }
 
-    showToast(`� تم تسجيل حضور الطالب: ${matchedStudent.name}`, 'success');
+    showToast(` تم تسجيل حضور الطالب: ${matchedStudent.name}`, 'success');
   }
 
   // --- 1-CLICK WHATSAPP DISPATCH SYSTEM ---
@@ -5181,7 +5181,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <h3 style="font-size: 1.05rem; font-weight:800; color:#fff; margin-bottom:2px;">${g.name}</h3>
               <span style="font-size: 0.75rem; color:var(--color-primary); font-weight:700;">${g.level}</span>
             </div>
-            <button class="btn-icon" style="color:#EF4444; border:1px solid rgba(239,68,68,0.35); background:rgba(239,68,68,0.1); padding:4px 8px; font-weight:700; font-size:0.75rem; cursor:pointer;" onclick="deleteGroup('${g.id}')" title="حذف الفوج نهائياً">�️ حذف</button>
+            <button class="btn-icon" style="color:#EF4444; border:1px solid rgba(239,68,68,0.35); background:rgba(239,68,68,0.1); padding:4px 8px; font-weight:700; font-size:0.75rem; cursor:pointer; display:inline-flex; align-items:center; gap:5px; border-radius:6px;" onclick="deleteGroup('${g.id}')" title="حذف الفوج نهائياً">${UI_ICONS.trash(12)} حذف</button>
           </div>
           <div style="font-size:0.8rem; color:var(--color-text-muted); margin-bottom:6px;">
             <span> الفئة: <strong>${g.ageCategory || '8 - 11 سنة (ناشئين)'}</strong></span>
@@ -5249,7 +5249,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (groupSelect) {
         groupSelect.value = groupName;
         renderAttendance();
-        showToast(`تم فتح شاشة الحضور لفوج (${groupName}) �`, 'info');
+        showToast(`تم فتح شاشة الحضور لفوج (${groupName}) `, 'info');
       }
     }, 100);
   };
@@ -5338,7 +5338,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
                   <a href="tel:${stu.parentPhone}" dir="ltr" style="font-size:0.8rem; color:var(--color-primary); font-family:monospace;">${stu.parentPhone || '—'}</a>
                   ${cleanPhone ? `
-                    <a href="https://wa.me/${waPhone}" target="_blank" style="color:#25D366; font-size:0.75rem; text-decoration:none;" title="محادثة واتساب">�</a>
+                    <a href="https://wa.me/${waPhone}" target="_blank" style="color:#25D366; font-size:0.75rem; text-decoration:none; display:inline-flex; align-items:center;" title="محادثة واتساب">${UI_ICONS.whatsapp(14)}</a>
                   ` : ''}
                 </div>
               </td>
@@ -6493,7 +6493,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const scheduleHtml = details.roomSessions.length > 0
         ? details.roomSessions.map(s => `
             <span style="display:inline-flex; align-items:center; gap:4px; font-size:0.75rem; background:rgba(56,189,248,0.12); color:#38BDF8; padding:3px 8px; border-radius:6px; font-weight:600;">
-              � ${s.day || ''} (${s.startTime} - ${s.endTime}) • ${s.groupName || ''}
+              ${UI_ICONS.calendar(12)} ${s.day || ''} (${s.startTime} - ${s.endTime}) • ${s.groupName || ''}
             </span>
           `).join(' ')
         : '<span style="font-size:0.75rem; color:#64748B;">لا توجد حصص مجدولة حالياً لهذه القاعة</span>';
@@ -7018,9 +7018,9 @@ document.addEventListener('DOMContentLoaded', () => {
               <button class="schedule-session__delete" onclick="deleteSession('${s.id}')" title="حذف الحصة">&times;</button>
               <div class="schedule-session__title" style="font-weight:800; font-size:0.86rem; color:#FFFFFF; margin-bottom:3px;">${s.groupName}</div>
               <div style="font-size:0.75rem; color:#94A3B8; margin-bottom:2px;">${eduDisplay}</div>
-              <div style="font-size:0.78rem; font-weight:800; color:#FBBF24; background:rgba(251,191,36,0.12); padding:2px 6px; border-radius:4px; display:inline-block; margin-bottom:4px;">⏰ ${timeSlotStr}</div>
+              <div style="font-size:0.78rem; font-weight:800; color:#FBBF24; background:rgba(251,191,36,0.12); padding:2px 6px; border-radius:4px; display:inline-block; margin-bottom:4px;">${UI_ICONS.clock(12)} ${timeSlotStr}</div>
               ${s.room ? `<div style="font-size:0.73rem; color:#94A3B8; margin-bottom:4px;">${s.room}</div>` : ''}
-              <button type="button" class="btn btn--primary btn--small" style="padding:4px 8px; font-size:0.72rem; margin-top:4px; width:100%; background:#0284C7; font-weight:700;" onclick="openAttendanceForSession('${encodeURIComponent(s.groupName)}', '${timeSlotStr}')">� تسجيل الحضور</button>
+              <button type="button" class="btn btn--primary btn--small" style="padding:4px 8px; font-size:0.72rem; margin-top:4px; width:100%; background:#0284C7; font-weight:700; display:inline-flex; align-items:center; justify-content:center; gap:5px;" onclick="openAttendanceForSession('${encodeURIComponent(s.groupName)}', '${timeSlotStr}')">${UI_ICONS.check(12)} تسجيل الحضور</button>
             </div>
           `;
         });
@@ -7225,7 +7225,7 @@ document.addEventListener('DOMContentLoaded', () => {
     students.push(newStudent);
     saveData('brainova_students', students);
     closeAddStudentModal();
-    showToast(`تم تسجيل التلميذ (${name}) بفوج (${group}) بدقة! �`, 'success');
+    showToast(`تم تسجيل التلميذ (${name}) بفوج (${group}) بدقة!`, 'success');
     renderActiveView();
   };
 
@@ -8557,8 +8557,8 @@ document.addEventListener('DOMContentLoaded', () => {
               <button type="button" class="btn btn--outline btn--small" style="padding:2px 8px; font-size:0.7rem; color:#10B981; border-color:rgba(16,185,129,0.3); background:rgba(16,185,129,0.06); font-weight:700;" onclick="restoreVaultBackup('${encodeURIComponent(f.path)}', '${f.name}')">
                 ${UI_ICONS.refresh(11)} استعادة
               </button>
-              <button type="button" style="background:none; border:none; color:#EF4444; cursor:pointer; font-size:0.8rem; margin-right:6px;" title="حذف النسخة" onclick="deleteVaultBackup('${encodeURIComponent(f.path)}', '${f.name}')">
-                �️
+              <button type="button" class="btn-icon" style="color:#EF4444; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); border-radius:6px; cursor:pointer; width:26px; height:26px; display:inline-flex; align-items:center; justify-content:center; margin-right:6px;" title="حذف النسخة" onclick="deleteVaultBackup('${encodeURIComponent(f.path)}', '${f.name}')">
+                ${UI_ICONS.trash(13)}
               </button>
             </td>
           </tr>
@@ -9365,7 +9365,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const res = await window.electronAPI.whatsapp.sendMessage(cleanPhone, rawMsg);
         if (res && res.success) {
-          showToast(`تم إرسال تقرير الدرس لولي أمر (${stu.name}) بنجاح عبر البوت! �`, 'success');
+          showToast(`تم إرسال تقرير الدرس لولي أمر (${stu.name}) بنجاح عبر البوت!`, 'success');
           return;
         }
       } catch (err) {
@@ -9380,7 +9380,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       window.open(waUrl, '_blank');
     }
-    showToast(`تم فتح محادثة ولي أمر (${stu.name}) لإرسال تقرير الدرس! �`, 'success');
+    showToast(`تم فتح محادثة ولي أمر (${stu.name}) لإرسال تقرير الدرس!`, 'success');
   };
 
   // --- LIVE QUEUES: AUTOMATICALLY DETECTED PARENTS & STUDENTS ---
@@ -9683,7 +9683,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (overdueStudents.length === 0) {
-      if (!isSilentAuto) showToast('لا يوجد طلاب متأخرون عن التسديد حالياً! كل الاشتراكات مسواة �', 'success');
+      if (!isSilentAuto) showToast('لا يوجد طلاب متأخرون عن التسديد حالياً! كل الاشتراكات مسواة!', 'success');
       return;
     }
 
@@ -10110,18 +10110,18 @@ document.addEventListener('DOMContentLoaded', () => {
 • الفوج: ${student.group || 'فوج الروبوتيك'} | المستوى: ${student.level || 'المستوى الأول'}
 • الأستاذ المؤطر: ${educatorName}
 
-1️⃣ المواظبة والانضباط العام:
+أولاً: المواظبة والانضباط العام:
 • نسبة الالتزام بالحضور: ${attRate}% (${present} من أصل ${total} حصة مسجلة).
 • رصيد الحصص المتبقي في الاشتراك الحالي: ${rem} حصص.
 ${attRate >= 80 ? '• ملاحظة الانضباط: مواظبة ممتازة وحضور في الموعد بكل حيوية وشغف.' : '• ملاحظة الانضباط: نوصي بمزيد من الالتزام لتفادي انقطاع تسلسل المشاريع التطبيقية.'}
 
-2️⃣ التقييم التقني والمهارات المكتسبة:
+ثانياً: التقييم التقني والمهارات المكتسبة:
 • التفكير المنطقي والبرمجة: تفاعل إيجابي مع المفاهيم الخوارزمية، وحل التحديات البرمجية بشكل تصاعدي ملحوظ.
 • التركيب الميكانيكي والحساسات: دقة في تجميع نماذج الروبوت والتعامل السليم مع العتاد والمحركات.
 • روح الفريق والإبداع: مشاركة فعالة مع زملاء الفوج وحرص دائم على اختبار وتجربة الأفكار الجديدة.
 ${latestNote ? `• ملاحظة المؤطر الميدانية: "${latestNote}"` : ''}
 
-3️⃣ توصيات وتوجيهات للشهر القادم:
+ثالثاً: توصيات وتوجيهات للشهر القادم:
 • تشجيع التلميذ(ة) على استعراض ما تعلمه ومواصلة الشغف في المنزل.
 ${rem <= 1 ? 'تنبيه إداري: الاشتراك الشهري قارب على الانتهاء، يرجى التنسيق مع الإدارة لتجديد الاشتراك لضمان استمرارية مقعد التلميذ بالفوج.' : '• الاشتراك منتظم وساري المفعول.'}
 
