@@ -2198,6 +2198,23 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
+    // Populate Past Sessions Selector for this group
+    const pastSelect = document.getElementById('attPastSessionsSelect');
+    if (pastSelect) {
+      const groupAttRecords = allAttendance.filter(a => isStudentInGroup({ group: a.groupName }, selectedGroup));
+      const uniquePastDates = [...new Set(groupAttRecords.map(a => a.date))].filter(Boolean);
+      uniquePastDates.sort((a, b) => (parseBrainovaDate(b) || 0) - (parseBrainovaDate(a) || 0)); // newest first
+
+      pastSelect.innerHTML = '<option value="">— سجل الحصص السابقة —</option>' + uniquePastDates.map((d, idx) => {
+        const dayAtt = groupAttRecords.filter(a => a.date === d);
+        const pres = dayAtt.filter(a => a.status === 'present' || a.status === 'late').length;
+        const abs = dayAtt.filter(a => a.status === 'absent').length;
+        const isCurrent = d === selectedDate;
+        const dayName = getArabicDayName(d);
+        return `<option value="${d}" ${isCurrent ? 'selected' : ''}>${dayName} ${d} (${pres} حاضر • ${abs} غائب)</option>`;
+      }).join('');
+    }
+
     updateAttendanceStats();
 
     if (groupStudents.length === 0) {
@@ -2281,6 +2298,9 @@ document.addEventListener('DOMContentLoaded', () => {
                    إشعار
                 </a>
               ` : ''}
+              <button type="button" class="btn btn--outline btn--small" onclick="openStudentAttendanceTimelineModal('${stu.id}')" title="السجل الزمني لحضور وغياب التلميذ بالتفصيل" style="color:#38BDF8; border-color:rgba(56,189,248,0.3); display:inline-flex; align-items:center; gap:4px;">
+                 ${UI_ICONS.calendar(11)} السجل
+              </button>
               <button type="button" class="btn btn--outline btn--small" onclick="openStudentProfile('${stu.id}')" title="الملف الشامل">
                  الملف
               </button>
@@ -2456,6 +2476,29 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } else {
       showToast('لا توجد حصص سابقة مسجلة لهذا الفوج', 'info');
+    }
+  };
+
+  window.onAttPastSessionSelected = function() {
+    const pastSelect = document.getElementById('attPastSessionsSelect');
+    if (!pastSelect || !pastSelect.value) return;
+    const dateInput = document.getElementById('attDateSelect');
+    if (dateInput) {
+      dateInput.value = pastSelect.value;
+      window.__preserveAttDate = true;
+      renderAttendance();
+      showToast(`تم الانتقال إلى سجل الحصة بتاريخ ${pastSelect.value}`, 'info');
+    }
+  };
+
+  window.openCurrentGroupMatrix = function() {
+    const groupSelect = document.getElementById('attGroupSelect');
+    const groupName = groupSelect ? groupSelect.value : '';
+    if (groupName) {
+      openGroupDossierModal(encodeURIComponent(groupName));
+      switchDossierTab('matrix');
+    } else {
+      showToast('يرجى تحديد الفوج أولاً', 'info');
     }
   };
 
@@ -5683,7 +5726,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('dossierStudentSearch');
     if (searchInput) searchInput.value = '';
 
-    renderGroupDossierTable();
+    switchDossierTab(window.__activeDossierTab || 'cases');
 
     const modal = document.getElementById('groupDossierModal');
     if (modal) modal.classList.add('active');
@@ -6113,6 +6156,877 @@ document.addEventListener('DOMContentLoaded', () => {
     link.download = `ملف_فوج_${groupName.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     showToast(`تم تصدير ملف الفوج (${groupName}) بصيغة CSV بنجاح!`, 'success');
+  };
+
+  // ── DOSSIER TAB SWITCHER ─────────────────────────────────
+  window.__activeDossierTab = 'cases';
+  window.switchDossierTab = function(tabName) {
+    window.__activeDossierTab = tabName;
+    const btnCases = document.getElementById('dossierTabBtnCases');
+    const btnMatrix = document.getElementById('dossierTabBtnMatrix');
+    const btnSessions = document.getElementById('dossierTabBtnSessions');
+
+    const secCases = document.getElementById('dossierSectionCases');
+    const secMatrix = document.getElementById('dossierSectionMatrix');
+    const secSessions = document.getElementById('dossierSectionSessions');
+
+    if (btnCases) btnCases.className = tabName === 'cases' ? 'btn btn--small btn--primary' : 'btn btn--small btn--outline';
+    if (btnMatrix) btnMatrix.className = tabName === 'matrix' ? 'btn btn--small btn--primary' : 'btn btn--small btn--outline';
+    if (btnSessions) btnSessions.className = tabName === 'sessions' ? 'btn btn--small btn--primary' : 'btn btn--small btn--outline';
+
+    if (secCases) secCases.style.display = tabName === 'cases' ? 'block' : 'none';
+    if (secMatrix) secMatrix.style.display = tabName === 'matrix' ? 'block' : 'none';
+    if (secSessions) secSessions.style.display = tabName === 'sessions' ? 'block' : 'none';
+
+    if (tabName === 'cases') {
+      renderGroupDossierTable();
+    } else if (tabName === 'matrix') {
+      renderGroupDossierMatrix();
+    } else if (tabName === 'sessions') {
+      renderGroupDossierSessions();
+    }
+  };
+
+  // ── MULTI-WEEK / MULTI-MONTH CROSS-TABLE MATRIX ──────────
+  window.renderGroupDossierMatrix = function() {
+    const groupName = window.__currentDossierGroupName;
+    const container = document.getElementById('dossierMatrixContainer');
+    if (!groupName || !container) return;
+
+    const allStudents = getData('brainova_students') || [];
+    let groupStudents = allStudents.filter(s => isStudentInGroup(s, groupName));
+    groupStudents.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ar'));
+
+    const query = document.getElementById('dossierMatrixSearch')?.value.trim().toLowerCase() || '';
+    if (query) {
+      groupStudents = groupStudents.filter(s => 
+        (s.name && s.name.toLowerCase().includes(query)) ||
+        (s.id && s.id.toLowerCase().includes(query))
+      );
+    }
+
+    const allAttendance = getData('brainova_attendance') || [];
+    const groupAtt = allAttendance.filter(a => isStudentInGroup({ group: a.groupName }, groupName));
+
+    const dates = [...new Set(groupAtt.map(a => a.date))].filter(Boolean);
+    dates.sort((a, b) => {
+      const da = parseBrainovaDate(a) || new Date(0);
+      const db = parseBrainovaDate(b) || new Date(0);
+      return da - db;
+    });
+
+    if (dates.length === 0) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 48px 16px; color: var(--color-text-muted);">
+          <div style="margin-bottom: 8px;">${UI_ICONS.calendar(36)}</div>
+          <strong style="display:block; font-size:0.95rem; color:#fff; margin-bottom:4px;">لا توجد حصص مسجلة في هذا الفوج حتى الآن</strong>
+          <span style="font-size:0.8rem;">عند تسجيل حضور الحصص الأسبوعية ستظهر المصفوفة الزمنية للتتبع التلقائي هنا لكل الأسابيع والأشهر.</span>
+        </div>
+      `;
+      return;
+    }
+
+    const theadDatesHtml = dates.map((d, idx) => {
+      const isMakeup = groupAtt.some(a => a.date === d && (a.sessionType === 'makeup' || (a.note && a.note.includes('تعويض'))));
+      const dayName = getArabicDayName(d);
+      return `
+        <th style="min-width: 62px; text-align: center; padding: 6px 4px; border-left: 1px solid rgba(255,255,255,0.06);">
+          <div style="font-weight: 800; color: ${isMakeup ? '#F59E0B' : '#38BDF8'}; font-size: 0.76rem;">حصة ${idx + 1}</div>
+          <div style="font-size: 0.68rem; color: #94A3B8; font-family: monospace; margin-top: 1px;">${d.slice(5)}</div>
+          <div style="font-size: 0.65rem; color: #64748B;">${dayName}</div>
+          ${isMakeup ? '<span style="font-size:0.6rem; background:rgba(245,158,11,0.2); color:#F59E0B; padding:1px 3px; border-radius:3px; display:inline-block; margin-top:2px;">تعويض</span>' : ''}
+        </th>
+      `;
+    }).join('');
+
+    const tbodyHtml = groupStudents.map((stu, sIdx) => {
+      let presCount = 0, lateCount = 0, absDeduct = 0, absHeld = 0, totalAtt = 0;
+      const cells = dates.map(d => {
+        const record = groupAtt.find(a => a.date === d && (a.studentId === stu.id || a.studentName === stu.name));
+        if (!record) {
+          return `<td style="text-align:center;"><span class="matrix-cell matrix-cell--empty">—</span></td>`;
+        }
+        totalAtt++;
+        if (record.status === 'present') {
+          presCount++;
+          return `<td style="text-align:center;"><span class="matrix-cell matrix-cell--present" title="حاضر في ${d}${record.note ? ` (${record.note})` : ''}">✓</span></td>`;
+        } else if (record.status === 'late') {
+          lateCount++;
+          return `<td style="text-align:center;"><span class="matrix-cell matrix-cell--late" title="متأخر في ${d}${record.note ? ` (${record.note})` : ''}">⏱</span></td>`;
+        } else {
+          const isHold = record.holdAbsence === true || record.deductSession === false;
+          if (isHold) {
+            absHeld++;
+            return `<td style="text-align:center;"><span class="matrix-cell matrix-cell--held" title="غائب (حصة محفوظة للتعويض) في ${d}${record.note ? ` (${record.note})` : ''}">🔒</span></td>`;
+          } else {
+            absDeduct++;
+            return `<td style="text-align:center;"><span class="matrix-cell matrix-cell--absent" title="غائب (مخصوم) في ${d}${record.note ? ` (${record.note})` : ''}">✕</span></td>`;
+          }
+        }
+      }).join('');
+
+      const rate = totalAtt > 0 ? Math.round(((presCount + lateCount) / totalAtt) * 100) : 100;
+      const rateColor = rate >= 85 ? '#10B981' : (rate >= 70 ? '#F59E0B' : '#EF4444');
+
+      return `
+        <tr>
+          <td class="matrix-sticky-col" style="color:#64748B; text-align:center;">${sIdx + 1}</td>
+          <td class="matrix-sticky-col" style="font-family:monospace; font-weight:700; color:var(--color-primary);">${stu.id}</td>
+          <td class="matrix-sticky-col" style="text-align:right;">
+            <a href="#" onclick="openStudentAttendanceTimelineModal('${stu.id}'); return false;" style="color:#fff; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:5px;" title="انقر لعرض السجل الزمني للتلميذ">
+              ${stu.name}
+            </a>
+          </td>
+          ${cells}
+          <td style="font-weight:700; color:#10B981; text-align:center; background:rgba(16,185,129,0.04); border-right:1px solid var(--color-border);">${presCount}</td>
+          <td style="font-weight:700; color:#F59E0B; text-align:center; background:rgba(245,158,11,0.04);">${lateCount}</td>
+          <td style="font-weight:700; color:#EF4444; text-align:center; background:rgba(239,68,68,0.04);">${absDeduct}</td>
+          <td style="font-weight:700; color:#C084FC; text-align:center; background:rgba(168,85,247,0.04);">${absHeld}</td>
+          <td style="font-weight:800; color:${rateColor}; text-align:center;">${rate}%</td>
+        </tr>
+      `;
+    }).join('');
+
+    const tfootHtml = `
+      <tr style="background: rgba(255,255,255,0.03); font-weight: 700; border-top: 1.5px solid var(--color-border);">
+        <td class="matrix-sticky-col" colspan="3" style="text-align: right; padding: 8px 12px; color: #94A3B8;">
+          معدل حضور الفوج لكل حصة:
+        </td>
+        ${dates.map(d => {
+          const dayAtt = groupAtt.filter(a => a.date === d);
+          const p = dayAtt.filter(a => a.status === 'present' || a.status === 'late').length;
+          const tot = dayAtt.length;
+          const pct = tot > 0 ? Math.round((p / tot) * 100) : 0;
+          const col = pct >= 80 ? '#10B981' : (pct >= 60 ? '#F59E0B' : '#EF4444');
+          return `<td style="font-size:0.72rem; color:${col}; text-align:center; padding:6px 2px;">
+            ${pct}%
+            <div style="font-size:0.65rem; color:#64748B;">(${p}/${tot})</div>
+          </td>`;
+        }).join('')}
+        <td colspan="5" style="border-right: 1px solid var(--color-border); text-align:center; color:#94A3B8; font-size:0.75rem;">
+          إجمالي الحصص المنعقدة: <strong>${dates.length}</strong>
+        </td>
+      </tr>
+    `;
+
+    container.innerHTML = `
+      <table class="data-table att-matrix-table" style="font-size: 0.78rem; width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="background: rgba(255,255,255,0.04); color: #94A3B8; position: sticky; top: 0; z-index: 5;">
+            <th class="matrix-sticky-col" style="width: 32px; z-index: 6;">#</th>
+            <th class="matrix-sticky-col" style="width: 65px; z-index: 6;">ID</th>
+            <th class="matrix-sticky-col" style="min-width: 140px; text-align: right; z-index: 6;">اسم التلميذ</th>
+            ${theadDatesHtml}
+            <th style="min-width: 50px; background: rgba(16,185,129,0.08); color: #10B981; border-right: 1px solid var(--color-border); text-align:center;">حاضر</th>
+            <th style="min-width: 50px; background: rgba(245,158,11,0.08); color: #F59E0B; text-align:center;">متأخر</th>
+            <th style="min-width: 55px; background: rgba(239,68,68,0.08); color: #EF4444; text-align:center;">مخصوم</th>
+            <th style="min-width: 55px; background: rgba(168,85,247,0.08); color: #C084FC; text-align:center;">محفوظ</th>
+            <th style="min-width: 65px; text-align: center;">الالتزام</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tbodyHtml}
+        </tbody>
+        <tfoot>
+          ${tfootHtml}
+        </tfoot>
+      </table>
+    `;
+  };
+
+  // ── PRINT MATRIX (A4 LANDSCAPE) ──────────────────────────
+  window.printGroupDossierMatrix = function() {
+    const groupName = window.__currentDossierGroupName;
+    if (!groupName) return;
+
+    const allGroups = getData('brainova_groups') || [];
+    const matchedGroup = allGroups.find(g => g.name === groupName || g.id === groupName) || { name: groupName };
+
+    const allStudents = getData('brainova_students') || [];
+    const groupStudents = allStudents.filter(s => isStudentInGroup(s, groupName));
+    groupStudents.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ar'));
+
+    const allAttendance = getData('brainova_attendance') || [];
+    const groupAtt = allAttendance.filter(a => isStudentInGroup({ group: a.groupName }, groupName));
+
+    const dates = [...new Set(groupAtt.map(a => a.date))].filter(Boolean);
+    dates.sort((a, b) => {
+      const da = parseBrainovaDate(a) || new Date(0);
+      const db = parseBrainovaDate(b) || new Date(0);
+      return da - db;
+    });
+
+    const printDate = new Date().toLocaleDateString('ar-DZ', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    let theadCols = dates.map((d, idx) => {
+      const dayName = getArabicDayName(d);
+      return `<th style="border: 1px solid #334155; padding: 4px; font-size: 9px; text-align: center;">حصة ${idx + 1}<br><span style="font-size:8px;">${d.slice(5)}</span><br><span style="font-size:7.5px;">${dayName}</span></th>`;
+    }).join('');
+
+    let rowsHtml = groupStudents.map((stu, sIdx) => {
+      let pres = 0, late = 0, absD = 0, absH = 0, tot = 0;
+      const cells = dates.map(d => {
+        const record = groupAtt.find(a => a.date === d && (a.studentId === stu.id || a.studentName === stu.name));
+        if (!record) return `<td style="border: 1px solid #94A3B8; padding: 3px; font-size: 8.5px; text-align:center; color:#94A3B8;">—</td>`;
+        tot++;
+        if (record.status === 'present') {
+          pres++;
+          return `<td style="border: 1px solid #94A3B8; padding: 3px; font-size: 9px; text-align:center; font-weight:700; color:#059669;">✓</td>`;
+        } else if (record.status === 'late') {
+          late++;
+          return `<td style="border: 1px solid #94A3B8; padding: 3px; font-size: 8.5px; text-align:center; font-weight:700; color:#D97706;">ت</td>`;
+        } else {
+          const isHold = record.holdAbsence === true || record.deductSession === false;
+          if (isHold) {
+            absH++;
+            return `<td style="border: 1px solid #94A3B8; padding: 3px; font-size: 8.5px; text-align:center; font-weight:700; color:#7C3AED;">ح</td>`;
+          } else {
+            absD++;
+            return `<td style="border: 1px solid #94A3B8; padding: 3px; font-size: 8.5px; text-align:center; font-weight:700; color:#DC2626;">غ</td>`;
+          }
+        }
+      }).join('');
+
+      const rate = tot > 0 ? Math.round(((pres + late) / tot) * 100) : 100;
+
+      return `
+        <tr>
+          <td style="border: 1px solid #94A3B8; padding: 4px; text-align:center;">${sIdx + 1}</td>
+          <td style="border: 1px solid #94A3B8; padding: 4px; font-family:monospace; font-weight:700;">${stu.id}</td>
+          <td style="border: 1px solid #94A3B8; padding: 4px; text-align:right; font-weight:700;">${stu.name}</td>
+          ${cells}
+          <td style="border: 1px solid #94A3B8; padding: 4px; text-align:center; font-weight:700; color:#059669;">${pres}</td>
+          <td style="border: 1px solid #94A3B8; padding: 4px; text-align:center; font-weight:700; color:#D97706;">${late}</td>
+          <td style="border: 1px solid #94A3B8; padding: 4px; text-align:center; font-weight:700; color:#DC2626;">${absD}</td>
+          <td style="border: 1px solid #94A3B8; padding: 4px; text-align:center; font-weight:700; color:#7C3AED;">${absH}</td>
+          <td style="border: 1px solid #94A3B8; padding: 4px; text-align:center; font-weight:800;">${rate}%</td>
+        </tr>
+      `;
+    }).join('');
+
+    const printHtml = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>المصفوفة الزمنية للحضور والغياب — ${groupName}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    @page { size: A4 landscape; margin: 8mm; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { font-family: 'Cairo', Tahoma, sans-serif; color: #0F172A; background: #fff; margin: 0; padding: 8px; font-size: 10px; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0284C7; padding-bottom: 8px; margin-bottom: 10px; }
+    .title { font-size: 16px; font-weight: 900; color: #0284C7; margin: 0; }
+    .meta-box { display: flex; justify-content: space-between; background: #F8FAFC; border: 1px solid #CBD5E1; padding: 6px 12px; border-radius: 6px; margin-bottom: 10px; font-size: 10.5px; }
+    .legend { display: flex; gap: 14px; font-size: 9.5px; margin-bottom: 8px; font-weight: 700; }
+    .table { width: 100%; border-collapse: collapse; border: 1.5px solid #0F172A; }
+    .table th { background: #0F172A; color: #fff; border: 1px solid #334155; padding: 4px 2px; font-size: 9px; text-align: center; }
+    .signatures { display: flex; justify-content: space-between; margin-top: 18px; padding: 0 40px; }
+    .sig-box { text-align: center; width: 220px; border-top: 1px dashed #64748B; padding-top: 6px; font-weight: 700; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1 class="title">أكاديمية براينوفا للروبوتيك والذكاء الاصطناعي — BRAINOVA ROBOTICS</h1>
+      <div style="font-size:12px; font-weight:700; color:#334155; margin-top:2px;">المصفوفة الزمنية وسجل الحضور والغياب الشامل (Multi-Week Attendance Matrix)</div>
+    </div>
+    <div style="text-align:left; font-size:10px; color:#64748B;">
+      <div>تاريخ الاستخراج: <strong>${printDate}</strong></div>
+      <div>الفوج: <strong>${groupName}</strong></div>
+    </div>
+  </div>
+
+  <div class="meta-box">
+    <div>اسم الفوج: <strong>${groupName}</strong></div>
+    <div>المستوى: <strong>${matchedGroup.level || 'دورة الروبوتيك'}</strong></div>
+    <div>المدرب المشرف: <strong>${matchedGroup.educator || matchedGroup.educatorName || 'غير محدد'}</strong></div>
+    <div>عدد الحصص المنعقدة: <strong>${dates.length} حصة</strong></div>
+    <div>إجمالي الطلاب: <strong>${groupStudents.length} تلميذ</strong></div>
+  </div>
+
+  <div class="legend">
+    <span style="color:#059669;">✓ حاضر</span>
+    <span style="color:#D97706;">ت متأخر</span>
+    <span style="color:#DC2626;">غ غائب (مخصوم)</span>
+    <span style="color:#7C3AED;">ح غائب محفوظ للتعويض</span>
+  </div>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th style="width:24px;">#</th>
+        <th style="width:60px;">ID</th>
+        <th style="width:130px; text-align:right;">اسم التلميذ الكامل</th>
+        ${theadCols}
+        <th style="width:36px; background:#064E3B; color:#fff;">حاضر</th>
+        <th style="width:36px; background:#78350F; color:#fff;">تأخر</th>
+        <th style="width:36px; background:#7F1D1D; color:#fff;">مخصوم</th>
+        <th style="width:36px; background:#581C87; color:#fff;">محفوظ</th>
+        <th style="width:45px; background:#0F172A; color:#fff;">الالتزام</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rowsHtml}
+    </tbody>
+  </table>
+
+  <div class="signatures">
+    <div class="sig-box">
+      توقيع وختم الأستاذ المشرف
+    </div>
+    <div class="sig-box">
+      توقيع وختم إدارة الأكاديمية
+    </div>
+  </div>
+
+  <script>
+    window.onload = function() {
+      setTimeout(function() {
+        window.print();
+      }, 500);
+    };
+  </script>
+</body>
+</html>`;
+
+    if (window.electronAPI && window.electronAPI.printDocument) {
+      window.electronAPI.printDocument({
+        title: `مصفوفة حضور فوج ${groupName}`,
+        html: printHtml
+      });
+      showToast(`جاري فتح مصفوفة الحضور الرسمية (${groupName}) للطباعة...`, 'success');
+    } else {
+      const w = window.open('', '_blank');
+      if (w) {
+        w.document.write(printHtml);
+        w.document.close();
+      } else {
+        showToast('يرجى السماح بالنوافذ المنبثقة لطباعة المصفوفة', 'error');
+      }
+    }
+  };
+
+  // ── EXPORT MATRIX CSV ────────────────────────────────────
+  window.exportGroupDossierMatrixCSV = function() {
+    const groupName = window.__currentDossierGroupName;
+    if (!groupName) return;
+
+    const allStudents = getData('brainova_students') || [];
+    const groupStudents = allStudents.filter(s => isStudentInGroup(s, groupName));
+    groupStudents.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ar'));
+
+    const allAttendance = getData('brainova_attendance') || [];
+    const groupAtt = allAttendance.filter(a => isStudentInGroup({ group: a.groupName }, groupName));
+
+    const dates = [...new Set(groupAtt.map(a => a.date))].filter(Boolean);
+    dates.sort((a, b) => {
+      const da = parseBrainovaDate(a) || new Date(0);
+      const db = parseBrainovaDate(b) || new Date(0);
+      return da - db;
+    });
+
+    const headers = ['ID', 'اسم التلميذ', ...dates.map((d, i) => `"حصة ${i+1} (${d})"`), 'مجموع الحضور', 'مجموع التأخر', 'غياب مخصوم', 'غياب محفوظ', 'نسبة الالتزام %'];
+    const rows = groupStudents.map(stu => {
+      let p = 0, l = 0, ad = 0, ah = 0, tot = 0;
+      const statusCols = dates.map(d => {
+        const record = groupAtt.find(a => a.date === d && (a.studentId === stu.id || a.studentName === stu.name));
+        if (!record) return '"—"';
+        tot++;
+        if (record.status === 'present') { p++; return '"حاضر"'; }
+        if (record.status === 'late') { l++; return '"متأخر"'; }
+        const isHold = record.holdAbsence === true || record.deductSession === false;
+        if (isHold) { ah++; return '"غائب محفوظ"'; }
+        ad++;
+        return '"غائب مخصوم"';
+      });
+
+      const rate = tot > 0 ? Math.round(((p + l) / tot) * 100) : 100;
+      return [
+        stu.id,
+        `"${(stu.name || '').replace(/"/g, '""')}"`,
+        ...statusCols,
+        p,
+        l,
+        ad,
+        ah,
+        `"${rate}%"`
+      ].join(',');
+    });
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `مصفوفة_حضور_${groupName.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    showToast(`تم تصدير مصفوفة الحضور (${groupName}) بنجاح!`, 'success');
+  };
+
+  // ── SESSIONS CHRONOLOGICAL LOG ───────────────────────────
+  window.renderGroupDossierSessions = function() {
+    const groupName = window.__currentDossierGroupName;
+    const container = document.getElementById('dossierSessionsContainer');
+    if (!groupName || !container) return;
+
+    const allAttendance = getData('brainova_attendance') || [];
+    const groupAtt = allAttendance.filter(a => isStudentInGroup({ group: a.groupName }, groupName));
+
+    const dates = [...new Set(groupAtt.map(a => a.date))].filter(Boolean);
+    dates.sort((a, b) => {
+      const da = parseBrainovaDate(a) || new Date(0);
+      const db = parseBrainovaDate(b) || new Date(0);
+      return db - da; // newest first
+    });
+
+    if (dates.length === 0) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 40px 16px; color: var(--color-text-muted);">
+          <div style="margin-bottom: 8px;">${UI_ICONS.clock(32)}</div>
+          <strong style="display:block; font-size:0.95rem; color:#fff; margin-bottom:4px;">لم يتم تسجيل أي حصة لهذا الفوج بعد</strong>
+          <span style="font-size:0.8rem;">سجل الحصص الأسبوعية وتفاصيل الحضور ستظهر هنا بعد حفظ الحصص في نافذة الحضور.</span>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = dates.map((d, idx) => {
+      const sessionIndex = dates.length - idx;
+      const dayAtt = groupAtt.filter(a => a.date === d);
+      const isMakeup = dayAtt.some(a => a.sessionType === 'makeup' || (a.note && a.note.includes('تعويض')));
+      const sessionTime = dayAtt[0]?.sessionTime || '—';
+      const dayName = getArabicDayName(d);
+
+      const presentList = dayAtt.filter(a => a.status === 'present');
+      const lateList = dayAtt.filter(a => a.status === 'late');
+      const absentDeductList = dayAtt.filter(a => a.status === 'absent' && a.holdAbsence !== true && a.deductSession !== false);
+      const absentHeldList = dayAtt.filter(a => a.status === 'absent' && (a.holdAbsence === true || a.deductSession === false));
+
+      const totalRecorded = dayAtt.length;
+      const rate = totalRecorded > 0 ? Math.round(((presentList.length + lateList.length) / totalRecorded) * 100) : 0;
+      const rateCol = rate >= 80 ? '#10B981' : (rate >= 60 ? '#F59E0B' : '#EF4444');
+
+      return `
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--color-border); border-radius: 10px; padding: 14px 16px; transition: border-color 0.2s ease;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 32px; height: 32px; border-radius: 8px; background: ${isMakeup ? 'rgba(245,158,11,0.15)' : 'rgba(56,189,248,0.15)'}; color: ${isMakeup ? '#F59E0B' : '#38BDF8'}; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem;">
+                #${sessionIndex}
+              </div>
+              <div>
+                <strong style="font-size: 0.95rem; color: #fff;">${dayName} ${d}</strong>
+                <span style="font-size: 0.76rem; color: #94A3B8; margin-right: 8px;">(توقيت: ${sessionTime})</span>
+                ${isMakeup ? '<span style="font-size:0.7rem; background:rgba(245,158,11,0.2); color:#F59E0B; border:1px solid rgba(245,158,11,0.4); padding:1px 6px; border-radius:4px; font-weight:700;">حصة تعويضية</span>' : '<span style="font-size:0.7rem; background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid rgba(56,189,248,0.3); padding:1px 6px; border-radius:4px; font-weight:700;">حصة عادية</span>'}
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 0.82rem; font-weight: 800; color: ${rateCol}; background: rgba(255,255,255,0.04); padding: 4px 8px; border-radius: 6px;">
+                نسبة الحضور: ${rate}% (${presentList.length + lateList.length}/${totalRecorded})
+              </span>
+              <button type="button" class="btn btn--outline btn--small" style="padding: 4px 8px; font-size: 0.74rem; color: #38BDF8; border-color: rgba(56,189,248,0.3);" onclick="jumpToAttendanceSessionDate('${encodeURIComponent(groupName)}', '${d}')">
+                مراجعة وتعديل الحصة ↗
+              </button>
+            </div>
+          </div>
+
+          <!-- Counters pills -->
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; font-size: 0.75rem;">
+            <span style="background: rgba(16,185,129,0.12); color: #34D399; border: 1px solid rgba(16,185,129,0.3); padding: 2px 8px; border-radius: 4px; font-weight: 700;">
+              حضور: ${presentList.length}
+            </span>
+            ${lateList.length > 0 ? `
+              <span style="background: rgba(245,158,11,0.12); color: #FCD34D; border: 1px solid rgba(245,158,11,0.3); padding: 2px 8px; border-radius: 4px; font-weight: 700;">
+                تأخر: ${lateList.length}
+              </span>
+            ` : ''}
+            ${absentDeductList.length > 0 ? `
+              <span style="background: rgba(239,68,68,0.12); color: #FCA5A5; border: 1px solid rgba(239,68,68,0.3); padding: 2px 8px; border-radius: 4px; font-weight: 700;">
+                غياب مخصوم: ${absentDeductList.length}
+              </span>
+            ` : ''}
+            ${absentHeldList.length > 0 ? `
+              <span style="background: rgba(168,85,247,0.12); color: #C084FC; border: 1px solid rgba(168,85,247,0.3); padding: 2px 8px; border-radius: 4px; font-weight: 700;">
+                غياب محفوظ للتعويض: ${absentHeldList.length}
+              </span>
+            ` : ''}
+          </div>
+
+          <!-- Absent Details -->
+          ${(absentDeductList.length > 0 || absentHeldList.length > 0) ? `
+            <div style="background: rgba(0,0,0,0.25); border-radius: 6px; padding: 8px 12px; font-size: 0.74rem; color: #94A3B8;">
+              <strong style="color: #F8FAFC; display: inline-block; margin-left: 6px;">حالات الغياب المسجلة:</strong>
+              ${[...absentDeductList, ...absentHeldList].map(a => `
+                <span style="display:inline-block; margin-left:10px; margin-top:2px;">
+                  <span style="color:#fff; font-weight:700;">${a.studentName}</span>
+                  <span style="color:${(a.holdAbsence || a.deductSession === false) ? '#C084FC' : '#EF4444'};">(${(a.holdAbsence || a.deductSession === false) ? 'محفوظ' : 'مخصوم'})</span>
+                  ${a.note ? `<span style="color:#64748B;">— ${a.note}</span>` : ''}
+                </span>
+              `).join('')}
+            </div>
+          ` : `
+            <div style="font-size: 0.72rem; color: #10B981;">حضور مكتمل بنسبة 100% دون أي غيابات مسجلة.</div>
+          `}
+        </div>
+      `;
+    }).join('');
+  };
+
+  window.jumpToAttendanceSessionDate = function(encodedGroupName, dateStr) {
+    const groupName = decodeURIComponent(encodedGroupName || '').trim();
+    closeGroupDossierModal();
+    switchView('attendance');
+    const groupSelect = document.getElementById('attGroupSelect');
+    const dateInput = document.getElementById('attDateSelect');
+    if (groupSelect && groupName) {
+      groupSelect.value = groupName;
+    }
+    if (dateInput && dateStr) {
+      dateInput.value = dateStr;
+    }
+    window.__preserveAttDate = true;
+    renderAttendance();
+  };
+
+  // ── STUDENT ATTENDANCE TIMELINE MODAL ────────────────────
+  window.__currentTimelineStudentId = '';
+
+  window.openStudentAttendanceTimelineModal = function(studentId) {
+    if (!studentId) return;
+
+    const allStudents = getData('brainova_students') || [];
+    const student = allStudents.find(s => s.id === studentId);
+    if (!student) {
+      showToast('لم يتم العثور على بيانات التلميذ', 'error');
+      return;
+    }
+
+    const studentGroup = student.group || '';
+    const allAttendance = getData('brainova_attendance') || [];
+    const groupAtt = allAttendance.filter(a => isStudentInGroup({ group: a.groupName }, studentGroup));
+
+    const dates = [...new Set(groupAtt.map(a => a.date))].filter(Boolean);
+    dates.sort((a, b) => {
+      const da = parseBrainovaDate(a) || new Date(0);
+      const db = parseBrainovaDate(b) || new Date(0);
+      return db - da; // newest first
+    });
+
+    // Header info
+    const titleEl = document.getElementById('studentTimelineTitle');
+    if (titleEl) titleEl.textContent = `السجل الزمني لحضور: ${student.name}`;
+
+    const badgeEl = document.getElementById('studentTimelineIdBadge');
+    if (badgeEl) badgeEl.textContent = student.id;
+
+    const grpEl = document.getElementById('studentTimelineGroup');
+    if (grpEl) grpEl.textContent = `${studentGroup || 'غير محدد'} • ${student.level || 'دورة الروبوتيك'}`;
+
+    const guardEl = document.getElementById('studentTimelineGuardian');
+    if (guardEl) guardEl.textContent = `${student.parentName || 'ولي الأمر'} (${student.parentPhone || '—'})`;
+
+    const remaining = Number(student.sessionsRemaining) || 0;
+    const remEl = document.getElementById('studentTimelineRemaining');
+    if (remEl) remEl.textContent = `${remaining} حصص`;
+
+    const balance = Number(student.balance) || 0;
+    const balEl = document.getElementById('studentTimelineBalance');
+    if (balEl) balEl.textContent = balance >= 0 ? 'حساب مسوّى (ساري)' : `متأخر: ${Math.abs(balance).toLocaleString()} دج`;
+
+    // Calculate student statistics
+    let presentCount = 0;
+    let lateCount = 0;
+    let absentDeductCount = 0;
+    let absentHeldCount = 0;
+    let totalRecorded = 0;
+
+    const rowsHtml = dates.map((d, idx) => {
+      const sessionNumber = dates.length - idx;
+      const record = groupAtt.find(a => a.date === d && (a.studentId === student.id || a.studentName === student.name));
+      const dayAtt = groupAtt.filter(a => a.date === d);
+      const isMakeup = dayAtt.some(a => a.sessionType === 'makeup' || (a.note && a.note.includes('تعويض')));
+      const sessionTime = dayAtt[0]?.sessionTime || '—';
+      const dayName = getArabicDayName(d);
+
+      let statusHtml = '';
+      let deductHtml = '';
+      let noteText = '—';
+
+      if (!record) {
+        statusHtml = `<span style="color:#64748B;">لم يُسجل</span>`;
+        deductHtml = `<span style="color:#64748B;">—</span>`;
+      } else {
+        totalRecorded++;
+        noteText = record.note || '—';
+        if (record.status === 'present') {
+          presentCount++;
+          statusHtml = `<span class="badge-status-present" style="font-size:0.75rem;">${UI_ICONS.check(11)} حاضر</span>`;
+          deductHtml = `<span style="color:#10B981; font-weight:700;">حصة مستهلكة (-1)</span>`;
+        } else if (record.status === 'late') {
+          lateCount++;
+          statusHtml = `<span class="badge-status-late" style="font-size:0.75rem;">${UI_ICONS.clock(11)} متأخر</span>`;
+          deductHtml = `<span style="color:#10B981; font-weight:700;">حصة مستهلكة (-1)</span>`;
+        } else {
+          const isHeld = record.holdAbsence === true || record.deductSession === false;
+          if (isHeld) {
+            absentHeldCount++;
+            statusHtml = `<span class="badge-status-absent-held" style="font-size:0.75rem;">${UI_ICONS.lock(11)} غائب (محفوظ)</span>`;
+            deductHtml = `<span style="color:#C084FC; font-weight:700;">حصة محفوظة للتعويض (0)</span>`;
+          } else {
+            absentDeductCount++;
+            statusHtml = `<span class="badge-status-absent-deducted" style="font-size:0.75rem;">${UI_ICONS.scissors(11)} غائب (مخصوم)</span>`;
+            deductHtml = `<span style="color:#EF4444; font-weight:700;">حصة مخصومة (-1)</span>`;
+          }
+        }
+      }
+
+      return `
+        <tr>
+          <td style="text-align:center; font-weight:700; color:#94A3B8;">#${sessionNumber}</td>
+          <td><strong style="font-family:monospace; color:#fff;">${d}</strong></td>
+          <td>${dayName} • <span style="font-family:monospace; font-size:0.75rem; color:#94A3B8;">${sessionTime}</span></td>
+          <td>${isMakeup ? '<span style="color:#F59E0B; font-weight:700;">حصة تعويضية</span>' : 'حصة عادية'}</td>
+          <td style="text-align:center;">${statusHtml}</td>
+          <td>${deductHtml}</td>
+          <td style="font-size:0.75rem; color:#94A3B8;">${noteText}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const rate = totalRecorded > 0 ? Math.round(((presentCount + lateCount) / totalRecorded) * 100) : 100;
+
+    const totEl = document.getElementById('stuTimelineTotal');
+    if (totEl) totEl.textContent = dates.length;
+
+    const presEl = document.getElementById('stuTimelinePresent');
+    if (presEl) presEl.textContent = presentCount;
+
+    const lateEl = document.getElementById('stuTimelineLate');
+    if (lateEl) lateEl.textContent = lateCount;
+
+    const absDEl = document.getElementById('stuTimelineAbsentDeducted');
+    if (absDEl) absDEl.textContent = absentDeductCount;
+
+    const absHEl = document.getElementById('stuTimelineAbsentHeld');
+    if (absHEl) absHEl.textContent = absentHeldCount;
+
+    const rateEl = document.getElementById('stuTimelineRate');
+    if (rateEl) {
+      rateEl.textContent = `${rate}%`;
+      rateEl.style.color = rate >= 85 ? '#10B981' : (rate >= 70 ? '#F59E0B' : '#EF4444');
+    }
+
+    const tbody = document.getElementById('studentTimelineTableBody');
+    if (tbody) {
+      if (dates.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:32px 14px; color:var(--color-text-muted);">لم يتم تسجيل أي حصة لهذا الفوج حتى الآن.</td></tr>`;
+      } else {
+        tbody.innerHTML = rowsHtml;
+      }
+    }
+
+    window.__currentTimelineStudentId = studentId;
+
+    const modal = document.getElementById('studentAttendanceTimelineModal');
+    if (modal) modal.classList.add('active');
+  };
+
+  window.closeStudentAttendanceTimelineModal = function() {
+    const modal = document.getElementById('studentAttendanceTimelineModal');
+    if (modal) modal.classList.remove('active');
+  };
+
+  window.printStudentAttendanceTimeline = function(overrideStudentId) {
+    const studentId = overrideStudentId || window.__currentTimelineStudentId;
+    if (!studentId) return;
+
+    const allStudents = getData('brainova_students') || [];
+    const student = allStudents.find(s => s.id === studentId);
+    if (!student) return;
+
+    const studentGroup = student.group || '';
+    const allAttendance = getData('brainova_attendance') || [];
+    const groupAtt = allAttendance.filter(a => isStudentInGroup({ group: a.groupName }, studentGroup));
+
+    const dates = [...new Set(groupAtt.map(a => a.date))].filter(Boolean);
+    dates.sort((a, b) => {
+      const da = parseBrainovaDate(a) || new Date(0);
+      const db = parseBrainovaDate(b) || new Date(0);
+      return da - db;
+    });
+
+    const printDate = new Date().toLocaleDateString('ar-DZ', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    let pres = 0, late = 0, absD = 0, absH = 0, tot = 0;
+    let rowsHtml = dates.map((d, idx) => {
+      const record = groupAtt.find(a => a.date === d && (a.studentId === student.id || a.studentName === student.name));
+      const dayAtt = groupAtt.filter(a => a.date === d);
+      const isMakeup = dayAtt.some(a => a.sessionType === 'makeup' || (a.note && a.note.includes('تعويض')));
+      const sessionTime = dayAtt[0]?.sessionTime || '—';
+      const dayName = getArabicDayName(d);
+
+      let statusStr = 'لم يُسجل';
+      let effectStr = '—';
+      let note = record?.note || '';
+
+      if (record) {
+        tot++;
+        if (record.status === 'present') {
+          pres++;
+          statusStr = '<strong style="color:#059669;">حاضر</strong>';
+          effectStr = 'مستهلكة من الرصيد';
+        } else if (record.status === 'late') {
+          late++;
+          statusStr = '<strong style="color:#D97706;">متأخر</strong>';
+          effectStr = 'مستهلكة من الرصيد';
+        } else {
+          const isHeld = record.holdAbsence === true || record.deductSession === false;
+          if (isHeld) {
+            absH++;
+            statusStr = '<strong style="color:#7C3AED;">غائب (محفوظ للتعويض)</strong>';
+            effectStr = 'رصيد محبوس لم يُخصم';
+          } else {
+            absD++;
+            statusStr = '<strong style="color:#DC2626;">غائب (مخصوم)</strong>';
+            effectStr = 'مخصومة من الرصيد';
+          }
+        }
+      }
+
+      return `
+        <tr>
+          <td style="border:1px solid #94A3B8; padding:5px; text-align:center;">${idx + 1}</td>
+          <td style="border:1px solid #94A3B8; padding:5px; font-family:monospace; font-weight:700;">${d}</td>
+          <td style="border:1px solid #94A3B8; padding:5px; text-align:right;">${dayName} (${sessionTime})</td>
+          <td style="border:1px solid #94A3B8; padding:5px; text-align:center;">${isMakeup ? 'حصة تعويضية' : 'حصة عادية'}</td>
+          <td style="border:1px solid #94A3B8; padding:5px; text-align:center;">${statusStr}</td>
+          <td style="border:1px solid #94A3B8; padding:5px; text-align:center; font-size:10px;">${effectStr}</td>
+          <td style="border:1px solid #94A3B8; padding:5px; text-align:right; font-size:10px;">${note || '—'}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const rate = tot > 0 ? Math.round(((pres + late) / tot) * 100) : 100;
+    const remaining = Number(student.sessionsRemaining) || 0;
+
+    const printHtml = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>كشف السجل الزمني لحضور التلميذ — ${student.name}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    @page { size: A4 portrait; margin: 12mm; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { font-family: 'Cairo', Tahoma, sans-serif; color: #0F172A; background: #fff; margin: 0; padding: 10px; font-size: 11px; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0284C7; padding-bottom: 10px; margin-bottom: 12px; }
+    .title { font-size: 17px; font-weight: 900; color: #0284C7; margin: 0; }
+    .meta-box { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: #F8FAFC; border: 1px solid #CBD5E1; padding: 10px 14px; border-radius: 6px; margin-bottom: 14px; font-size: 11px; }
+    .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; }
+    .kpi-card { background: #F1F5F9; border: 1px solid #CBD5E1; border-radius: 6px; padding: 6px 10px; text-align: center; }
+    .table { width: 100%; border-collapse: collapse; border: 1.5px solid #0F172A; margin-bottom: 18px; }
+    .table th { background: #0F172A; color: #fff; border: 1px solid #334155; padding: 6px 4px; font-size: 10.5px; text-align: center; }
+    .signatures { display: flex; justify-content: space-between; margin-top: 24px; padding: 0 40px; }
+    .sig-box { text-align: center; width: 220px; border-top: 1px dashed #64748B; padding-top: 8px; font-weight: 700; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1 class="title">أكاديمية براينوفا للروبوتيك والذكاء الاصطناعي — BRAINOVA ROBOTICS</h1>
+      <div style="font-size:12.5px; font-weight:700; color:#334155; margin-top:2px;">الكشف الفردي المفصل للحضور والغياب (Student Attendance Transcript)</div>
+    </div>
+    <div style="text-align:left; font-size:10.5px; color:#64748B;">
+      <div>تاريخ التحرير: <strong>${printDate}</strong></div>
+      <div>رقم التلميذ: <strong>${student.id}</strong></div>
+    </div>
+  </div>
+
+  <div class="meta-box">
+    <div>اسم التلميذ: <strong style="font-size:12px;">${student.name}</strong></div>
+    <div>الفوج المسجل: <strong>${studentGroup}</strong></div>
+    <div>المستوى: <strong>${student.level || 'دورة الروبوتيك'}</strong></div>
+    <div>ولي الأمر: <strong>${student.parentName || 'ولي الأمر'}</strong></div>
+    <div>رقم الهاتف: <strong dir="ltr">${student.parentPhone || '—'}</strong></div>
+    <div>الرصيد المتبقي: <strong>${remaining} حصص</strong></div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <span style="font-size:10px; color:#64748B;">إجمالي الحصص</span>
+      <div style="font-size:14px; font-weight:800; color:#0284C7;">${dates.length}</div>
+    </div>
+    <div class="kpi-card">
+      <span style="font-size:10px; color:#64748B;">حضور فعلي</span>
+      <div style="font-size:14px; font-weight:800; color:#059669;">${pres}</div>
+    </div>
+    <div class="kpi-card">
+      <span style="font-size:10px; color:#64748B;">تأخر</span>
+      <div style="font-size:14px; font-weight:800; color:#D97706;">${late}</div>
+    </div>
+    <div class="kpi-card">
+      <span style="font-size:10px; color:#64748B;">غياب مخصوم</span>
+      <div style="font-size:14px; font-weight:800; color:#DC2626;">${absD}</div>
+    </div>
+    <div class="kpi-card">
+      <span style="font-size:10px; color:#64748B;">غياب محفوظ</span>
+      <div style="font-size:14px; font-weight:800; color:#7C3AED;">${absH}</div>
+    </div>
+  </div>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th style="width:28px;">#</th>
+        <th style="width:75px;">تاريخ الحصة</th>
+        <th>اليوم والتوقيت</th>
+        <th>نوع الحصة</th>
+        <th style="width:120px;">حالة الحضور</th>
+        <th>الأثر على الرصيد</th>
+        <th>الملاحظات وسبب الغياب</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rowsHtml || '<tr><td colspan="7" style="text-align:center; padding:15px;">لا توجد حصص مسجلة.</td></tr>'}
+    </tbody>
+  </table>
+
+  <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:8px 12px; border-radius:6px; font-size:10.5px; color:#475569;">
+    <strong>ملاحظة بيداغوجية:</strong> نسبة الالتزام الإجمالية للتلميذ هي <strong>${rate}%</strong>. الحصص المحفوظة تُعوّض في مواعيد استدراكية خاصة بالتنسيق مع الأكاديمية.
+  </div>
+
+  <div class="signatures">
+    <div class="sig-box">
+      توقيع وختم المشرف البيداغوجي
+    </div>
+    <div class="sig-box">
+      توقيع وختم الإدارة العامة للأكاديمية
+    </div>
+  </div>
+
+  <script>
+    window.onload = function() {
+      setTimeout(function() {
+        window.print();
+      }, 500);
+    };
+  </script>
+</body>
+</html>`;
+
+    if (window.electronAPI && window.electronAPI.printDocument) {
+      window.electronAPI.printDocument({
+        title: `كشف حضور التلميذ ${student.name}`,
+        html: printHtml
+      });
+      showToast(`جاري فتح كشف حضور التلميذ (${student.name}) للطباعة...`, 'success');
+    } else {
+      const w = window.open('', '_blank');
+      if (w) {
+        w.document.write(printHtml);
+        w.document.close();
+      } else {
+        showToast('يرجى السماح بالنوافذ المنبثقة لطباعة الكشف', 'error');
+      }
+    }
   };
 
   // =========================================================

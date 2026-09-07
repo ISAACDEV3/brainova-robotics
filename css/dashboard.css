@@ -2800,3 +2800,64 @@ html[dir="ltr"] .dossier-table {
   box-sizing: border-box;
 }
 
+/* ── Multi-Week Attendance History & Cross-Table Matrix ── */
+.att-matrix-table th, .att-matrix-table td {
+  padding: 8px 6px;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.att-matrix-table th.matrix-sticky-col, .att-matrix-table td.matrix-sticky-col {
+  position: sticky;
+  right: 0;
+  background: #0E1526;
+  z-index: 2;
+  box-shadow: -2px 0 6px rgba(0,0,0,0.3);
+}
+.att-matrix-table thead th.matrix-sticky-col {
+  z-index: 3;
+}
+.att-matrix-table tr:hover td.matrix-sticky-col {
+  background: #141E34;
+}
+
+.matrix-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.72rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.matrix-cell:hover {
+  transform: scale(1.15);
+}
+.matrix-cell--present {
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  color: #34D399;
+}
+.matrix-cell--late {
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  color: #FCD34D;
+}
+.matrix-cell--absent {
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  color: #FCA5A5;
+}
+.matrix-cell--held {
+  background: rgba(168, 85, 247, 0.18);
+  border: 1px solid rgba(168, 85, 247, 0.45);
+  color: #C084FC;
+}
+.matrix-cell--empty {
+  color: #475569;
+  font-size: 0.75rem;
+}
+
+

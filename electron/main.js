@@ -441,18 +441,23 @@ function createMain(splash) {
     if (!isReadyToShow || !isSplashFinished) return;
     isAppLaunched = true;
 
+    // 1. Immediately unpin, hide and destroy splash window so it vanishes 100% cleanly from desktop
     if (splash && !splash.isDestroyed()) {
-      splash.close();
+      try { splash.setAlwaysOnTop(false); } catch(e) {}
+      try { splash.hide(); } catch(e) {}
+      try { splash.destroy(); } catch(e) {}
     }
 
-    try {
-      mainWindow.maximize();
-    } catch(e) {}
-    mainWindow.show();
-    mainWindow.focus();
+    // 2. Wait 350ms to ensure Windows DWM has fully cleared the splash window before revealing mainWindow
+    setTimeout(() => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.show();
+        mainWindow.focus();
 
-    performAutoBackup();
-    setupAutoUpdater();
+        performAutoBackup();
+        setupAutoUpdater();
+      }
+    }, 350);
 
       // Initialize WhatsApp Automation Bot
       try {

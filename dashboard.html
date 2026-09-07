@@ -501,6 +501,10 @@
               <p class="page-subtitle">تسجيل تفقد الحصة المباشر، خصم الرصيد التلقائي، وإشعار الأولياء بالغياب.</p>
             </div>
             <div style="display:flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn--outline btn--small" onclick="openCurrentGroupMatrix()" style="color:#38BDF8; border-color:rgba(56,189,248,0.4); display:inline-flex; align-items:center; gap:6px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                سجل الحضور الشامل (المصفوفة)
+              </button>
               <button class="btn btn--outline btn--small" onclick="openPrintAttendanceSheetModal()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                 طباعة ورقة الحضور
@@ -551,6 +555,12 @@
                   <button type="button" class="btn btn--outline btn--small" style="height:36px; padding:0 8px; font-size:0.72rem; white-space:nowrap; color:#38BDF8; border-color:rgba(56,189,248,0.4); background:rgba(56,189,248,0.06); font-weight:700;" onclick="attJumpToNextSession()" title="الانتقال لموعد الحصة القادمة">الحصة القادمة</button>
                   <button type="button" class="btn btn--outline btn--small" style="height:36px; padding:0 8px; font-size:0.72rem; white-space:nowrap;" onclick="attJumpToPrevSession()" title="عرض الحصة السابقة المسجلة">السابقة</button>
                 </div>
+              </div>
+              <div>
+                <label style="font-size:0.72rem; color:var(--color-text-dim); font-weight:700; display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">أرشيف الحصص المنعقدة</label>
+                <select id="attPastSessionsSelect" onchange="onAttPastSessionSelected()" class="form-input" style="width: 220px; height: 36px; font-weight:700; color:#38BDF8; border-color:rgba(56,189,248,0.3);">
+                  <option value="">— سجل الحصص السابقة —</option>
+                </select>
               </div>
               <div>
                 <label style="font-size:0.72rem; color:var(--color-text-dim); font-weight:700; display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">نوع الحصة</label>
@@ -2048,41 +2058,104 @@
 
         </div>
 
-        <!-- Student Search & Fast Actions Toolbar inside Dossier -->
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
-          <div style="position: relative; flex: 1; max-width: 320px;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute; right:10px; top:9px; width:14px; height:14px; color:#94A3B8; pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="dossierStudentSearch" class="form-input" placeholder="بحث باسم التلميذ أو رقم الهاتف أو الحالة..." style="padding-right:32px; height:34px; font-size:0.82rem; width:100%;" oninput="renderGroupDossierTable()">
+        <!-- Dossier Navigation Tabs -->
+        <div style="display: flex; gap: 8px; margin-bottom: 14px; border-bottom: 1px solid var(--color-border); padding-bottom: 10px;">
+          <button type="button" id="dossierTabBtnCases" class="btn btn--small btn--primary" onclick="switchDossierTab('cases')" style="font-weight:700; display:inline-flex; align-items:center; gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            سجل حالات الطلاب الشامل
+          </button>
+          <button type="button" id="dossierTabBtnMatrix" class="btn btn--small btn--outline" onclick="switchDossierTab('matrix')" style="font-weight:700; display:inline-flex; align-items:center; gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+            المصفوفة الزمنية للحضور والغياب (Cross-Table)
+          </button>
+          <button type="button" id="dossierTabBtnSessions" class="btn btn--small btn--outline" onclick="switchDossierTab('sessions')" style="font-weight:700; display:inline-flex; align-items:center; gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            سجل الحصص المنعقدة (أسبوعياً وشهرياً)
+          </button>
+        </div>
+
+        <!-- TAB 1: Cases Table Section -->
+        <div id="dossierSectionCases">
+          <!-- Student Search & Fast Actions Toolbar inside Dossier -->
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
+            <div style="position: relative; flex: 1; max-width: 320px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute; right:10px; top:9px; width:14px; height:14px; color:#94A3B8; pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="dossierStudentSearch" class="form-input" placeholder="بحث باسم التلميذ أو رقم الهاتف أو الحالة..." style="padding-right:32px; height:34px; font-size:0.82rem; width:100%;" oninput="renderGroupDossierTable()">
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button type="button" class="btn btn--outline btn--small" style="color:#A855F7; border-color:rgba(168,85,247,0.4);" onclick="openGroupMakeupSessionModal(encodeURIComponent(window.__currentDossierGroupName))">
+                + برمجة حصة تعويضية
+              </button>
+              <button type="button" class="btn btn--primary btn--small" onclick="openAddStudentForCurrentDossierGroup()">
+                + إضافة تلميذ للفوج
+              </button>
+            </div>
           </div>
-          <div style="display:flex; gap:8px; align-items:center;">
-            <button type="button" class="btn btn--outline btn--small" style="color:#A855F7; border-color:rgba(168,85,247,0.4);" onclick="openGroupMakeupSessionModal(encodeURIComponent(window.__currentDossierGroupName))">
-              + برمجة حصة تعويضية
-            </button>
-            <button type="button" class="btn btn--primary btn--small" onclick="openAddStudentForCurrentDossierGroup()">
-              + إضافة تلميذ للفوج
-            </button>
+
+          <!-- Comprehensive Cases Table -->
+          <div class="table-container" style="max-height: 440px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: 8px;">
+            <table class="data-table" style="font-size: 0.8rem; width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background: rgba(255,255,255,0.04); color: #94A3B8; text-align: right; position: sticky; top: 0; z-index: 1;">
+                  <th style="padding: 10px 12px;">ID</th>
+                  <th style="padding: 10px 12px;">التلميذ / السن</th>
+                  <th style="padding: 10px 12px;">ولي الأمر والهاتف</th>
+                  <th style="padding: 10px 12px;">حالة الاشتراك المالي</th>
+                  <th style="padding: 10px 12px;">رصيد الحصص</th>
+                  <th style="padding: 10px 12px;">سجل الحضور والالتزام</th>
+                  <th style="padding: 10px 12px;">الحالة البيداغوجية والملاحظات</th>
+                  <th style="padding: 10px 12px; text-align: center;">إجراءات سريعة</th>
+                </tr>
+              </thead>
+              <tbody id="groupDossierTableBody">
+                <!-- Rendered by JS -->
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <!-- Comprehensive Cases Table -->
-        <div class="table-container" style="max-height: 440px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: 8px;">
-          <table class="data-table" style="font-size: 0.8rem; width: 100%; border-collapse: collapse;">
-            <thead>
-              <tr style="background: rgba(255,255,255,0.04); color: #94A3B8; text-align: right; position: sticky; top: 0; z-index: 1;">
-                <th style="padding: 10px 12px;">ID</th>
-                <th style="padding: 10px 12px;">التلميذ / السن</th>
-                <th style="padding: 10px 12px;">ولي الأمر والهاتف</th>
-                <th style="padding: 10px 12px;">حالة الاشتراك المالي</th>
-                <th style="padding: 10px 12px;">رصيد الحصص</th>
-                <th style="padding: 10px 12px;">سجل الحضور والالتزام</th>
-                <th style="padding: 10px 12px;">الحالة البيداغوجية والملاحظات</th>
-                <th style="padding: 10px 12px; text-align: center;">إجراءات سريعة</th>
-              </tr>
-            </thead>
-            <tbody id="groupDossierTableBody">
-              <!-- Rendered by JS -->
-            </tbody>
-          </table>
+        <!-- TAB 2: Multi-Week/Month Cross-Table Matrix Section -->
+        <div id="dossierSectionMatrix" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <div style="position: relative; width: 240px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute; right:10px; top:9px; width:14px; height:14px; color:#94A3B8; pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="dossierMatrixSearch" class="form-input" placeholder="تصفية الطلاب في المصفوفة..." style="padding-right:32px; height:34px; font-size:0.82rem; width:100%;" oninput="renderGroupDossierMatrix()">
+              </div>
+              <div style="display:flex; align-items:center; gap:6px; font-size:0.75rem; color:#94A3B8;">
+                <span class="matrix-cell matrix-cell--present" style="width:20px;height:20px;font-size:0.65rem;">✓</span> حاضر
+                <span class="matrix-cell matrix-cell--late" style="width:20px;height:20px;font-size:0.65rem; margin-right:6px;">⏱</span> متأخر
+                <span class="matrix-cell matrix-cell--absent" style="width:20px;height:20px;font-size:0.65rem; margin-right:6px;">✕</span> غائب (مخصوم)
+                <span class="matrix-cell matrix-cell--held" style="width:20px;height:20px;font-size:0.65rem; margin-right:6px;">🔒</span> غائب (محفوظ)
+              </div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button type="button" class="btn btn--outline btn--small" onclick="printGroupDossierMatrix()" style="display:inline-flex; align-items:center; gap:6px; color:#38BDF8; border-color:rgba(56,189,248,0.4);">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+                طباعة مصفوفة الحضور (A4 عرضي)
+              </button>
+              <button type="button" class="btn btn--outline btn--small" onclick="exportGroupDossierMatrixCSV()" style="display:inline-flex; align-items:center; gap:6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                تصدير CSV
+              </button>
+            </div>
+          </div>
+
+          <div id="dossierMatrixContainer" class="table-container" style="max-height: 440px; overflow: auto; border: 1px solid var(--color-border); border-radius: 8px;">
+            <!-- Rendered by JS: cross-table grid -->
+          </div>
+        </div>
+
+        <!-- TAB 3: Chronological Held Sessions Section -->
+        <div id="dossierSectionSessions" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <p style="font-size: 0.8rem; color: var(--color-text-muted); margin:0;">
+              سجل تفصيلي مرتب زمنياً لجميع الحصص التي عُقدت لهذا الفوج مع إحصائيات كل حصة والغيابات المسجلة بها.
+            </p>
+          </div>
+          <div id="dossierSessionsContainer" style="display: flex; flex-direction: column; gap: 10px; max-height: 440px; overflow-y: auto; padding-right: 2px;">
+            <!-- Rendered by JS -->
+          </div>
         </div>
 
       </div>
@@ -2093,6 +2166,117 @@
           أكاديمية براينوفا للروبوتيك والذكاء الاصطناعي 2026 — ملف الفوج الرقمي المعتمد
         </span>
         <button type="button" class="btn btn--outline" onclick="closeGroupDossierModal()">إغلاق</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== STUDENT ATTENDANCE TIMELINE (السجل الزمني المفصل لحضور وغياب التلميذ) MODAL ===== -->
+  <div class="modal-overlay" id="studentAttendanceTimelineModal">
+    <div class="modal" style="max-width: 920px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+      
+      <div class="modal__header" style="flex-shrink: 0; padding-bottom: 12px; border-bottom: 1px solid var(--color-border);">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); display: flex; align-items: center; justify-content: center; color: #10B981;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+          </div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <h2 class="modal__title" id="studentTimelineTitle" style="margin:0; font-size: 1.15rem; font-weight: 800; color: #fff;">السجل الزمني لحضور وغياب التلميذ</h2>
+              <span id="studentTimelineIdBadge" class="status-pill status-pill--active" style="font-family: monospace; font-size: 0.75rem;">—</span>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--color-text-muted); margin: 3px 0 0 0;" id="studentTimelineSubtitle">
+              كشف تفصيلي بجميع الحصص المنعقدة، تواريخ الحضور والغياب، وحالة الخصم والتعويض.
+            </p>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button type="button" class="btn btn--outline btn--small" onclick="printStudentAttendanceTimeline()" style="display:inline-flex; align-items:center; gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+            طباعة الكشف (A4)
+          </button>
+          <button class="modal__close" onclick="closeStudentAttendanceTimelineModal()">×</button>
+        </div>
+      </div>
+
+      <!-- Scrollable Body -->
+      <div style="overflow-y: auto; flex: 1; padding: 14px 0;">
+        
+        <!-- Student Meta Banner -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 14px; background: rgba(255,255,255,0.03); padding: 12px 16px; border-radius: 10px; border: 1px solid var(--color-border);">
+          <div>
+            <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block;">الفوج والمستوى</span>
+            <strong id="studentTimelineGroup" style="font-size: 0.88rem; color: #fff;">—</strong>
+          </div>
+          <div>
+            <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block;">ولي الأمر ورقم الهاتف</span>
+            <strong id="studentTimelineGuardian" style="font-size: 0.88rem; color: #38BDF8;">—</strong>
+          </div>
+          <div>
+            <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block;">رصيد الحصص المتبقي</span>
+            <strong id="studentTimelineRemaining" style="font-size: 0.88rem; color: #10B981;">—</strong>
+          </div>
+          <div>
+            <span style="font-size: 0.72rem; color: var(--color-text-muted); display: block;">الحساب المالي</span>
+            <strong id="studentTimelineBalance" style="font-size: 0.88rem; color: #F59E0B;">—</strong>
+          </div>
+        </div>
+
+        <!-- Student Attendance KPIs -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 16px;">
+          <div style="background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.2); border-radius:8px; padding:8px 12px; text-align:center;">
+            <span style="font-size:0.7rem; color:#94A3B8;">إجمالي الحصص</span>
+            <div id="stuTimelineTotal" style="font-size:1.2rem; font-weight:800; color:#38BDF8; margin-top:2px;">0</div>
+          </div>
+          <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2); border-radius:8px; padding:8px 12px; text-align:center;">
+            <span style="font-size:0.7rem; color:#94A3B8;">حضور فعلي</span>
+            <div id="stuTimelinePresent" style="font-size:1.2rem; font-weight:800; color:#10B981; margin-top:2px;">0</div>
+          </div>
+          <div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2); border-radius:8px; padding:8px 12px; text-align:center;">
+            <span style="font-size:0.7rem; color:#94A3B8;">تأخر</span>
+            <div id="stuTimelineLate" style="font-size:1.2rem; font-weight:800; color:#F59E0B; margin-top:2px;">0</div>
+          </div>
+          <div style="background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:8px; padding:8px 12px; text-align:center;">
+            <span style="font-size:0.7rem; color:#94A3B8;">غياب مخصوم</span>
+            <div id="stuTimelineAbsentDeducted" style="font-size:1.2rem; font-weight:800; color:#EF4444; margin-top:2px;">0</div>
+          </div>
+          <div style="background:rgba(168,85,247,0.08); border:1px solid rgba(168,85,247,0.2); border-radius:8px; padding:8px 12px; text-align:center;">
+            <span style="font-size:0.7rem; color:#94A3B8;">غياب محفوظ</span>
+            <div id="stuTimelineAbsentHeld" style="font-size:1.2rem; font-weight:800; color:#C084FC; margin-top:2px;">0</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 12px; text-align:center;">
+            <span style="font-size:0.7rem; color:#94A3B8;">نسبة الالتزام</span>
+            <div id="stuTimelineRate" style="font-size:1.2rem; font-weight:800; color:#fff; margin-top:2px;">100%</div>
+          </div>
+        </div>
+
+        <!-- Chronological Table -->
+        <div class="table-container" style="max-height: 420px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: 8px;">
+          <table class="data-table" style="font-size: 0.82rem; width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: rgba(255,255,255,0.04); color: #94A3B8; text-align: right; position: sticky; top: 0; z-index: 1;">
+                <th style="padding: 10px 12px; width:45px; text-align:center;">#</th>
+                <th style="padding: 10px 12px;">تاريخ الحصة</th>
+                <th style="padding: 10px 12px;">اليوم والتوقيت</th>
+                <th style="padding: 10px 12px;">نوع الحصة</th>
+                <th style="padding: 10px 12px; text-align:center;">حالة الحضور</th>
+                <th style="padding: 10px 12px;">الأثر على الرصيد</th>
+                <th style="padding: 10px 12px;">ملاحظات الحصة / سبب الغياب</th>
+              </tr>
+            </thead>
+            <tbody id="studentTimelineTableBody">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <div class="modal__actions" style="flex-shrink: 0; padding-top: 12px; border-top: 1px solid var(--color-border); margin-top: 0; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 0.78rem; color: #64748B;">
+          أكاديمية براينوفا للروبوتيك والذكاء الاصطناعي — السجل الزمني للحضور
+        </span>
+        <button type="button" class="btn btn--outline" onclick="closeStudentAttendanceTimelineModal()">إغلاق</button>
       </div>
 
     </div>
