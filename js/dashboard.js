@@ -455,6 +455,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   
   function renderAll() {
+    window.__forceAttSelectorsReload = true;
     updateHeaderBadges();
     renderActiveView();
   }
@@ -1655,19 +1656,371 @@ document.addEventListener('DOMContentLoaded', () => {
     renderAttendance();
   };
 
-  let activeAttendanceDraft = {};
+  // --- ATTENDANCE SYSTEM WITH LIVE TIME, DAY & GROUP LINKAGE ---
+  function getAllGroupsWithSchedule() {
+    const groups = getData('brainova_groups') || [];
+    const schedules = getData('brainova_schedule') || [];
+    const students = getData('brainova_students') || [];
+
+    return groups.map(g => {
+      const sch = schedules.find(s => s.groupId === g.id || s.groupName === g.name || (s.groupName && s.groupName.includes(g.name)));
+      const day = sch ? sch.day : (g.day || 'السبت');
+      const rawTime = sch ? `${sch.startTime} - ${sch.endTime}` : (g.timeSlot || '14:00 - 16:00');
+      const timeSlot = typeof normalizeTimeSlot === 'function' ? normalizeTimeSlot(rawTime) : rawTime;
+      const room = g.room || (sch ? sch.room : '') || 'الرئيسية';
+      const educator = g.educator || (sch ? (sch.educator || sch.educatorName) : '') || 'أستاذ الروبوتيك';
+      const enrolledCount = students.filter(s => isStudentInGroup(s, g.name)).length;
+
+      return {
+        group: g,
+        id: g.id,
+        name: g.name,
+        level: g.level || 'المستوى الأول',
+        day: day,
+        timeSlot: timeSlot,
+        room: room,
+        educator: educator,
+        enrolledCount: enrolledCount
+      };
+    });
+  }
+  window.getAllGroupsWithSchedule = getAllGroupsWithSchedule;
+
+  function populateAttendanceSelectors(targetGroup = null, targetTime = null) {
+    const groupSelect = document.getElementById('attGroupSelect');
+    const timeSelect = document.getElementById('attSessionTimeSelect');
+    if (!groupSelect || !timeSelect) return;
+
+    const allGroups = getAllGroupsWithSchedule();
+
+    // 1. Populate Group Select
+    if (groupSelect.children.length === 0 || window.__forceAttSelectorsReload) {
+      groupSelect.innerHTML = allGroups.map(g => {
+        return `<option value="${g.name}" data-day="${g.day}" data-time="${g.timeSlot}">${g.name} (${g.day} • ${g.timeSlot})</option>`;
+      }).join('');
+      if (targetGroup) groupSelect.value = targetGroup;
+    }
+
+    // 2. Populate Session Time Select with active group annotations
+    if (timeSelect.children.length === 0 || window.__forceAttSelectorsReload) {
+      const standardSlots = [
+        '08:00 - 10:00', '08:30 - 10:30', '09:00 - 11:00',
+        '11:00 - 13:00', '11:30 - 13:30', '13:30 - 15:30',
+        '14:00 - 16:00', '14:30 - 16:30', '16:00 - 18:00',
+        '16:30 - 18:30', '17:00 - 19:00', '18:00 - 20:00'
+      ];
+
+      const allSlots = [...standardSlots];
+      allGroups.forEach(g => {
+        if (g.timeSlot && !allSlots.includes(g.timeSlot)) {
+          allSlots.push(g.timeSlot);
+        }
+      });
+
+      allSlots.sort((a, b) => toMin(a.split('-')[0]) - toMin(b.split('-')[0]));
+
+      timeSelect.innerHTML = allSlots.map(slot => {
+        const norm = typeof normalizeTimeSlot === 'function' ? normalizeTimeSlot(slot) : slot;
+        const matching = allGroups.filter(g => {
+          const gNorm = typeof normalizeTimeSlot === 'function' ? normalizeTimeSlot(g.timeSlot) : g.timeSlot;
+          return gNorm === norm || g.timeSlot.includes(norm) || norm.includes(g.timeSlot);
+        });
+
+        if (matching.length > 0) {
+          const names = matching.map(m => `${m.name} [${m.day}]`).join(' ، ');
+          return `<option value="${slot}">${slot} • (${names})</option>`;
+        }
+        return `<option value="${slot}">${slot}</option>`;
+      }).join('') + `<option value="حصة مخصصة">حصة مخصصة / تعويضية</option>`;
+
+      if (targetTime) {
+        let found = false;
+        for (let opt of timeSelect.options) {
+          if (opt.value === targetTime || opt.value.includes(targetTime)) {
+            timeSelect.value = opt.value;
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          timeSelect.add(new Option(targetTime, targetTime, true, true));
+          timeSelect.value = targetTime;
+        }
+      }
+      window.__forceAttSelectorsReload = false;
+    }
+  }
+
+  window.onAttSessionTimeChanged = function() {
+    window.__userInteractedWithTimeSelect = true;
+    const timeSelect = document.getElementById('attSessionTimeSelect');
+    const groupSelect = document.getElementById('attGroupSelect');
+    const daySelect = document.getElementById('attDaySelect');
+    const dateInput = document.getElementById('attDateSelect');
+    if (!timeSelect) return;
+
+    const chosenTime = timeSelect.value;
+    if (chosenTime === 'حصة مخصصة') {
+      renderAttendance();
+      return;
+    }
+
+    const allGroups = getAllGroupsWithSchedule();
+    const normChosen = typeof normalizeTimeSlot === 'function' ? normalizeTimeSlot(chosenTime) : chosenTime;
+
+    // Find all groups that match this chosen time slot
+    const matchingGroups = allGroups.filter(g => {
+      const normG = typeof normalizeTimeSlot === 'function' ? normalizeTimeSlot(g.timeSlot) : g.timeSlot;
+      return normG === normChosen || g.timeSlot.includes(normChosen) || normChosen.includes(g.timeSlot);
+    });
+
+    if (matchingGroups.length > 0) {
+      const currentGroup = groupSelect ? groupSelect.value : '';
+      let target = matchingGroups.find(g => g.name === currentGroup);
+
+      if (!target && daySelect && daySelect.value && daySelect.value !== 'all') {
+        target = matchingGroups.find(g => areDaysEqual(g.day, daySelect.value));
+      }
+
+      if (!target) {
+        target = matchingGroups[0];
+      }
+
+      if (groupSelect) groupSelect.value = target.name;
+      if (daySelect) daySelect.value = target.day;
+
+      const cycle = getGroupWeeklyCycleInfo(target.name);
+      if (dateInput) {
+        dateInput.value = cycle.suggestedDate || getNextDateForDayName(target.day) || new Date().toISOString().slice(0, 10);
+        window.__preserveAttDate = true;
+      }
+
+      showToast(`تم تحديد الفوج (${target.name}) المبرمج يوم (${target.day}) بتوقيت (${target.timeSlot})`, 'info');
+    } else {
+      showToast(`تنبيه: لا يوجد أي فوج مبرمج رسمياً في توقيت (${chosenTime})`, 'warning');
+    }
+
+    renderAttendance();
+  };
+
+  window.onAttGroupChanged = function() {
+    window.__userInteractedWithTimeSelect = false;
+    const groupSelect = document.getElementById('attGroupSelect');
+    const timeSelect = document.getElementById('attSessionTimeSelect');
+    const daySelect = document.getElementById('attDaySelect');
+    const dateInput = document.getElementById('attDateSelect');
+    if (!groupSelect) return;
+
+    const groupName = groupSelect.value;
+    const allGroups = getAllGroupsWithSchedule();
+    const matched = allGroups.find(g => g.name === groupName || isStudentInGroup({ group: g.name }, groupName));
+
+    if (matched) {
+      if (daySelect) daySelect.value = matched.day;
+      if (timeSelect) {
+        const normTime = typeof normalizeTimeSlot === 'function' ? normalizeTimeSlot(matched.timeSlot) : matched.timeSlot;
+        let found = false;
+        for (let opt of timeSelect.options) {
+          const optNorm = typeof normalizeTimeSlot === 'function' ? normalizeTimeSlot(opt.value) : opt.value;
+          if (optNorm === normTime || opt.value === matched.timeSlot) {
+            timeSelect.value = opt.value;
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          timeSelect.add(new Option(`${matched.timeSlot} • (${matched.name} [${matched.day}])`, matched.timeSlot, true, true));
+          timeSelect.value = matched.timeSlot;
+        }
+      }
+
+      const cycle = getGroupWeeklyCycleInfo(matched.name);
+      if (dateInput) {
+        dateInput.value = cycle.suggestedDate || getNextDateForDayName(matched.day) || new Date().toISOString().slice(0, 10);
+        window.__preserveAttDate = true;
+      }
+    }
+
+    renderAttendance();
+  };
+
+  window.onAttDayChanged = function() {
+    const daySelect = document.getElementById('attDaySelect');
+    const groupSelect = document.getElementById('attGroupSelect');
+    const timeSelect = document.getElementById('attSessionTimeSelect');
+    const dateInput = document.getElementById('attDateSelect');
+    if (!daySelect) return;
+
+    const dayVal = daySelect.value;
+    if (dayVal && dayVal !== 'all') {
+      const allGroups = getAllGroupsWithSchedule();
+      const dayGroups = allGroups.filter(g => areDaysEqual(g.day, dayVal));
+
+      if (dayGroups.length > 0) {
+        const currentGroup = groupSelect ? groupSelect.value : '';
+        let target = dayGroups.find(g => g.name === currentGroup);
+        if (!target) {
+          target = dayGroups[0];
+        }
+
+        if (groupSelect) groupSelect.value = target.name;
+        if (timeSelect) {
+          const normTime = typeof normalizeTimeSlot === 'function' ? normalizeTimeSlot(target.timeSlot) : target.timeSlot;
+          let found = false;
+          for (let opt of timeSelect.options) {
+            const optNorm = typeof normalizeTimeSlot === 'function' ? normalizeTimeSlot(opt.value) : opt.value;
+            if (optNorm === normTime || opt.value === target.timeSlot) {
+              timeSelect.value = opt.value;
+              found = true;
+              break;
+            }
+          }
+          if (!found) {
+            timeSelect.add(new Option(`${target.timeSlot} • (${target.name} [${target.day}])`, target.timeSlot, true, true));
+            timeSelect.value = target.timeSlot;
+          }
+        }
+
+        if (dateInput) {
+          const nextDate = getNextDateForDayName(target.day);
+          if (nextDate) dateInput.value = nextDate;
+          window.__preserveAttDate = true;
+        }
+
+        showToast(`تم تصفية أفواج يوم (${dayVal}) — الفوج الحالي: ${target.name}`, 'info');
+      } else {
+        showToast(`لا توجد أي أفواج مبرمجة في يوم (${dayVal})`, 'warning');
+      }
+    }
+
+    renderAttendance();
+  };
+
+  window.onAttDateChanged = function() {
+    const dateInput = document.getElementById('attDateSelect');
+    const daySelect = document.getElementById('attDaySelect');
+    if (dateInput && dateInput.value) {
+      const dayName = getArabicDayName(dateInput.value);
+      if (daySelect && dayName) {
+        daySelect.value = dayName;
+      }
+      window.__preserveAttDate = true;
+    }
+    renderAttendance();
+  };
+
+  window.selectAttendanceGroupDirectly = function(groupName, timeSlot, dayName) {
+    const groupSelect = document.getElementById('attGroupSelect');
+    const timeSelect = document.getElementById('attSessionTimeSelect');
+    const daySelect = document.getElementById('attDaySelect');
+    const dateInput = document.getElementById('attDateSelect');
+
+    const decodedGroupName = decodeURIComponent(groupName);
+
+    if (groupSelect) groupSelect.value = decodedGroupName;
+    if (timeSelect && timeSlot) {
+      for (let opt of timeSelect.options) {
+        if (opt.value === timeSlot || opt.value.includes(timeSlot)) {
+          timeSelect.value = opt.value;
+          break;
+        }
+      }
+    }
+    if (daySelect && dayName) daySelect.value = dayName;
+
+    if (dateInput && dayName) {
+      const nextDate = getNextDateForDayName(dayName);
+      if (nextDate) dateInput.value = nextDate;
+      window.__preserveAttDate = true;
+    }
+
+    renderAttendance();
+    showToast(`تم التبديل إلى فوج (${decodedGroupName})`, 'success');
+  };
+
+  function updateAttScheduleBanner(selectedGroup, selectedTime, selectedDate) {
+    const banner = document.getElementById('attScheduleBanner');
+    if (!banner) return;
+
+    const allGroups = getAllGroupsWithSchedule();
+    const normTime = typeof normalizeTimeSlot === 'function' ? normalizeTimeSlot(selectedTime) : selectedTime;
+    const currentGroupInfo = allGroups.find(g => g.name === selectedGroup || isStudentInGroup({ group: g.name }, selectedGroup)) || {
+      name: selectedGroup,
+      day: 'السبت',
+      timeSlot: selectedTime,
+      room: 'الرئيسية',
+      educator: 'أستاذ الروبوتيك',
+      enrolledCount: 0
+    };
+
+    const matchingTimeGroups = allGroups.filter(g => {
+      const gNorm = typeof normalizeTimeSlot === 'function' ? normalizeTimeSlot(g.timeSlot) : g.timeSlot;
+      return gNorm === normTime || g.timeSlot.includes(normTime) || normTime.includes(g.timeSlot);
+    });
+
+    const dateDayName = selectedDate ? getArabicDayName(selectedDate) : currentGroupInfo.day;
+    const isDayAligned = areDaysEqual(dateDayName, currentGroupInfo.day);
+
+    let matchingPillsHtml = '';
+    if (matchingTimeGroups.length > 1) {
+      matchingPillsHtml = `
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:6px; padding-top:6px; border-top:1px dashed rgba(56,189,248,0.25); width:100%;">
+          <span style="font-size:0.75rem; color:#94A3B8; font-weight:700;">أفواج أخرى في نفس التوقيت:</span>
+          ${matchingTimeGroups.map(mg => {
+            const isActive = (mg.name === selectedGroup);
+            return `
+              <button type="button" class="att-matching-group-btn ${isActive ? 'is-active' : ''}" onclick="selectAttendanceGroupDirectly('${encodeURIComponent(mg.name)}', '${mg.timeSlot}', '${mg.day}')" title="التبديل الفوري إلى ${mg.name}">
+                <span>${mg.name}</span>
+                <span style="opacity:0.85; font-size:0.7rem;">(${mg.day} • ${mg.room})</span>
+              </button>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    const hasExactMatch = matchingTimeGroups.length > 0;
+
+    banner.innerHTML = `
+      <div class="att-schedule-banner-items">
+        <div class="att-banner-pill">
+          <span class="att-banner-pill-label">توقيت الحصة:</span>
+          <span class="att-banner-pill-value highlight-cyan">${selectedTime}</span>
+        </div>
+        <div class="att-banner-pill">
+          <span class="att-banner-pill-label">الفوج المتواجد:</span>
+          <span class="att-banner-pill-value highlight-emerald">${currentGroupInfo.name}</span>
+          <span style="font-size:0.7rem; color:#94A3B8; margin-right:4px;">(${currentGroupInfo.enrolledCount} طالب)</span>
+        </div>
+        <div class="att-banner-pill">
+          <span class="att-banner-pill-label">اليوم المجدول:</span>
+          <span class="att-banner-pill-value highlight-amber">${currentGroupInfo.day}</span>
+          ${!isDayAligned ? `<span style="font-size:0.68rem; background:rgba(245,158,11,0.2); color:#FBBF24; padding:1px 5px; border-radius:3px; margin-right:4px;" title="التاريخ المختار هو ${dateDayName} بينما موعد الفوج هو ${currentGroupInfo.day}">حصة (${dateDayName})</span>` : ''}
+        </div>
+        <div class="att-banner-pill">
+          <span class="att-banner-pill-label">القاعة والمؤطر:</span>
+          <span class="att-banner-pill-value" style="font-size:0.76rem; color:#E2E8F0;">${currentGroupInfo.room} • ${currentGroupInfo.educator}</span>
+        </div>
+        ${!hasExactMatch ? `
+          <div class="att-banner-pill" style="border-color:rgba(245,158,11,0.4); background:rgba(245,158,11,0.1);">
+            <span style="color:#FBBF24; font-weight:700; font-size:0.72rem;">حصة تعويضية / مخصصة خارج أوقات الفوج المعتادة</span>
+          </div>
+        ` : ''}
+      </div>
+      ${matchingPillsHtml}
+    `;
+  }
 
   function renderAttendance() {
-    const groups = getData('brainova_groups');
+    const groups = getData('brainova_groups') || [];
     const groupSelect = document.getElementById('attGroupSelect');
     const dateInput = document.getElementById('attDateSelect');
     const timeSelect = document.getElementById('attSessionTimeSelect');
+    const daySelect = document.getElementById('attDaySelect');
     const tbody = document.getElementById('attendanceTableBody');
     if (!tbody || !groupSelect || !dateInput) return;
 
-    if (groupSelect.children.length === 0 && groups.length > 0) {
-      groupSelect.innerHTML = groups.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
-    }
+    populateAttendanceSelectors(window.__selectedAttendanceGroup || groupSelect.value, window.__selectedAttendanceTime || (timeSelect ? timeSelect.value : null));
 
     if (window.__selectedAttendanceGroup) {
       const target = window.__selectedAttendanceGroup.trim().toLowerCase();
@@ -1704,6 +2057,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const selectedGroup = groupSelect.value || (groups[0] ? groups[0].name : '');
+    const allGroups = getAllGroupsWithSchedule();
+    const groupScheduleInfo = allGroups.find(g => g.name === selectedGroup || isStudentInGroup({ group: g.name }, selectedGroup));
+
+    if (daySelect && groupScheduleInfo) {
+      if (!daySelect.value || daySelect.value === 'all') {
+        daySelect.value = groupScheduleInfo.day;
+      }
+    }
+
     const allAttendance = getData('brainova_attendance') || [];
     const cycle = getGroupWeeklyCycleInfo(selectedGroup, allAttendance);
 
@@ -1717,8 +2079,20 @@ document.addEventListener('DOMContentLoaded', () => {
       dateInput.value = cycle.suggestedDate;
     }
 
+    if (timeSelect && groupScheduleInfo && !window.__userInteractedWithTimeSelect) {
+      const targetTime = groupScheduleInfo.timeSlot;
+      for (let opt of timeSelect.options) {
+        if (opt.value === targetTime) {
+          timeSelect.value = opt.value;
+          break;
+        }
+      }
+    }
+
     const selectedDate = dateInput.value;
-    const selectedTime = timeSelect ? timeSelect.value : '08:00 - 10:00';
+    const selectedTime = timeSelect ? timeSelect.value : '14:00 - 16:00';
+
+    updateAttScheduleBanner(selectedGroup, selectedTime, selectedDate);
 
     const allStudents = getData('brainova_students');
     const rawGroupStudents = allStudents.filter(s => isStudentInGroup(s, selectedGroup));
@@ -5122,7 +5496,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (dateInput) dateInput.value = dateVal;
       }
       renderAttendance();
-      showToast(`تم فتح سجل الحضور الكامل لفوج "${groupName}" �`, 'success');
+      showToast(`تم فتح سجل الحضور الكامل لفوج "${groupName}" بنجاح!`, 'success');
     }, 120);
   };
 

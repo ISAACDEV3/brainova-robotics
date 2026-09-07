@@ -1055,6 +1055,89 @@ html[dir="ltr"] .schedule-session__delete {
 .att-metric-pill--absent { border-color: rgba(244,63,94,0.3); color: var(--color-rose); }
 .att-metric-pill--late { border-color: rgba(245,158,11,0.3); color: var(--color-amber); }
 
+/* Live Attendance Session Schedule Banner */
+.att-schedule-banner {
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.09) 0%, rgba(15, 23, 42, 0.75) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.att-schedule-banner-items {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.att-banner-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 23, 42, 0.65);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.att-banner-pill-label {
+  color: #94A3B8;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.att-banner-pill-value {
+  color: #FFFFFF;
+  font-weight: 800;
+}
+
+.att-banner-pill-value.highlight-cyan {
+  color: #38BDF8;
+}
+
+.att-banner-pill-value.highlight-amber {
+  color: #FBBF24;
+}
+
+.att-banner-pill-value.highlight-emerald {
+  color: #34D399;
+}
+
+.att-matching-group-btn {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38BDF8;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.att-matching-group-btn:hover {
+  background: rgba(56, 189, 248, 0.25);
+  border-color: #38BDF8;
+  color: #FFFFFF;
+}
+
+.att-matching-group-btn.is-active {
+  background: #0284C7;
+  border-color: #38BDF8;
+  color: #FFFFFF;
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.45);
+}
+
 .att-segmented-control {
   display: inline-flex;
   background: rgba(0, 0, 0, 0.35);

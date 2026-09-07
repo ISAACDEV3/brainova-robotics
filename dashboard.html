@@ -521,44 +521,43 @@
           <div class="att-session-header">
             <div class="att-controls-row" style="flex-wrap:wrap; gap:12px;">
               <div>
-                <label style="font-size:0.72rem; color:var(--color-text-dim); font-weight:700; display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">الفوج التدريبي</label>
-                <select id="attGroupSelect" onchange="renderAttendance()" class="form-input" style="width: 200px; height: 36px; font-weight:700;"></select>
+                <label style="font-size:0.72rem; color:var(--color-text-dim); font-weight:700; display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">توقيت الحصة</label>
+                <select id="attSessionTimeSelect" onchange="onAttSessionTimeChanged()" class="form-input" style="width: 215px; height: 36px; font-weight:700; color:var(--color-primary);"></select>
+              </div>
+              <div>
+                <label style="font-size:0.72rem; color:var(--color-text-dim); font-weight:700; display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">يوم الحصة</label>
+                <select id="attDaySelect" onchange="onAttDayChanged()" class="form-input" style="width: 140px; height: 36px; font-weight:700;">
+                  <option value="all">كل الأيام</option>
+                  <option value="السبت">السبت</option>
+                  <option value="الأحد">الأحد</option>
+                  <option value="الاثنين">الاثنين</option>
+                  <option value="الثلاثاء">الثلاثاء</option>
+                  <option value="الأربعاء">الأربعاء</option>
+                  <option value="الخميس">الخميس</option>
+                  <option value="الجمعة">الجمعة</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:0.72rem; color:var(--color-text-dim); font-weight:700; display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">الفوج التدريبي المتواجد</label>
+                <select id="attGroupSelect" onchange="onAttGroupChanged()" class="form-input" style="width: 225px; height: 36px; font-weight:700;"></select>
               </div>
               <div>
                 <label style="font-size:0.72rem; color:var(--color-text-dim); font-weight:700; display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">تاريخ الحصة</label>
                 <div style="display:flex; gap:6px; align-items:center;">
-                  <input type="date" id="attDateSelect" onchange="renderAttendance()" class="form-input" style="width: 155px; height: 36px; font-family:monospace;">
+                  <input type="date" id="attDateSelect" onchange="onAttDateChanged()" class="form-input" style="width: 155px; height: 36px; font-family:monospace;">
                   <button type="button" class="btn btn--outline btn--small" style="height:36px; padding:0 8px; font-size:0.72rem; white-space:nowrap; color:#38BDF8; border-color:rgba(56,189,248,0.4); background:rgba(56,189,248,0.06); font-weight:700;" onclick="attJumpToNextSession()" title="الانتقال لموعد الحصة القادمة">الحصة القادمة</button>
-                  <button type="button" class="btn btn--outline btn--small" style="height:36px; padding:0 8px; font-size:0.72rem; white-space:nowrap;" onclick="attJumpToPrevSession()" title="عرض الحصة السابقة المسجلة">⏮️ السابقة</button>
+                  <button type="button" class="btn btn--outline btn--small" style="height:36px; padding:0 8px; font-size:0.72rem; white-space:nowrap;" onclick="attJumpToPrevSession()" title="عرض الحصة السابقة المسجلة">السابقة</button>
                 </div>
               </div>
               <div>
-                <label style="font-size:0.72rem; color:var(--color-text-dim); font-weight:700; display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">توقيت الحصة</label>
-                <select id="attSessionTimeSelect" onchange="renderAttendance()" class="form-input" style="width: 170px; height: 36px; font-weight:700; color:var(--color-primary);">
-                  <option value="08:00 - 10:00">08:00 - 10:00</option>
-                  <option value="08:30 - 10:30">08:30 - 10:30</option>
-                  <option value="09:00 - 11:00">09:00 - 11:00</option>
-                  <option value="11:00 - 13:00">11:00 - 13:00</option>
-                  <option value="11:30 - 13:30">11:30 - 13:30</option>
-                  <option value="13:30 - 15:30">13:30 - 15:30</option>
-                  <option value="14:00 - 16:00" selected>14:00 - 16:00</option>
-                  <option value="14:30 - 16:30">14:30 - 16:30</option>
-                  <option value="16:00 - 18:00">16:00 - 18:00</option>
-                  <option value="16:30 - 18:30">16:30 - 18:30</option>
-                  <option value="17:00 - 19:00">17:00 - 19:00</option>
-                  <option value="18:00 - 20:00">18:00 - 20:00</option>
-                  <option value="حصة مخصصة">حصة مخصصة / تعويضية</option>
-                </select>
-              </div>
-              <div>
                 <label style="font-size:0.72rem; color:var(--color-text-dim); font-weight:700; display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">نوع الحصة</label>
-                <select id="attSessionTypeSelect" onchange="renderAttendance()" class="form-input" style="width: 155px; height: 36px; font-weight:700;">
+                <select id="attSessionTypeSelect" onchange="renderAttendance()" class="form-input" style="width: 130px; height: 36px; font-weight:700;">
                   <option value="regular" selected>عادية</option>
                   <option value="makeup">تعويضية</option>
                   <option value="extra">استثنائية</option>
                 </select>
               </div>
-              <div style="flex:1; min-width:180px; max-width:240px;">
+              <div style="flex:1; min-width:170px; max-width:240px;">
                 <label style="font-size:0.72rem; color:var(--color-text-dim); font-weight:700; display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">تصفية الطلاب</label>
                 <div style="position:relative; display:flex; align-items:center;">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute; right:8px; width:13px; height:13px; color:#94A3B8; pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -567,6 +566,9 @@
                 </div>
               </div>
             </div>
+
+            <!-- Active Session & Time Matching Schedule Banner -->
+            <div id="attScheduleBanner" class="att-schedule-banner"></div>
 
             <!-- Live Session Metrics -->
             <div class="att-controls-row">
