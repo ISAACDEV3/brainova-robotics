@@ -395,12 +395,15 @@ function createSplash() {
 // ── MAIN WINDOW ───────────────────────────────────────────────────────────────
 function createMain(splash) {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  const defaultWidth = Math.min(1360, Math.floor(width * 0.88));
+  const defaultHeight = Math.min(840, Math.floor(height * 0.88));
 
   mainWindow = new BrowserWindow({
-    width:    width,
-    height:   height,
+    width:    defaultWidth,
+    height:   defaultHeight,
     minWidth: 1024,
     minHeight: 640,
+    center:   true,
     show: false,
     frame: false,
     titleBarStyle: 'hidden',
@@ -432,9 +435,15 @@ function createMain(splash) {
     } catch(e) {}
   });
 
+  mainWindow.on('maximize', () => {
+    try {
+      mainWindow.webContents.send('win-state-changed', true);
+    } catch(e) {}
+  });
+
   mainWindow.on('unmaximize', () => {
     try {
-      mainWindow.maximize();
+      mainWindow.webContents.send('win-state-changed', false);
     } catch(e) {}
   });
 
@@ -718,11 +727,20 @@ app.on('activate', () => {
 });
 
 // ── IPC: WINDOW CONTROLS ──────────────────────────────────────────────────────
-ipcMain.on('win-minimize',  () => mainWindow && mainWindow.minimize());
-ipcMain.on('win-maximize',  () => mainWindow && mainWindow.maximize());
-ipcMain.on('win-close',     () => mainWindow && mainWindow.close());
-ipcMain.on('win-hide',      () => mainWindow && mainWindow.hide());
-ipcMain.on('open-main-site',     () => openWindow('index.html', 1300, 800));
+ipcMain.on('win-minimize',        () => mainWindow && mainWindow.minimize());
+ipcMain.on('win-maximize',        () => mainWindow && mainWindow.maximize());
+ipcMain.on('win-unmaximize',      () => mainWindow && mainWindow.unmaximize());
+ipcMain.on('win-toggle-maximize', () => {
+  if (!mainWindow) return;
+  if (mainWindow.isMaximized()) {
+    mainWindow.unmaximize();
+  } else {
+    mainWindow.maximize();
+  }
+});
+ipcMain.on('win-close',           () => mainWindow && mainWindow.close());
+ipcMain.on('win-hide',            () => mainWindow && mainWindow.hide());
+ipcMain.on('open-main-site',      () => openWindow('index.html', 1300, 800));
 ipcMain.handle('win-is-maximized', () => mainWindow ? mainWindow.isMaximized() : false);
 ipcMain.handle('open-external', async (_, url) => {
   try {

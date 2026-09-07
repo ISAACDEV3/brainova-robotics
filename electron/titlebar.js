@@ -44,7 +44,7 @@
   });
 
   document.getElementById('_tb_min').onclick   = () => window.electronAPI.minimize();
-  document.getElementById('_tb_max').onclick   = () => window.electronAPI.maximize();
+  document.getElementById('_tb_max').onclick   = () => window.electronAPI.toggleMaximize ? window.electronAPI.toggleMaximize() : window.electronAPI.maximize();
   document.getElementById('_tb_close').onclick = () => window.electronAPI.close();
 
   // Push page content down

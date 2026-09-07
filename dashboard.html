@@ -118,6 +118,9 @@
             <button onclick="if(window.electronAPI)window.electronAPI.minimize()" title="تصغير" style="width:30px; height:26px; border:1px solid rgba(56,189,248,0.2); border-radius:5px; background:rgba(255,255,255,0.04); color:#94A3B8; cursor:pointer; display:flex; align-items:center; justify-content:center;">
               <svg width="11" height="11" viewBox="0 0 12 12"><rect fill="currentColor" width="10" height="1.6" x="1" y="5.2"/></svg>
             </button>
+            <button id="btnWinMaximize" onclick="if(window.electronAPI)window.electronAPI.toggleMaximize()" title="تكبير / استعادة" style="width:30px; height:26px; border:1px solid rgba(56,189,248,0.2); border-radius:5px; background:rgba(255,255,255,0.04); color:#94A3B8; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+              <svg id="btnWinMaximizeIcon" width="11" height="11" viewBox="0 0 12 12"><path fill="none" stroke="currentColor" stroke-width="1.1" d="M3.5 3.5V1.5h7v7H8.5"/><rect fill="none" stroke="currentColor" stroke-width="1.1" width="7" height="7" x="1.5" y="3.5" rx="0.5"/></svg>
+            </button>
             <button onclick="if(window.electronAPI)window.electronAPI.close()" title="إغلاق البرنامج" style="width:30px; height:26px; border:1px solid rgba(239,68,68,0.3); border-radius:5px; background:rgba(239,68,68,0.12); color:#F87171; cursor:pointer; display:flex; align-items:center; justify-content:center;">
               <svg width="11" height="11" viewBox="0 0 12 12"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M2.5 2.5l7 7m0-7l-7 7"/></svg>
             </button>
@@ -3708,6 +3711,27 @@
     if (window.electronAPI || navigator.userAgent.includes('Electron')) {
       const ctrl = document.getElementById('electronWinControls');
       if (ctrl) ctrl.style.display = 'flex';
+
+      function updateWinMaximizeIcon(isMax) {
+        const btn = document.getElementById('btnWinMaximize');
+        if (!btn) return;
+        if (isMax) {
+          btn.title = "استعادة لأسفل";
+          btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 12 12"><path fill="none" stroke="currentColor" stroke-width="1.1" d="M3.5 3.5V1.5h7v7H8.5"/><rect fill="none" stroke="currentColor" stroke-width="1.1" width="7" height="7" x="1.5" y="3.5" rx="0.5"/></svg>';
+        } else {
+          btn.title = "تكبير";
+          btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 12 12"><rect fill="none" stroke="currentColor" stroke-width="1.3" width="9" height="9" x="1.5" y="1.5" rx="1"/></svg>';
+        }
+      }
+
+      if (window.electronAPI) {
+        if (window.electronAPI.onWindowStateChange) {
+          window.electronAPI.onWindowStateChange((isMax) => updateWinMaximizeIcon(isMax));
+        }
+        if (window.electronAPI.isMaximized) {
+          window.electronAPI.isMaximized().then(isMax => updateWinMaximizeIcon(isMax)).catch(() => {});
+        }
+      }
     }
   </script>
 </body>

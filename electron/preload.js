@@ -2,15 +2,18 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
   // ── Window Controls
-  minimize:       () => ipcRenderer.send('win-minimize'),
-  maximize:       () => ipcRenderer.send('win-maximize'),
-  close:          () => ipcRenderer.send('win-close'),
-  hide:           () => ipcRenderer.send('win-hide'),
-  isMaximized:    () => ipcRenderer.invoke('win-is-maximized'),
-  openParentPortal: () => ipcRenderer.send('open-parent-portal'),
-  openMainSite:   () => ipcRenderer.send('open-main-site'),
-  openExternal:   (url) => ipcRenderer.invoke('open-external', url),
-  platform:       process.platform,
+  minimize:            () => ipcRenderer.send('win-minimize'),
+  maximize:            () => ipcRenderer.send('win-maximize'),
+  unmaximize:          () => ipcRenderer.send('win-unmaximize'),
+  toggleMaximize:      () => ipcRenderer.send('win-toggle-maximize'),
+  close:               () => ipcRenderer.send('win-close'),
+  hide:                () => ipcRenderer.send('win-hide'),
+  isMaximized:         () => ipcRenderer.invoke('win-is-maximized'),
+  onWindowStateChange: (callback) => ipcRenderer.on('win-state-changed', (_, isMax) => callback(isMax)),
+  openParentPortal:    () => ipcRenderer.send('open-parent-portal'),
+  openMainSite:        () => ipcRenderer.send('open-main-site'),
+  openExternal:        (url) => ipcRenderer.invoke('open-external', url),
+  platform:            process.platform,
 
   // ── Printing (Native Windows Print Dialog & Receipt Preview)
   print:          () => ipcRenderer.send('print-window'),
