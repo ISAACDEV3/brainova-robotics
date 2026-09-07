@@ -2509,3 +2509,294 @@ html[dir="ltr"] .dossier-table {
   fill: #38BDF8;
 }
 
+/* =========================================================
+   18. WHATSAPP GATEWAY & AUTOMATION BOT (EXECUTIVE SAAS SUITE)
+   ========================================================= */
+
+.wa-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 1100px) {
+  .wa-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.wa-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.wa-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  transition: border-color var(--ease-fast);
+}
+
+.wa-card:hover {
+  border-color: var(--border-glow);
+}
+
+.wa-card--highlight {
+  border-color: rgba(56, 189, 248, 0.28);
+  background: linear-gradient(180deg, rgba(18, 24, 39, 0.98) 0%, rgba(13, 18, 30, 0.98) 100%);
+}
+
+.wa-card--emerald {
+  border-color: rgba(16, 185, 129, 0.28);
+}
+
+.wa-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  box-sizing: border-box;
+}
+
+.wa-card__title {
+  font-size: 0.94rem;
+  font-weight: 800;
+  color: #F8FAFC;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.wa-title-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(56, 189, 248, 0.1);
+  color: #38BDF8;
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  flex-shrink: 0;
+}
+
+.wa-title-icon--emerald {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10B981;
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.wa-title-icon--amber {
+  background: rgba(245, 158, 11, 0.1);
+  color: #F59E0B;
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.wa-card__desc {
+  font-size: 0.78rem;
+  color: var(--text-sub);
+  margin-top: -8px;
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+.wa-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.wa-field-group label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #94A3B8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wa-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+  .wa-field-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.wa-input,
+.wa-select,
+.wa-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: #090D16;
+  border: 1px solid #1E293B;
+  border-radius: var(--radius-sm);
+  color: #F8FAFC;
+  font-family: inherit;
+  font-size: 0.82rem;
+  padding: 8px 12px;
+  transition: all var(--ease-fast);
+  outline: none;
+}
+
+.wa-input:focus,
+.wa-select:focus,
+.wa-textarea:focus {
+  border-color: #0284C7;
+  box-shadow: 0 0 0 1px #0284C7, 0 0 12px rgba(2, 132, 199, 0.2);
+  background: #0B111E;
+}
+
+.wa-input[readonly] {
+  background: rgba(255, 255, 255, 0.03);
+  color: #94A3B8;
+  cursor: default;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.wa-textarea {
+  resize: vertical;
+  line-height: 1.6;
+  min-height: 72px;
+}
+
+.wa-template-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.wa-pill-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #CBD5E1;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--ease-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.wa-pill-btn:hover {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: #38BDF8;
+  color: #FFFFFF;
+}
+
+.wa-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.wa-action-bar--end {
+  justify-content: flex-end;
+}
+
+.wa-btn-wa {
+  background: #059669;
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 0.82rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-sm);
+  padding: 8px 16px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: all var(--ease-fast);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-sizing: border-box;
+  white-space: nowrap;
+  height: 34px;
+}
+
+.wa-btn-wa:hover {
+  background: #047857;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.35);
+  transform: translateY(-1px);
+}
+
+.wa-btn-wa svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.wa-qr-frame {
+  text-align: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.wa-qr-box {
+  margin: 0 auto 16px auto;
+  width: 200px;
+  height: 200px;
+  background: #FFFFFF;
+  padding: 10px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 24px rgba(16, 185, 129, 0.18);
+  box-sizing: border-box;
+}
+
+.wa-qr-instructions {
+  font-size: 0.77rem;
+  color: #94A3B8;
+  line-height: 1.7;
+  text-align: right;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.wa-connected-hero {
+  padding: 24px 20px;
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.02) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 12px;
+  text-align: center;
+  box-sizing: border-box;
+}
+

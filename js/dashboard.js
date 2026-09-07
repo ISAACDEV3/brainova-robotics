@@ -9952,7 +9952,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const parentName = student.parentName && student.parentName.trim() ? student.parentName.trim() : `ولي أمر ${student.name}`;
       const template = status === 'late' ? settings.lateTemplate : settings.absentTemplate;
-      const typeNotice = sessionType === 'makeup' ? ' (حصة تعويضية)' : (sessionType === 'extra' ? ' (حصة استثنائية ⭐)' : '');
+      const typeNotice = sessionType === 'makeup' ? ' (حصة تعويضية)' : (sessionType === 'extra' ? ' (حصة استثنائية)' : '');
       const text = template
         .replace(/{student}/g, student.name || 'التلميذ')
         .replace(/{parent}/g, parentName)
@@ -10249,7 +10249,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const res = await window.electronAPI.whatsapp.sendMessage(stu.parentPhone, text);
                 if (res && res.success) {
-                  addWaGuardianLog(`⏳ [تأخر آلي] رصد تأخر (${stu.name}) عن حصة (${session.startTime}) وتم إرسال تنبيه لوالده.`);
+                  addWaGuardianLog(`[تأخر آلي] رصد تأخر (${stu.name}) عن حصة (${session.startTime}) وتم إرسال تنبيه لوالده.`);
                 }
                 await new Promise(r => setTimeout(r, 2000));
               }

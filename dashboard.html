@@ -913,230 +913,291 @@
         <section id="view-whatsapp" class="dashboard-view">
           <div class="page-header">
             <div>
-              <h1 class="page-title">واتساب الأكاديمية (WhatsApp Bot)</h1>
-              <p class="page-subtitle">إدارة البوت، الإشعارات التلقائية، والرد الذكي على أولياء الأمور.</p>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <h1 class="page-title">بوابة واتساب الأكاديمية (WhatsApp Gateway)</h1>
+                <span id="waHeaderStatusBadge" class="status-pill" style="background:rgba(239,68,68,0.12); color:#EF4444; border:1px solid rgba(239,68,68,0.25); font-size:0.78rem; font-weight:700;">
+                  غير متصل
+                </span>
+              </div>
+              <p class="page-subtitle">إدارة البوت، الإشعارات التلقائية الفورية، والتقارير البيداغوجية الموجهة لأولياء الأمور.</p>
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
-              <span id="waHeaderStatusBadge" class="status-pill" style="background:rgba(239,68,68,0.1); color:#EF4444; border:1px solid rgba(239,68,68,0.2); font-size:0.8rem; font-weight:600;">
-                غير متصل
-              </span>
-              <button type="button" class="btn btn--outline btn--small" onclick="refreshWhatsAppStatus()">تحديث</button>
+              <button type="button" class="btn btn--outline btn--small" onclick="refreshWhatsAppStatus()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                تحديث الحالة
+              </button>
             </div>
           </div>
 
           <!-- Autonomous AI Guardian & Scheduler Engine Banner -->
-          <div class="card" style="margin-bottom:20px; background:rgba(255,255,255,0.015); border:1px solid var(--color-border); border-radius:var(--radius-md); padding:18px 20px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; margin-bottom:16px;">
+          <div class="wa-card" style="margin-bottom:20px; background:linear-gradient(180deg, rgba(18,24,39,0.95) 0%, rgba(11,16,28,0.95) 100%);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; margin-bottom:14px;">
               <div>
                 <div style="display:flex; align-items:center; gap:10px;">
-                  <h3 style="font-size:1.05rem; font-weight:700; color:var(--color-text); margin:0;">الإرسال المجدول والتلقائي</h3>
-                  <span id="waGuardianStatusBadge" class="status-pill" style="background:rgba(16,185,129,0.1); color:#10B981; border:1px solid rgba(16,185,129,0.2); font-size:0.75rem; font-weight:600;">
+                  <span class="wa-title-icon wa-title-icon--emerald">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  </span>
+                  <h3 style="font-size:1rem; font-weight:800; color:#F8FAFC; margin:0;">الإرسال المجدول والتلقائي (Autonomous Guardian)</h3>
+                  <span id="waGuardianStatusBadge" class="status-pill status-pill--active" style="font-size:0.74rem;">
                     يعمل في الخلفية
                   </span>
                 </div>
-                <p style="font-size:0.8rem; color:var(--color-text-muted); margin:4px 0 0 0;">
-                  متابعة مواعيد الحصص والاشتراكات وإرسال التنبيهات في أوقاتها.
+                <p style="font-size:0.78rem; color:var(--text-sub); margin:4px 0 0 0;">
+                  متابعة مواعيد الحصص، رصد التأخرات، وتنبيهات انتهاء الاشتراكات في الوقت الفعلي.
                 </p>
               </div>
               <div>
                 <button type="button" class="btn btn--outline btn--small" onclick="runAutonomousGuardianLoop(true)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                   فحص الآن
                 </button>
               </div>
             </div>
 
             <!-- Autonomous Rules Checkboxes -->
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin-bottom:14px; padding:12px; background:rgba(0,0,0,0.2); border-radius:var(--radius-sm); border:1px solid var(--color-border);">
-              <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; font-size:0.8rem; color:var(--color-text);">
-                <input type="checkbox" id="waGuardianMasterToggle" checked style="margin-top:2px; cursor:pointer;" onchange="saveWhatsAppSettings()">
-                <span><strong>التشغيل التلقائي</strong><br><small style="color:var(--color-text-muted);">إرسال الإشعارات تلقائياً</small></span>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin-bottom:14px; padding:12px 14px; background:rgba(0,0,0,0.3); border-radius:var(--radius-sm); border:1px solid rgba(255,255,255,0.06);">
+              <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; font-size:0.8rem; color:#F8FAFC;">
+                <input type="checkbox" id="waGuardianMasterToggle" checked style="margin-top:2px; cursor:pointer; accent-color:#0284C7;" onchange="saveWhatsAppSettings()">
+                <span><strong style="color:#F1F5F9;">التشغيل التلقائي العام</strong><br><small style="color:#94A3B8;">تفعيل إرسال كافة الإشعارات آلياً</small></span>
               </label>
-              <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; font-size:0.8rem; color:var(--color-text);">
-                <input type="checkbox" id="waGuardianSessionLateToggle" checked style="margin-top:2px; cursor:pointer;" onchange="saveWhatsAppSettings()">
-                <span><strong>تنبيه التأخر</strong><br><small style="color:var(--color-text-muted);">إشعار بعد 15 دقيقة من بدء الحصة</small></span>
+              <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; font-size:0.8rem; color:#F8FAFC;">
+                <input type="checkbox" id="waGuardianSessionLateToggle" checked style="margin-top:2px; cursor:pointer; accent-color:#0284C7;" onchange="saveWhatsAppSettings()">
+                <span><strong style="color:#F1F5F9;">تنبيه التأخر الفوري</strong><br><small style="color:#94A3B8;">إشعار بعد 15 دقيقة من بدء الحصة</small></span>
               </label>
-              <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; font-size:0.8rem; color:var(--color-text);">
-                <input type="checkbox" id="waGuardianPreSessionToggle" checked style="margin-top:2px; cursor:pointer;" onchange="saveWhatsAppSettings()">
-                <span><strong>تذكير قبل الحصة</strong><br><small style="color:var(--color-text-muted);">إشعار قبل موعد الحصة بـ 30 دقيقة</small></span>
+              <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; font-size:0.8rem; color:#F8FAFC;">
+                <input type="checkbox" id="waGuardianPreSessionToggle" checked style="margin-top:2px; cursor:pointer; accent-color:#0284C7;" onchange="saveWhatsAppSettings()">
+                <span><strong style="color:#F1F5F9;">تذكير قبل الحصة</strong><br><small style="color:#94A3B8;">إشعار استباقي قبل الموعد بـ 30 دقيقة</small></span>
               </label>
-              <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; font-size:0.8rem; color:var(--color-text);">
-                <input type="checkbox" id="waGuardianOverdueToggle" checked style="margin-top:2px; cursor:pointer;" onchange="saveWhatsAppSettings()">
-                <span><strong>تجديد الاشتراك</strong><br><small style="color:var(--color-text-muted);">تنبيه عند انتهاء الشهر أو الرصيد</small></span>
+              <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; font-size:0.8rem; color:#F8FAFC;">
+                <input type="checkbox" id="waGuardianOverdueToggle" checked style="margin-top:2px; cursor:pointer; accent-color:#0284C7;" onchange="saveWhatsAppSettings()">
+                <span><strong style="color:#F1F5F9;">تجديد الاشتراك الشهري</strong><br><small style="color:#94A3B8;">تنبيه عند استحقاق التجديد أو نفاد الرصيد</small></span>
               </label>
             </div>
 
             <!-- Live Autonomous Activity Feed (Console) -->
             <div>
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <span style="font-size:0.75rem; font-weight:600; color:var(--color-text-muted); font-family:monospace;">سجل العمليات:</span>
-                <button type="button" style="background:none; border:none; color:var(--color-text-muted); font-size:0.72rem; cursor:pointer;" onclick="clearWaGuardianLogs()">مسح السجل</button>
+                <span style="font-size:0.75rem; font-weight:700; color:#94A3B8; font-family:var(--font-mono); display:flex; align-items:center; gap:6px;">
+                  <span style="width:6px; height:6px; border-radius:50%; background:#10B981; display:inline-block;"></span>
+                  سجل عمليات المراقب الآلي:
+                </span>
+                <button type="button" style="background:none; border:none; color:#64748B; font-size:0.72rem; cursor:pointer;" onclick="clearWaGuardianLogs()">مسح السجل</button>
               </div>
-              <div id="waGuardianLiveLog" style="background:rgba(0,0,0,0.4); border:1px solid var(--color-border); border-radius:var(--radius-sm); padding:10px 12px; font-family:monospace; font-size:0.75rem; color:#A7F3D0; height:85px; overflow-y:auto; line-height:1.6;">
+              <div id="waGuardianLiveLog" style="background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.06); border-radius:var(--radius-sm); padding:10px 14px; font-family:var(--font-mono); font-size:0.75rem; color:#A7F3D0; height:85px; overflow-y:auto; line-height:1.6;">
                 <!-- Logs rendered by JS -->
               </div>
             </div>
           </div>
 
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+          <!-- BALANCED 2-COLUMN EXECUTIVE WORKSPACE -->
+          <div class="wa-grid">
             
-            <!-- Column 1: Connection & QR Code -->
-            <div class="card" style="display:flex; flex-direction:column; gap:16px;">
-              <div class="card__header" style="padding-bottom:0;">
-                <h3 class="card__title" style="display:flex; align-items:center; gap:8px;">
-                  ربط الحساب (WhatsApp)
-                </h3>
-              </div>
-
-              <!-- When Disconnected / Needs QR -->
-              <div id="waQrBox" style="text-align:center; padding:20px; background:rgba(255,255,255,0.02); border:1px dashed var(--color-border); border-radius:12px;">
-                <div id="waQrContainer" style="margin:0 auto 16px auto; width:220px; height:220px; background:#fff; padding:10px; border-radius:12px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 20px rgba(37,211,102,0.15);">
-                  <span id="waQrPlaceholder" style="color:#0f172a; font-size:0.85rem; font-weight:700;">جاري تجهيز رمز QR...</span>
-                  <img id="waQrImage" src="" alt="WhatsApp QR Code" style="display:none; width:100%; height:100%; border-radius:6px;">
-                </div>
-                <div style="font-size:0.82rem; color:#f1f5f9; font-weight:700; margin-bottom:6px;">امسح الرمز بهاتفك للربط:</div>
-                <div style="font-size:0.78rem; color:#94a3b8; line-height:1.7; text-align:right; max-width:300px; margin:0 auto;">
-                  1. افتح تطبيق <strong>WhatsApp</strong> في هاتفك.<br>
-                  2. اضغط على <strong>الأجهزة المرتبطة</strong> > <strong>ربط جهاز</strong>.<br>
-                  3. وجّه الكاميرا نحو الرمز أعلاه.
-                </div>
-                <div style="margin-top:14px;">
-                  <button type="button" class="btn btn--primary btn--small" style="background:#25D366; font-weight:700; width:100%;" onclick="startWhatsAppClient()">
-                    توليد رمز QR للربط المباشر
-                  </button>
-                </div>
-              </div>
-
-              <!-- When Connected -->
-              <div id="waConnectedBox" style="display:none; padding:20px; background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.3); border-radius:12px; text-align:center;">
-                <div style="display:flex; justify-content:center; margin-bottom:10px; color:#10B981;"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
-                <h3 style="color:#10B981; font-size:1.05rem; margin-bottom:4px;">متصل بنجاح</h3>
-                <p id="waConnectedPhoneDisplay" style="font-family:monospace; font-size:1.05rem; color:#f8fafc; font-weight:800; margin-bottom:6px;">+213XXXXXXXXX</p>
-                <p style="font-size:0.78rem; color:#94a3b8; margin-bottom:14px;">البوت نشط ويعمل في الخلفية.</p>
-                <button type="button" class="btn btn--outline btn--small" style="color:#EF4444; border-color:rgba(239,68,68,0.3);" onclick="logoutWhatsApp()">
-                  قطع الاتصال
-                </button>
-              </div>
-            </div>
-
-            <!-- Column 2: Automation Rules & Templates -->
-            <div style="display:flex; flex-direction:column; gap:20px;">
+            <!-- Column 1 (Right): Gateway & Direct Parent Messenger -->
+            <div class="wa-col">
               
-              <!-- Rule 1: Attendance Alerts -->
-              <div class="card">
-                <div class="card__header" style="display:flex; justify-content:space-between; align-items:center;">
-                  <h3 class="card__title" style="font-size:0.95rem;">تنبيهات الغياب والتأخر</h3>
-                  <input type="checkbox" id="waAutoAttendanceToggle" checked style="width:18px; height:18px; cursor:pointer;" onchange="saveWhatsAppSettings()">
+              <!-- Card 1: Connection & QR Code -->
+              <div class="wa-card">
+                <div class="wa-card__header">
+                  <h3 class="wa-card__title">
+                    <span class="wa-title-icon wa-title-icon--emerald">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+                    </span>
+                    ربط الحساب وبوابة الاتصال
+                  </h3>
+                  <span class="dash-pill-muted">Baileys Multi-Device</span>
                 </div>
-                <p style="font-size:0.78rem; color:#94a3b8; margin-bottom:10px;">
-                  إرسال رسالة فورية للولي تلقائياً عند تسجيل غياب أو تأخر التلميذ.
-                </p>
-                <div class="form-group" style="margin-bottom:0;">
-                  <label style="font-size:0.75rem; color:#94a3b8;">قالب الرسالة ({student}، {group}، {time}):</label>
-                  <textarea id="waLateTemplateInput" rows="3" class="form-input" style="font-size:0.8rem; resize:vertical;" onchange="saveWhatsAppSettings()"></textarea>
-                </div>
-              </div>
 
-              <!-- Rule 2: Monthly Payment Reminders -->
-              <div class="card">
-                <div class="card__header" style="display:flex; justify-content:space-between; align-items:center;">
-                  <h3 class="card__title" style="font-size:0.95rem;">تذكيرات تجديد الاشتراك</h3>
-                  <input type="checkbox" id="waAutoPaymentToggle" checked style="width:18px; height:18px; cursor:pointer;" onchange="saveWhatsAppSettings()">
+                <!-- When Disconnected / Needs QR -->
+                <div id="waQrBox" class="wa-qr-frame">
+                  <div id="waQrContainer" class="wa-qr-box">
+                    <span id="waQrPlaceholder" style="color:#0F172A; font-size:0.82rem; font-weight:700;">جاري تجهيز رمز QR...</span>
+                    <img id="waQrImage" src="" alt="WhatsApp QR Code" style="display:none; width:100%; height:100%; border-radius:6px; object-fit:contain;">
+                  </div>
+                  <div style="font-size:0.84rem; color:#F1F5F9; font-weight:700; margin-bottom:6px;">امسح الرمز بهاتفك للربط المباشر:</div>
+                  <div class="wa-qr-instructions">
+                    1. افتح تطبيق <strong>WhatsApp</strong> في هاتفك.<br>
+                    2. اضغط على <strong>الأجهزة المرتبطة</strong> ثم <strong>ربط جهاز</strong>.<br>
+                    3. وجّه الكاميرا نحو الرمز أعلاه للمزامنة الفورية.
+                  </div>
+                  <div style="margin-top:16px;">
+                    <button type="button" class="wa-btn-wa" style="width:100%; justify-content:center;" onclick="startWhatsAppClient()">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h.01"/><path d="M17 7h.01"/><path d="M7 17h.01"/><path d="M17 17h.01"/></svg>
+                      توليد رمز QR للربط المباشر
+                    </button>
+                  </div>
                 </div>
-                <p style="font-size:0.78rem; color:#94a3b8; margin-bottom:10px;">
-                  تذكير أولياء الأمور عند انتهاء الشهر أو رصيد الحصص لتجديد الاشتراك.
-                </p>
-                <div class="form-group" style="margin-bottom:10px;">
-                  <label style="font-size:0.75rem; color:#94a3b8;">قالب الرسالة ({student}، {days_ago}):</label>
-                  <textarea id="waOverdueTemplateInput" rows="3" class="form-input" style="font-size:0.8rem; resize:vertical;" onchange="saveWhatsAppSettings()"></textarea>
-                </div>
-                <div style="display:flex; justify-content:flex-end;">
-                  <button type="button" class="btn btn--primary btn--small" style="background:#0284C7; display:flex; align-items:center; gap:6px;" onclick="triggerBatchPaymentReminders()">
-                    <span>إرسال التذكيرات الآن</span>
+
+                <!-- When Connected -->
+                <div id="waConnectedBox" class="wa-connected-hero" style="display:none;">
+                  <div style="display:inline-flex; align-items:center; justify-content:center; width:52px; height:52px; border-radius:50%; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); margin-bottom:12px; color:#10B981;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  </div>
+                  <h3 style="color:#10B981; font-size:1.05rem; font-weight:800; margin-bottom:4px;">بوابة الواتساب متصلة ونشطة</h3>
+                  <p id="waConnectedPhoneDisplay" style="font-family:var(--font-mono); font-size:1.1rem; color:#F8FAFC; font-weight:800; margin-bottom:6px;">+213XXXXXXXXX</p>
+                  <p style="font-size:0.78rem; color:#94A3B8; margin-bottom:16px;">البوت يعمل في الخلفية وجاهز لإرسال الإشعارات والرد الآلي.</p>
+                  <button type="button" class="btn btn--outline btn--small" style="color:#EF4444; border-color:rgba(239,68,68,0.3);" onclick="logoutWhatsApp()">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    قطع الاتصال
                   </button>
                 </div>
               </div>
 
-              <!-- Smart Auto-Select Box -->
-              <div class="card" style="background:rgba(255,255,255,0.015);">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                  <h3 class="card__title" style="font-size:0.9rem; margin-bottom:0;">مراسلة ولي أمر</h3>
+              <!-- Card 2: Direct Parent Messenger (مراسلة ولي أمر) -->
+              <div class="wa-card">
+                <div class="wa-card__header">
+                  <h3 class="wa-card__title">
+                    <span class="wa-title-icon">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </span>
+                    مراسلة ولي أمر
+                  </h3>
+                  <span class="dash-pill-muted">إرسال مخصص</span>
                 </div>
-                
-                <div class="form-group" style="margin-bottom:10px;">
-                  <label style="font-size:0.78rem; font-weight:600; color:#94a3b8;">اختر التلميذ:</label>
-                  <select id="waStudentAutoSelect" class="form-input" onchange="handleWaStudentAutoSelectChange()">
-                    <option value="">-- اختر تلميذاً لجلب بيانات الولي تلقائياً --</option>
+
+                <div class="wa-field-group">
+                  <label for="waStudentAutoSelect">اختر التلميذ لجلب بيانات الولي تلقائياً:</label>
+                  <select id="waStudentAutoSelect" class="wa-select" onchange="handleWaStudentAutoSelectChange()">
+                    <option value="">-- اضغط هنا لاختيار التلميذ --</option>
                   </select>
                 </div>
 
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
-                  <div class="form-group" style="margin-bottom:0;">
-                    <label style="font-size:0.75rem; color:#94a3b8;">ولي الأمر:</label>
-                    <input type="text" id="waAutoParentName" class="form-input" placeholder="ولي الأمر" style="font-size:0.82rem;" readonly>
+                <div class="wa-field-row">
+                  <div class="wa-field-group">
+                    <label for="waAutoParentName">ولي الأمر:</label>
+                    <input type="text" id="waAutoParentName" class="wa-input" placeholder="اسم ولي الأمر" readonly>
                   </div>
-                  <div class="form-group" style="margin-bottom:0;">
-                    <label style="font-size:0.75rem; color:#94a3b8;">رقم الهاتف:</label>
-                    <input type="text" id="waTestPhone" class="form-input" placeholder="05XXXXXXXX" style="font-size:0.82rem; font-family:monospace;">
-                  </div>
-                </div>
-
-                <div class="form-group" style="margin-bottom:10px;">
-                  <label style="font-size:0.75rem; color:#94a3b8;">نماذج جاهزة:</label>
-                  <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-                    <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:3px 8px;" onclick="loadAutoTemplateForSelected('late')">تأخر</button>
-                    <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:3px 8px;" onclick="loadAutoTemplateForSelected('absent')">غياب</button>
-                    <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:3px 8px;" onclick="loadAutoTemplateForSelected('overdue')">تجديد اشتراك</button>
+                  <div class="wa-field-group">
+                    <label for="waTestPhone">رقم هاتف الولي (WhatsApp):</label>
+                    <input type="text" id="waTestPhone" class="wa-input" placeholder="05XXXXXXXX" dir="ltr" style="font-family:var(--font-mono);">
                   </div>
                 </div>
 
-                <div class="form-group" style="margin-bottom:10px;">
-                  <textarea id="waTestMessage" rows="3" class="form-input" placeholder="نص الرسالة الموجهة لولي الأمر..." style="font-size:0.8rem; resize:vertical;"></textarea>
+                <div class="wa-field-group">
+                  <label>نماذج سريعة جاهزة للتعبئة:</label>
+                  <div class="wa-template-pills">
+                    <button type="button" class="wa-pill-btn" onclick="loadAutoTemplateForSelected('late')">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      تأخر عن الحصة
+                    </button>
+                    <button type="button" class="wa-pill-btn" onclick="loadAutoTemplateForSelected('absent')">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                      تسجيل غياب
+                    </button>
+                    <button type="button" class="wa-pill-btn" onclick="loadAutoTemplateForSelected('overdue')">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+                      تجديد الاشتراك
+                    </button>
+                  </div>
                 </div>
 
-                <div style="display:flex; justify-content:flex-end;">
-                  <button type="button" class="btn btn--primary" style="background:#25D366; display:flex; align-items:center; gap:6px; font-size:0.85rem;" onclick="sendTestWhatsAppMessage()">
+                <div class="wa-field-group" style="margin-bottom:0;">
+                  <label for="waTestMessage">نص الرسالة الموجهة لولي الأمر:</label>
+                  <textarea id="waTestMessage" rows="3" class="wa-textarea" placeholder="اكتب نص الرسالة هنا أو اختر نموذجاً سريعاً من القوالب أعلاه..."></textarea>
+                </div>
+
+                <div class="wa-action-bar">
+                  <div style="font-size:0.75rem; color:#64748B;">
+                    يتم الإرسال مباشرة عبر محرك Baileys المشفر
+                  </div>
+                  <button type="button" class="wa-btn-wa" onclick="sendTestWhatsAppMessage()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                     <span>إرسال الرسالة</span>
                   </button>
                 </div>
               </div>
 
-              <!-- Lesson Progress Dispatch Box -->
-              <div class="card" style="background:rgba(255,255,255,0.015); margin-top:16px; border:1px solid rgba(56,189,248,0.25);">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                  <h3 class="card__title" style="font-size:0.92rem; margin-bottom:0; display:flex; align-items:center; gap:6px; color:#38BDF8;">
+            </div>
+
+            <!-- Column 2 (Left): Lesson Progress Dispatch & Automation Rules -->
+            <div class="wa-col">
+              
+              <!-- Card 3: Lesson Progress Dispatch (إرسال تقرير درس اليوم لولي أمر التلميذ) -->
+              <div class="wa-card wa-card--highlight">
+                <div class="wa-card__header">
+                  <h3 class="wa-card__title">
+                    <span class="wa-title-icon">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    </span>
                     إرسال تقرير درس اليوم لولي أمر التلميذ
                   </h3>
+                  <span class="status-pill status-pill--active" style="font-size:0.72rem;">توليد بيداغوجي</span>
                 </div>
-                
-                <div class="form-group" style="margin-bottom:10px;">
-                  <label style="font-size:0.78rem; font-weight:600; color:#94a3b8;">اختر التلميذ:</label>
-                  <select id="waLessonStudentSelect" class="form-input" onchange="onWaLessonStudentChange()">
-                    <option value="">-- اختر التلميذ لجلب بيانات الولي تلقائياً --</option>
+
+                <div class="wa-field-group">
+                  <label for="waLessonStudentSelect">اختر التلميذ لجلب بيانات الولي تلقائياً:</label>
+                  <select id="waLessonStudentSelect" class="wa-select" onchange="onWaLessonStudentChange()">
+                    <option value="">-- اضغط هنا لاختيار التلميذ --</option>
                   </select>
                 </div>
 
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
-                  <div class="form-group" style="margin-bottom:0;">
-                    <label style="font-size:0.75rem; color:#94a3b8;">عنوان الدرس / المشروع:</label>
-                    <input type="text" id="waLessonTitleInput" oninput="generateLessonReportMessage()" class="form-input" placeholder="مثال: تركيب وبرمجة حساس Ultrasonic" style="font-size:0.82rem;">
+                <div class="wa-field-row">
+                  <div class="wa-field-group">
+                    <label for="waLessonTitleInput">عنوان الدرس / المشروع:</label>
+                    <input type="text" id="waLessonTitleInput" oninput="generateLessonReportMessage()" class="wa-input" placeholder="مثال: تركيب وبرمجة حساس Ultrasonic">
                   </div>
-                  <div class="form-group" style="margin-bottom:0;">
-                    <label style="font-size:0.75rem; color:#94a3b8;">ما تعلمه وأنجزه التلميذ:</label>
-                    <input type="text" id="waLessonAchievementInput" oninput="generateLessonReportMessage()" class="form-input" placeholder="مثال: برمج الروبوت لتفادي العوائق بنجاح" style="font-size:0.82rem;">
+                  <div class="wa-field-group">
+                    <label for="waLessonAchievementInput">ما تعلمه وأنجزه التلميذ:</label>
+                    <input type="text" id="waLessonAchievementInput" oninput="generateLessonReportMessage()" class="wa-input" placeholder="مثال: برمج الروبوت لتفادي العوائق بنجاح">
                   </div>
                 </div>
 
-                <div class="form-group" style="margin-bottom:10px;">
-                  <label style="font-size:0.75rem; color:#94a3b8;">معاينة نص الرسالة التي ستصل للولي عبر واتساب:</label>
-                  <textarea id="waLessonFinalMessage" rows="4" class="form-input" style="font-size:0.8rem; resize:vertical;" placeholder="سيتم صياغة تقرير الدرس تلقائياً ومخاطبة الولي..."></textarea>
+                <div class="wa-field-group" style="margin-bottom:0;">
+                  <label for="waLessonFinalMessage">معاينة نص الرسالة التي ستصل للولي عبر واتساب:</label>
+                  <textarea id="waLessonFinalMessage" rows="4" class="wa-textarea" placeholder="سيتم صياغة تقرير الدرس تلقائياً ومخاطبة الولي بأسلوب بيداغوجي راقٍ..."></textarea>
                 </div>
 
-                <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div class="wa-action-bar">
                   <button type="button" class="btn btn--outline btn--small" onclick="generateLessonReportMessage()">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
                     إعادة صياغة التقرير
                   </button>
-                  <button type="button" class="btn btn--primary" style="background:#25D366; display:flex; align-items:center; gap:6px; font-size:0.85rem;" onclick="dispatchLessonReportWhatsApp()">
+                  <button type="button" class="wa-btn-wa" onclick="dispatchLessonReportWhatsApp()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                     إرسال تقرير الدرس لولي الأمر
+                  </button>
+                </div>
+              </div>
+
+              <!-- Card 4: Automation Rules & Templates (قوالب الرسائل التلقائية) -->
+              <div class="wa-card">
+                <div class="wa-card__header">
+                  <h3 class="wa-card__title">
+                    <span class="wa-title-icon wa-title-icon--amber">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>
+                    </span>
+                    قوالب التنبيهات التلقائية
+                  </h3>
+                  <span class="dash-pill-muted">قوالب ديناميكية</span>
+                </div>
+
+                <!-- Template 1: Attendance Alerts -->
+                <div style="margin-bottom:14px; padding-bottom:14px; border-bottom:1px solid rgba(255,255,255,0.06);">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <label style="font-size:0.8rem; font-weight:700; color:#F1F5F9; display:flex; align-items:center; gap:8px; cursor:pointer;">
+                      <input type="checkbox" id="waAutoAttendanceToggle" checked style="width:16px; height:16px; cursor:pointer; accent-color:#0284C7;" onchange="saveWhatsAppSettings()">
+                      <span>تنبيهات الغياب والتأخر التلقائية</span>
+                    </label>
+                    <span style="font-size:0.72rem; color:#64748B;">متغيرات: {student}، {group}، {time}</span>
+                  </div>
+                  <textarea id="waLateTemplateInput" rows="2" class="wa-textarea" style="min-height:56px;" onchange="saveWhatsAppSettings()"></textarea>
+                </div>
+
+                <!-- Template 2: Monthly Payment Reminders -->
+                <div>
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <label style="font-size:0.8rem; font-weight:700; color:#F1F5F9; display:flex; align-items:center; gap:8px; cursor:pointer;">
+                      <input type="checkbox" id="waAutoPaymentToggle" checked style="width:16px; height:16px; cursor:pointer; accent-color:#0284C7;" onchange="saveWhatsAppSettings()">
+                      <span>تذكيرات تجديد الاشتراك الشهري</span>
+                    </label>
+                    <span style="font-size:0.72rem; color:#64748B;">متغيرات: {student}، {days_ago}</span>
+                  </div>
+                  <textarea id="waOverdueTemplateInput" rows="2" class="wa-textarea" style="min-height:56px;" onchange="saveWhatsAppSettings()"></textarea>
+                </div>
+
+                <div class="wa-action-bar wa-action-bar--end">
+                  <button type="button" class="btn btn--primary btn--small" style="display:flex; align-items:center; gap:6px;" onclick="triggerBatchPaymentReminders()">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    <span>إرسال تذكيرات التجديد الآن</span>
                   </button>
                 </div>
               </div>
@@ -1145,15 +1206,18 @@
 
           </div>
 
-          <!-- Auto-Selected Target Queues (Grand Live Panel) -->
-          <div class="card" style="margin-top:20px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+          <!-- Section 3: Batch Broadcast Queues Hub -->
+          <div class="wa-card" style="margin-bottom:24px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.06); flex-wrap:wrap; gap:12px;">
               <div>
-                <h3 class="card__title" style="display:flex; align-items:center; gap:8px; font-size:1.05rem;">
-                  الإرسال الجماعي
+                <h3 class="wa-card__title">
+                  <span class="wa-title-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  </span>
+                  قوائم الإرسال الجماعي لأولياء الأمور
                 </h3>
-                <p style="font-size:0.78rem; color:#94a3b8; margin-top:2px;">
-                  إرسال الإشعارات والتذكيرات دفعة واحدة لأولياء الأمور.
+                <p style="font-size:0.78rem; color:#94A3B8; margin-top:2px;">
+                  رصد الطلاب المستحق عليهم التجديد والغيابات وإرسال الإشعارات دفعة واحدة أو بشكل فردي.
                 </p>
               </div>
               <div style="display:flex; gap:8px;">
@@ -1168,24 +1232,25 @@
 
             <!-- Overdue Table -->
             <div id="waQueueOverdueSection">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.2); padding:10px 14px; border-radius:8px; flex-wrap:wrap; gap:8px;">
-                <div style="font-size:0.82rem; color:#fca5a5;">
-                  المستحق عليهم التجديد: <strong><span id="waOverdueListCount">0</span> تلميذ</strong>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.2); padding:10px 14px; border-radius:8px; flex-wrap:wrap; gap:8px;">
+                <div style="font-size:0.82rem; color:#FCA5A5; font-weight:700;">
+                  المستحق عليهم التجديد: <span id="waOverdueListCount" style="color:#FFF;">0</span> تلميذ
                 </div>
-                <button type="button" class="btn btn--primary btn--small" style="background:#0284C7;" onclick="triggerBatchPaymentReminders()">
+                <button type="button" class="btn btn--primary btn--small" onclick="triggerBatchPaymentReminders()">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                   إرسال للجميع الآن
                 </button>
               </div>
-              <div style="max-height:280px; overflow-y:auto; border:1px solid var(--color-border); border-radius:8px;">
+              <div style="max-height:280px; overflow-y:auto; border:1px solid var(--border-card); border-radius:8px;">
                 <table style="width:100%; border-collapse:collapse; font-size:0.8rem; text-align:right;">
                   <thead>
                     <tr style="background:rgba(255,255,255,0.04); color:#94A3B8;">
-                      <th style="padding:8px 12px;">التلميذ</th>
-                      <th style="padding:8px 12px;">ولي الأمر</th>
-                      <th style="padding:8px 12px;">رقم الهاتف</th>
-                      <th style="padding:8px 12px;">تاريخ آخر تسديد</th>
-                      <th style="padding:8px 12px;">مدة التأخر</th>
-                      <th style="padding:8px 12px; text-align:center;">إرسال</th>
+                      <th style="padding:10px 14px;">التلميذ</th>
+                      <th style="padding:10px 14px;">ولي الأمر</th>
+                      <th style="padding:10px 14px;">رقم الهاتف</th>
+                      <th style="padding:10px 14px;">تاريخ آخر تسديد</th>
+                      <th style="padding:10px 14px;">مدة التأخر</th>
+                      <th style="padding:10px 14px; text-align:center;">إرسال</th>
                     </tr>
                   </thead>
                   <tbody id="waOverdueTableBody">
@@ -1197,24 +1262,25 @@
 
             <!-- Attendance Late Table -->
             <div id="waQueueAttendanceSection" style="display:none;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.2); padding:10px 14px; border-radius:8px; flex-wrap:wrap; gap:8px;">
-                <div style="font-size:0.82rem; color:#fde68a;">
-                  غياب وتأخر اليوم: <strong><span id="waAttendanceListCount">0</span> تلاميذ</strong>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.2); padding:10px 14px; border-radius:8px; flex-wrap:wrap; gap:8px;">
+                <div style="font-size:0.82rem; color:#FDE68A; font-weight:700;">
+                  غياب وتأخر اليوم: <span id="waAttendanceListCount" style="color:#FFF;">0</span> تلاميذ
                 </div>
-                <button type="button" class="btn btn--primary btn--small" style="background:#F59E0B;" onclick="triggerBatchAttendanceAlerts()">
+                <button type="button" class="btn btn--primary btn--small" style="background:#D97706; border-color:#D97706;" onclick="triggerBatchAttendanceAlerts()">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                   إرسال للجميع الآن
                 </button>
               </div>
-              <div style="max-height:280px; overflow-y:auto; border:1px solid var(--color-border); border-radius:8px;">
+              <div style="max-height:280px; overflow-y:auto; border:1px solid var(--border-card); border-radius:8px;">
                 <table style="width:100%; border-collapse:collapse; font-size:0.8rem; text-align:right;">
                   <thead>
                     <tr style="background:rgba(255,255,255,0.04); color:#94A3B8;">
-                      <th style="padding:8px 12px;">التلميذ</th>
-                      <th style="padding:8px 12px;">ولي الأمر</th>
-                      <th style="padding:8px 12px;">رقم الهاتف</th>
-                      <th style="padding:8px 12px;">الفوج والتوقيت</th>
-                      <th style="padding:8px 12px;">الحالة</th>
-                      <th style="padding:8px 12px; text-align:center;">إرسال</th>
+                      <th style="padding:10px 14px;">التلميذ</th>
+                      <th style="padding:10px 14px;">ولي الأمر</th>
+                      <th style="padding:10px 14px;">رقم الهاتف</th>
+                      <th style="padding:10px 14px;">الفوج والتوقيت</th>
+                      <th style="padding:10px 14px;">الحالة</th>
+                      <th style="padding:10px 14px; text-align:center;">إرسال</th>
                     </tr>
                   </thead>
                   <tbody id="waAttendanceTableBody">
@@ -1226,16 +1292,16 @@
 
           </div>
 
-          <!-- AI RECEPTIONIST & LIVE PARENT INTERACTION STREAM -->
-          <div class="card" style="margin-top:20px; background:linear-gradient(145deg, rgba(15,23,42,0.85) 0%, rgba(10,18,34,0.95) 100%); border:1px solid rgba(56,189,248,0.22); border-radius:12px; padding:20px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+          <!-- Section 4: AI Receptionist & Live Parent Interaction Stream -->
+          <div class="wa-card wa-card--highlight">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.06);">
               <div style="display:flex; align-items:center; gap:10px;">
-                <div style="width:36px; height:36px; border-radius:8px; background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); display:flex; align-items:center; justify-content:center; color:#38BDF8;">
+                <span class="wa-title-icon">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 9h.01"/><path d="M15 9h.01"/><path d="M10 15h4"/></svg>
-                </div>
+                </span>
                 <div>
-                  <h3 class="card__title" style="margin:0; font-size:1.05rem;">الرد الآلي الذكي (AI Receptionist)</h3>
-                  <p style="font-size:0.78rem; color:#94A3B8; margin:2px 0 0 0;">الرد التلقائي على استفسارات الأولياء بالدارجة والعربية.</p>
+                  <h3 class="wa-card__title" style="margin:0;">الرد الآلي الذكي (AI Receptionist)</h3>
+                  <p style="font-size:0.78rem; color:#94A3B8; margin:2px 0 0 0;">الرد التلقائي الفوري على استفسارات الأولياء بالدارجة والعربية على مدار الساعة.</p>
                 </div>
               </div>
               <div style="display:flex; align-items:center; gap:10px;">
@@ -1244,13 +1310,13 @@
             </div>
 
             <!-- AI Settings Form Row -->
-            <div style="display:grid; grid-template-columns: 1fr 1.5fr auto; gap:12px; align-items:center; background:rgba(0,0,0,0.25); padding:14px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); margin-bottom:16px;">
+            <div style="display:grid; grid-template-columns: 1fr 1.5fr auto; gap:12px; align-items:center; background:rgba(0,0,0,0.3); padding:12px 16px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); margin-bottom:16px;">
               <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.84rem; color:#F8FAFC; margin-bottom:0;">
-                <input type="checkbox" id="waAiAgentToggle" checked style="width:16px; height:16px; cursor:pointer;" onchange="saveWaAiSettings()">
-                <span><strong>تفعيل الرد الذكي</strong></span>
+                <input type="checkbox" id="waAiAgentToggle" checked style="width:16px; height:16px; cursor:pointer; accent-color:#0284C7;" onchange="saveWaAiSettings()">
+                <span><strong>تفعيل الرد الذكي التلقائي</strong></span>
               </label>
               <div>
-                <input type="password" id="waAiApiKeyInput" class="form-input" placeholder="API KEY" style="height:36px; font-size:0.8rem;">
+                <input type="password" id="waAiApiKeyInput" class="wa-input" placeholder="API KEY (Gemini / OpenAI)" style="height:36px; font-size:0.8rem;">
               </div>
               <div>
                 <button type="button" class="btn btn--outline btn--small" style="height:36px; border-color:rgba(56,189,248,0.4); color:#38BDF8;" onclick="saveWaAiSettings()">
@@ -1261,24 +1327,26 @@
 
             <!-- Live Conversations Stream Header -->
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <h4 style="font-size:0.9rem; font-weight:700; color:#CBD5E1; margin:0;">
-                سجل المحادثات المباشرة
+              <h4 style="font-size:0.88rem; font-weight:700; color:#CBD5E1; margin:0; display:flex; align-items:center; gap:6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                سجل المحادثات والردود المباشرة
               </h4>
               <button type="button" class="btn btn--outline btn--small" style="font-size:0.72rem; padding:2px 8px;" onclick="loadWaChatLogs()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
                 تحديث
               </button>
             </div>
 
             <!-- Live Table -->
-            <div style="max-height:260px; overflow-y:auto; border:1px solid rgba(255,255,255,0.08); border-radius:8px; background:rgba(0,0,0,0.3);">
+            <div style="max-height:260px; overflow-y:auto; border:1px solid rgba(255,255,255,0.08); border-radius:8px; background:rgba(0,0,0,0.35);">
               <table style="width:100%; border-collapse:collapse; font-size:0.82rem;">
                 <thead>
                   <tr style="background:rgba(255,255,255,0.03); color:#94A3B8; text-align:right;">
-                    <th style="padding:8px 12px; width:120px;">التلميذ</th>
-                    <th style="padding:8px 12px; width:110px;">رقم الهاتف</th>
-                    <th style="padding:8px 12px;">رسالة الولي</th>
-                    <th style="padding:8px 12px;">الرد الآلي</th>
-                    <th style="padding:8px 12px; width:90px; text-align:center;">المحرك</th>
+                    <th style="padding:10px 14px; width:130px;">التلميذ</th>
+                    <th style="padding:10px 14px; width:120px;">رقم الهاتف</th>
+                    <th style="padding:10px 14px;">رسالة الولي الواردة</th>
+                    <th style="padding:10px 14px;">رد البوت الذكي</th>
+                    <th style="padding:10px 14px; width:90px; text-align:center;">المحرك</th>
                   </tr>
                 </thead>
                 <tbody id="waAiChatLogsTableBody">
