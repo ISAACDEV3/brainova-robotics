@@ -68,7 +68,7 @@
           <span class="status-dot"></span>
           <span>النظام متصل محلياً</span>
         </div>
-        <button class="btn-icon" style="border:none; color:var(--color-text-dim);" onclick="location.reload();" title="تحديث النظام">🔄</button>
+        <button class="btn-icon" style="border:none; color:var(--color-text-dim);" onclick="location.reload();" title="تحديث النظام"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block; vertical-align:middle;"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></button>
       </div>
     </aside>
 
@@ -77,10 +77,10 @@
       <!-- Central Broadcast Banner from HQ -->
       <div id="centralBroadcastBanner" style="display:none; background:linear-gradient(90deg, #1E1B4B, #312E81); border-bottom:1px solid #6366F1; color:#EEF2FF; padding:10px 24px; font-size:0.86rem; font-weight:700; align-items:center; justify-content:space-between; z-index:9999;">
         <div style="display:flex; align-items:center; gap:10px;">
-          <span style="background:rgba(99,102,241,0.3); padding:3px 8px; border-radius:6px; font-size:0.75rem; border:1px solid rgba(99,102,241,0.5);">📢 تعميم مركزي</span>
+          <span style="background:rgba(99,102,241,0.3); padding:3px 8px; border-radius:6px; font-size:0.75rem; border:1px solid rgba(99,102,241,0.5);">تعميم مركزي</span>
           <span id="centralBroadcastBannerText"></span>
         </div>
-        <button onclick="document.getElementById('centralBroadcastBanner').style.display='none'" style="background:transparent; border:none; color:#C7D2FE; cursor:pointer; font-size:1.1rem; line-height:1;">✕</button>
+        <button onclick="document.getElementById('centralBroadcastBanner').style.display='none'" style="background:transparent; border:none; color:#C7D2FE; cursor:pointer; font-size:1.1rem; line-height:1;">&times;</button>
       </div>
 
       <!-- Topbar -->
@@ -301,15 +301,15 @@
           <!-- Subscription & Payment Filter Toolbar -->
           <div style="display:flex; gap:12px; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; background:var(--color-bg-card); padding:10px 16px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">
             <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-              <span style="font-size:0.84rem; color:var(--color-text-muted); font-weight:700;">📅 تصفية حسب تاريخ الدفع والشهر:</span>
+              <span style="font-size:0.84rem; color:var(--color-text-muted); font-weight:700;">تصفية حالة الدفع والاشتراك:</span>
               <select id="studentSubFilter" onchange="renderStudents()" class="form-input" style="width:auto; padding:6px 14px; font-size:0.84rem; height:36px;">
                 <option value="all">جميع الحالات (عرض كل الطلاب)</option>
-                <option value="risk_high">⚠️ خطر انقطاع مرتفع (غيابات متتالية / نفاد الحصص)</option>
-                <option value="risk_medium">🟡 خطر انقطاع متوسط (غياب حديث / رصيد حصة واحدة)</option>
-                <option value="active">🟢 اشتراك ساري (دفع حديثاً - متبقي أيام)</option>
-                <option value="due_soon">⏳ اقترب موعد التجديد (خلال 5 أيام أو أقل)</option>
-                <option value="overdue">🔴 متأخر عن دفع الشهر (انتهت الـ 30 يوماً)</option>
-                <option value="unpaid">⚪ لم يسدد أي دفعة بعد</option>
+                <option value="risk_high">[حرج] خطر انقطاع مرتفع (غيابات / نفاد حصص)</option>
+                <option value="risk_medium">[متابعة] خطر انقطاع متوسط (غياب حديث)</option>
+                <option value="active">اشتراك سارٍ (مدفوع بالكامل)</option>
+                <option value="due_soon">اقترب موعد التجديد (خلال 5 أيام)</option>
+                <option value="overdue">متأخر في الدفع (مستحقات معلقة)</option>
+                <option value="unpaid">لم يسدد أي دفعة بعد</option>
               </select>
             </div>
 
@@ -413,13 +413,13 @@
           <!-- Age Filter & Search Toolbar -->
           <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; margin-bottom:16px; flex-wrap:wrap; background:var(--color-bg-card); padding:10px 16px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">
             <div style="display:flex; gap:10px; align-items:center;">
-              <span style="font-size:0.85rem; color:var(--color-text-muted); font-weight:700;">🎂 تصفية حسب الفئة العمرية:</span>
+              <span style="font-size:0.85rem; color:var(--color-text-muted); font-weight:700;">تصفية حسب الفئة العمرية:</span>
               <select id="groupAgeFilter" onchange="renderGroups()" class="form-input" style="width:auto; padding:6px 12px; font-size:0.85rem;">
                 <option value="all">جميع الفئات العمرية</option>
-                <option value="6-8">👶 براعم الروبوتيك (6 - 8 سنوات)</option>
-                <option value="8-11">🚀 المبرمج الناشئ (8 - 11 سنة)</option>
-                <option value="11-15">🤖 المبتكر الصغير (11 - 15 سنة)</option>
-                <option value="15-18">⚡ مهندسو المستقبل (15 - 18 سنة)</option>
+                <option value="6-8">براعم الروبوتيك (6 - 8 سنوات)</option>
+                <option value="8-11">المبرمج الناشئ (8 - 11 سنة)</option>
+                <option value="11-15">المبتكر الصغير (11 - 15 سنة)</option>
+                <option value="15-18">مهندسو المستقبل (15 - 18 سنة)</option>
               </select>
             </div>
 
@@ -528,7 +528,7 @@
                 <label style="font-size:0.72rem; color:var(--color-text-dim); font-weight:700; display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">تاريخ الحصة</label>
                 <div style="display:flex; gap:6px; align-items:center;">
                   <input type="date" id="attDateSelect" onchange="renderAttendance()" class="form-input" style="width: 155px; height: 36px; font-family:monospace;">
-                  <button type="button" class="btn btn--outline btn--small" style="height:36px; padding:0 8px; font-size:0.72rem; white-space:nowrap; color:#38BDF8; border-color:rgba(56,189,248,0.4); background:rgba(56,189,248,0.06); font-weight:700;" onclick="attJumpToNextSession()" title="الانتقال لموعد الحصة القادمة">🗓️ القادمة</button>
+                  <button type="button" class="btn btn--outline btn--small" style="height:36px; padding:0 8px; font-size:0.72rem; white-space:nowrap; color:#38BDF8; border-color:rgba(56,189,248,0.4); background:rgba(56,189,248,0.06); font-weight:700;" onclick="attJumpToNextSession()" title="الانتقال لموعد الحصة القادمة">الحصة القادمة</button>
                   <button type="button" class="btn btn--outline btn--small" style="height:36px; padding:0 8px; font-size:0.72rem; white-space:nowrap;" onclick="attJumpToPrevSession()" title="عرض الحصة السابقة المسجلة">⏮️ السابقة</button>
                 </div>
               </div>
@@ -553,9 +553,9 @@
               <div>
                 <label style="font-size:0.72rem; color:var(--color-text-dim); font-weight:700; display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">نوع الحصة</label>
                 <select id="attSessionTypeSelect" onchange="renderAttendance()" class="form-input" style="width: 155px; height: 36px; font-weight:700;">
-                  <option value="regular" selected>عادية 📅</option>
-                  <option value="makeup">تعويضية 🔄</option>
-                  <option value="extra">استثنائية ⭐</option>
+                  <option value="regular" selected>عادية</option>
+                  <option value="makeup">تعويضية</option>
+                  <option value="extra">استثنائية</option>
                 </select>
               </div>
               <div style="flex:1; min-width:180px; max-width:240px;">
@@ -701,8 +701,8 @@
               <div class="table-container" style="padding:22px; background:linear-gradient(145deg, rgba(15,23,42,0.95) 0%, rgba(10,18,34,0.98) 100%); border:1px solid rgba(16,185,129,0.3); box-shadow:0 10px 30px rgba(0,0,0,0.3);">
                 <div class="table-header" style="margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
                   <div style="display:flex; align-items:center; gap:10px;">
-                    <div style="width:36px; height:36px; border-radius:8px; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); display:flex; align-items:center; justify-content:center; color:#10B981; font-size:1.15rem;">
-                      🛡️
+                    <div style="width:36px; height:36px; border-radius:8px; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); display:flex; align-items:center; justify-content:center; color:#10B981;">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                     </div>
                     <div>
                       <h3 class="table-title" style="margin:0; font-size:1.05rem;">مركز الأمان والخزنة السحابية (Security Vault)</h3>
@@ -755,8 +755,8 @@
                 <!-- Live Backups Table Explorer -->
                 <div style="margin-top:16px;">
                   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                    <span style="font-size:0.8rem; font-weight:700; color:#F1F5F9;">📦 مستكشف النسخ الاحتياطية اليومية المتوفرة:</span>
-                    <button type="button" class="btn btn--outline btn--small" style="padding:2px 8px; font-size:0.7rem;" onclick="loadVaultBackupsList()">تحديث القائمة 🔄</button>
+                    <span style="font-size:0.8rem; font-weight:700; color:#F1F5F9;">مستكشف النسخ الاحتياطية المتوفرة:</span>
+                    <button type="button" class="btn btn--outline btn--small" style="padding:2px 8px; font-size:0.7rem;" onclick="loadVaultBackupsList()">تحديث القائمة <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block; vertical-align:middle;"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></button>
                   </div>
                   <div style="max-height:160px; overflow-y:auto; border:1px solid var(--color-border); border-radius:8px;">
                     <table style="width:100%; border-collapse:collapse; font-size:0.75rem; text-align:right;">
@@ -781,17 +781,17 @@
               <!-- Database Management & Factory Reset -->
               <div class="table-container" style="padding:20px;">
                 <div class="table-header" style="margin-bottom:16px;">
-                  <h3 class="table-title">⚙️ إدارة وتهيئة قاعدة البيانات</h3>
+                  <h3 class="table-title">إدارة وتهيئة قاعدة البيانات</h3>
                 </div>
                 <p style="font-size:0.82rem; color:var(--color-text-dim); margin-bottom:14px; line-height:1.6;">
                   تتيح لك تصفير النظام وبدء العمل الفعلي بقاعدة بيانات نظيفة خالية من البيانات التجريبية، أو إعادة تعيين النظام عند الحاجة.
                 </p>
                 <div style="display:flex; gap:10px;">
                   <button class="btn btn--outline btn--small" onclick="promptFactoryReset()" style="flex:1; border-color:rgba(239,68,68,0.4); color:#F87171;">
-                    🗑️ تصفير وبدء قاعدة جديدة
+                    تصفير وبدء قاعدة جديدة
                   </button>
                   <button class="btn btn--outline btn--small" onclick="loadSampleData()" style="flex:1; border-color:rgba(56,189,248,0.3); color:#38BDF8;">
-                    📥 توليد بيانات تجريبية
+                    توليد بيانات تجريبية
                   </button>
                 </div>
               </div>
@@ -865,7 +865,7 @@
               <!-- Security Audit & Activity Ledger -->
               <div class="table-container" style="padding:20px; border:1px solid rgba(56,189,248,0.2);">
                 <div class="table-header" style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
-                  <h3 class="table-title">📜 سجل تدقيق العمليات (Audit Ledger)</h3>
+                  <h3 class="table-title">سجل تدقيق العمليات (Audit Ledger)</h3>
                 </div>
                 <p style="font-size:0.78rem; color:var(--color-text-dim); margin-bottom:12px; line-height:1.5;">
                   يوثق النظام العمليات الحساسة (النسخ الاحتياطي، الاسترجاع، وتعديل كلمات المرور) بالطابع الزمني الدقيق.
@@ -978,7 +978,7 @@
             <div class="card" style="display:flex; flex-direction:column; gap:16px;">
               <div class="card__header" style="padding-bottom:0;">
                 <h3 class="card__title" style="display:flex; align-items:center; gap:8px;">
-                  <span>📲</span> ربط الحساب (WhatsApp)
+                  ربط الحساب (WhatsApp)
                 </h3>
               </div>
 
@@ -996,14 +996,14 @@
                 </div>
                 <div style="margin-top:14px;">
                   <button type="button" class="btn btn--primary btn--small" style="background:#25D366; font-weight:700; width:100%;" onclick="startWhatsAppClient()">
-                    ⚡ توليد رمز QR للربط المباشر
+                    توليد رمز QR للربط المباشر
                   </button>
                 </div>
               </div>
 
               <!-- When Connected -->
               <div id="waConnectedBox" style="display:none; padding:20px; background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.3); border-radius:12px; text-align:center;">
-                <div style="font-size:3rem; margin-bottom:8px;">✅</div>
+                <div style="display:flex; justify-content:center; margin-bottom:10px; color:#10B981;"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
                 <h3 style="color:#10B981; font-size:1.05rem; margin-bottom:4px;">متصل بنجاح</h3>
                 <p id="waConnectedPhoneDisplay" style="font-family:monospace; font-size:1.05rem; color:#f8fafc; font-weight:800; margin-bottom:6px;">+213XXXXXXXXX</p>
                 <p style="font-size:0.78rem; color:#94a3b8; margin-bottom:14px;">البوت نشط ويعمل في الخلفية.</p>
@@ -1099,7 +1099,7 @@
               <div class="card" style="background:rgba(255,255,255,0.015); margin-top:16px; border:1px solid rgba(56,189,248,0.25);">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                   <h3 class="card__title" style="font-size:0.92rem; margin-bottom:0; display:flex; align-items:center; gap:6px; color:#38BDF8;">
-                    <span>📚</span> إرسال تقرير درس اليوم لولي أمر التلميذ
+                    إرسال تقرير درس اليوم لولي أمر التلميذ
                   </h3>
                 </div>
                 
@@ -1117,7 +1117,7 @@
                   </div>
                   <div class="form-group" style="margin-bottom:0;">
                     <label style="font-size:0.75rem; color:#94a3b8;">ما تعلمه وأنجزه التلميذ:</label>
-                    <input type="text" id="waLessonAchievementInput" oninput="generateLessonReportMessage()" class="form-input" placeholder="مثال: برمج الروبوت لتفادي العوائق بنجاح 🤖" style="font-size:0.82rem;">
+                    <input type="text" id="waLessonAchievementInput" oninput="generateLessonReportMessage()" class="form-input" placeholder="مثال: برمج الروبوت لتفادي العوائق بنجاح" style="font-size:0.82rem;">
                   </div>
                 </div>
 
@@ -1128,10 +1128,10 @@
 
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                   <button type="button" class="btn btn--outline btn--small" onclick="generateLessonReportMessage()">
-                    ⚡ إعادة صياغة التقرير
+                    إعادة صياغة التقرير
                   </button>
                   <button type="button" class="btn btn--primary" style="background:#25D366; display:flex; align-items:center; gap:6px; font-size:0.85rem;" onclick="dispatchLessonReportWhatsApp()">
-                    <span>📲 إرسال تقرير الدرس لولي الأمر</span>
+                    إرسال تقرير الدرس لولي الأمر
                   </button>
                 </div>
               </div>
@@ -1145,7 +1145,7 @@
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
               <div>
                 <h3 class="card__title" style="display:flex; align-items:center; gap:8px; font-size:1.05rem;">
-                  <span>📋</span> الإرسال الجماعي
+                  الإرسال الجماعي
                 </h3>
                 <p style="font-size:0.78rem; color:#94a3b8; margin-top:2px;">
                   إرسال الإشعارات والتذكيرات دفعة واحدة لأولياء الأمور.
@@ -1225,8 +1225,8 @@
           <div class="card" style="margin-top:20px; background:linear-gradient(145deg, rgba(15,23,42,0.85) 0%, rgba(10,18,34,0.95) 100%); border:1px solid rgba(56,189,248,0.22); border-radius:12px; padding:20px;">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
               <div style="display:flex; align-items:center; gap:10px;">
-                <div style="width:36px; height:36px; border-radius:8px; background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); display:flex; align-items:center; justify-content:center; color:#38BDF8; font-size:1.1rem;">
-                  🤖
+                <div style="width:36px; height:36px; border-radius:8px; background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); display:flex; align-items:center; justify-content:center; color:#38BDF8;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 9h.01"/><path d="M15 9h.01"/><path d="M10 15h4"/></svg>
                 </div>
                 <div>
                   <h3 class="card__title" style="margin:0; font-size:1.05rem;">الرد الآلي الذكي (AI Receptionist)</h3>
@@ -1257,7 +1257,7 @@
             <!-- Live Conversations Stream Header -->
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
               <h4 style="font-size:0.9rem; font-weight:700; color:#CBD5E1; margin:0;">
-                💬 سجل المحادثات المباشرة
+                سجل المحادثات المباشرة
               </h4>
               <button type="button" class="btn btn--outline btn--small" style="font-size:0.72rem; padding:2px 8px;" onclick="loadWaChatLogs()">
                 تحديث
@@ -1455,7 +1455,7 @@
   <div class="modal-overlay" id="editStudentModal">
     <div class="modal" style="max-width: 540px;">
       <div class="modal__header">
-        <h3 class="modal__title">✏️ تعديل بيانات التلميذ والفوج</h3>
+        <h3 class="modal__title">تعديل بيانات التلميذ والفوج</h3>
         <button class="modal__close" onclick="closeEditStudentModal()">&times;</button>
       </div>
       <form id="editStudentForm" class="reg-form" onsubmit="submitEditStudent(event)">
@@ -1589,8 +1589,8 @@
         <!-- Next Renewal Date Picker -->
         <div class="form-group" style="margin-top: 6px;">
           <label style="display:flex; justify-content:space-between; align-items:center;">
-            <span>📅 تاريخ استحقاق التجديد القادم</span>
-            <small style="color:#38BDF8; font-weight:normal; cursor:pointer;" onclick="autoComputeEditStudentRenewalDate()">⚡ ضبط تلقائي حسب الحصص</small>
+            <span>تاريخ استحقاق التجديد القادم</span>
+            <small style="color:#38BDF8; font-weight:normal; cursor:pointer;" onclick="autoComputeEditStudentRenewalDate()">ضبط تلقائي حسب الحصص</small>
           </label>
           <input type="date" id="editStudentNextRenewalDate" class="form-input" style="font-weight:700;">
           <small style="color:var(--color-text-dim); font-size:0.74rem;">عند تسديد شهرين أو أكثر (8 أو 12 حصة)، يتم تمديد التاريخ تلقائياً لمنع أي إنذار خاطئ.</small>
@@ -1601,7 +1601,7 @@
           <div style="display:flex; align-items:center; justify-content:space-between;">
             <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:700; color:#F87171; margin-bottom:0;">
               <input type="checkbox" id="editStudentHasDebt" style="width:18px; height:18px; cursor:pointer;" onchange="toggleEditStudentDebtFields()">
-              <span>⚠️ تحديد التلميذ كمتأخر في الدفع (عليه ديون / مستحقات)</span>
+              <span>تحديد التلميذ كمتأخر في الدفع (عليه ديون / مستحقات)</span>
             </label>
           </div>
           
@@ -1628,14 +1628,14 @@
               </div>
             </div>
             <p style="font-size:0.72rem; color:#94A3B8; margin-top:8px; margin-bottom:0;">
-              💡 يمكنك تحديد التأخر بعدد الحصص فقط (مثلاً 3 حصص)، أو بعدد الأشهر؛ وسيتم احتساب الدين والشارات بدقة متناهية.
+              يمكنك تحديد التأخر بعدد الحصص فقط (مثلاً 3 حصص)، أو بعدد الأشهر؛ وسيتم احتساب الدين والشارات بدقة متناهية.
             </p>
           </div>
         </div>
 
         <div class="modal__actions">
           <button type="button" class="btn btn--outline" onclick="closeEditStudentModal()">إلغاء</button>
-          <button type="submit" class="btn btn--primary">💾 حفظ التعديلات</button>
+          <button type="submit" class="btn btn--primary">حفظ التعديلات</button>
         </div>
       </form>
     </div>
@@ -1723,13 +1723,13 @@
             </div>
             <div style="display:flex; gap:6px; flex-wrap:wrap;">
               <button type="button" class="btn btn--outline btn--small" id="quickAttPrevWeekBtn" onclick="quickAttJumpToPrevSession()" style="font-size:0.75rem; padding:4px 8px; border-color:rgba(255,255,255,0.2);">
-                ⏮️ آخر حصة (<span id="quickAttPrevDateLabel">—</span>)
+                آخر حصة (<span id="quickAttPrevDateLabel">—</span>)
               </button>
               <button type="button" class="btn btn--outline btn--small" id="quickAttNextWeekBtn" onclick="quickAttJumpToNextSession()" style="font-size:0.75rem; padding:4px 8px; color:#38BDF8; border-color:rgba(56,189,248,0.4); background:rgba(56,189,248,0.1); font-weight:700;">
-                🗓️ الموعد القادم (<span id="quickAttNextDateLabel">—</span>)
+                الموعد القادم (<span id="quickAttNextDateLabel">—</span>)
               </button>
               <button type="button" class="btn btn--outline btn--small" onclick="quickAttJumpToToday()" style="font-size:0.75rem; padding:4px 8px; font-weight:700;">
-                📅 اليوم
+                اليوم
               </button>
             </div>
           </div>
@@ -1745,9 +1745,9 @@
           <div>
             <label style="font-size:0.75rem; color:var(--color-text-muted); font-weight:600; display:block; margin-bottom:4px;">نوع الحصة</label>
             <select id="quickAttSessionType" class="form-input" style="height:34px; font-weight:700;" onchange="onQuickAttSessionTypeChange()">
-              <option value="regular" selected>حصة أسبوعية عادية 📅</option>
-              <option value="makeup">حصة تعويضية 🔄</option>
-              <option value="extra">حصة استثنائية / إضافية ⭐</option>
+              <option value="regular" selected>حصة أسبوعية عادية</option>
+              <option value="makeup">حصة تعويضية</option>
+              <option value="extra">حصة استثنائية / إضافية</option>
             </select>
           </div>
           <div>
@@ -1789,7 +1789,7 @@
         <!-- Action Footer -->
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; gap:8px;">
           <button type="button" class="btn btn--outline" style="font-size:0.78rem; border-color:rgba(56,189,248,0.35); color:#38BDF8;" onclick="switchToFullAttendanceViewFromQuickModal()">
-            🖥️ فتح في السجل الكامل
+            فتح في السجل الكامل
           </button>
           <div style="display:flex; gap:8px;">
             <button type="button" class="btn btn--outline" onclick="closeQuickGroupAttendanceModal()">إلغاء</button>
@@ -2211,10 +2211,10 @@
           <input type="number" id="editGroupMaxStudents" class="form-input" min="1" max="50">
         </div>
         <div class="modal__actions" style="display:flex; justify-content:space-between; align-items:center;">
-          <button type="button" class="btn btn--outline" style="color:#EF4444; border-color:rgba(239,68,68,0.4); font-weight:700;" onclick="deleteGroupFromEditModal()">🗑️ حذف هذا الفوج</button>
+          <button type="button" class="btn btn--outline" style="color:#EF4444; border-color:rgba(239,68,68,0.4); font-weight:700;" onclick="deleteGroupFromEditModal()">حذف هذا الفوج</button>
           <div style="display:flex; gap:8px;">
             <button type="button" class="btn btn--outline" onclick="closeEditGroupModal()">إلغاء</button>
-            <button type="submit" class="btn btn--primary">💾 حفظ تعديلات الفوج</button>
+            <button type="submit" class="btn btn--primary">حفظ تعديلات الفوج</button>
           </div>
         </div>
       </form>
@@ -2483,17 +2483,17 @@
   <div class="modal-overlay" id="recordPaymentModal">
     <div class="modal" style="max-width: 530px;">
       <div class="modal__header">
-        <h2 class="modal__title">💳 المعاملات المالية وإصدار الوصل</h2>
+        <h2 class="modal__title">المعاملات المالية وإصدار الوصل</h2>
         <button class="modal__close" onclick="closeRecordPaymentModal()">×</button>
       </div>
 
       <!-- Mode Selector Tabs: Paid vs Unpaid Debt -->
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px;">
         <button type="button" class="btn btn--small" id="payTypeTabPaid" onclick="setPaymentModalMode('paid')" style="background:#10B981; color:#fff; font-weight:800; border:2px solid #10B981; padding:8px 4px; display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;">
-          <span>✅</span> وصل تسديد (مدفوع بالكامل)
+          وصل تسديد (مدفوع بالكامل)
         </button>
         <button type="button" class="btn btn--outline btn--small" id="payTypeTabDebt" onclick="setPaymentModalMode('debt')" style="background:transparent; color:#F87171; border:2px solid rgba(239,68,68,0.5); font-weight:800; padding:8px 4px; display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;">
-          <span>⚠️</span> وصل تأخر في الدفع (غير مدفوع)
+          وصل تأخر في الدفع (غير مدفوع)
         </button>
       </div>
       <input type="hidden" id="payModalType" value="paid">
@@ -2524,7 +2524,7 @@
                 <strong>شهران (2)</strong><br><span style="font-size:0.7rem; color:var(--color-text-dim);">8 حصص</span>
               </button>
               <button type="button" class="btn btn--outline btn--small" onclick="setPaymentMonths(3)" id="btnMonthPreset3" style="padding:6px; font-size:0.75rem; text-align:center;">
-                <strong>3 أشهر 🌟</strong><br><span style="font-size:0.7rem; color:var(--color-text-dim);">12 حصة</span>
+                <strong>3 أشهر</strong><br><span style="font-size:0.7rem; color:var(--color-text-dim);">12 حصة</span>
               </button>
               <button type="button" class="btn btn--outline btn--small" onclick="setPaymentMonths(6)" id="btnMonthPreset6" style="padding:6px; font-size:0.75rem; text-align:center;">
                 <strong>6 أشهر</strong><br><span style="font-size:0.7rem; color:var(--color-text-dim);">24 حصة</span>
@@ -2549,7 +2549,7 @@
         <!-- 2. DEBT / UNPAID MODE SECTION -->
         <div id="payDebtSection" style="display:none; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.35); border-radius:8px; padding:12px; margin-bottom:14px;">
           <div style="font-size:0.82rem; font-weight:800; color:#F87171; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
-            <span>⚠️</span> تفاصيل التأخر في الدفع والحصص غير المسددة (إشعار دين):
+            تفاصيل التأخر في الدفع والحصص غير المسددة (إشعار دين):
           </div>
 
           <div style="display:flex; gap:14px; margin-bottom:10px;">
@@ -2627,7 +2627,7 @@
 
         <div style="display:flex; align-items:center; gap:8px; margin: 16px 0;">
           <input type="checkbox" id="autoPrintReceiptCheck" checked style="width:16px; height:16px; cursor:pointer;">
-          <label for="autoPrintReceiptCheck" style="cursor:pointer; font-weight:600; font-size:0.85rem; color:var(--color-text);">🖨️ فتح ومعاينة الوصل فوراً بعد الحفظ (Google Chrome / 80mm)</label>
+          <label for="autoPrintReceiptCheck" style="cursor:pointer; font-weight:600; font-size:0.85rem; color:var(--color-text);">فتح ومعاينة الوصل فوراً بعد الحفظ (Google Chrome / 80mm)</label>
         </div>
 
         <div class="modal__actions">
@@ -2742,7 +2742,7 @@
 
       <div class="modal__actions" style="margin-top:14px; display:flex; gap:8px;">
         <button type="button" class="btn btn--outline" onclick="closeReceiptModal()" style="flex:1; border-color:#D1D5DB; color:#374151;">إلغاء</button>
-        <button type="button" class="btn btn--primary" onclick="triggerAppPrint()" style="flex:2; background:#0284C7;">🖨️ طباعة الوصل (Google Chrome)</button>
+        <button type="button" class="btn btn--primary" onclick="triggerAppPrint()" style="flex:2; background:#0284C7;">طباعة الوصل (Google Chrome)</button>
       </div>
     </div>
   </div>
@@ -2751,7 +2751,7 @@
   <div class="modal-overlay" id="transferGroupModal">
     <div class="modal" style="max-width: 480px;">
       <div class="modal__header">
-        <h2 class="modal__title">🔄 نقل وتغيير فوج التلميذ</h2>
+        <h2 class="modal__title">نقل وتغيير فوج التلميذ</h2>
         <button class="modal__close" onclick="closeTransferGroupModal()">×</button>
       </div>
       <form id="transferGroupForm" onsubmit="submitTransferGroup(event)">
@@ -2807,8 +2807,8 @@
           <div class="cr80-meta">
             <div class="cr80-student-name" id="idCardStudentName">نزار تسنيم</div>
             <div class="cr80-level-text" id="idCardLevel">المستوى الأول: التفكير المنطقي</div>
-            <div class="cr80-group-text">👥 الفوج: <strong id="idCardGroup" style="color:#fff;">الفوج أ (مبتدئ)</strong></div>
-            <div class="cr80-id-text">🆔 المعرف: <span id="idCardStudentId">STU-001</span></div>
+            <div class="cr80-group-text">الفوج: <strong id="idCardGroup" style="color:#fff;">الفوج أ (مبتدئ)</strong></div>
+            <div class="cr80-id-text">المعرف: <span id="idCardStudentId">STU-001</span></div>
           </div>
           <div class="cr80-qr-frame">
             <img id="idCardQrCode" alt="QR" class="cr80-qr-img">
@@ -2855,7 +2855,7 @@
         </div>
 
         <div style="position:absolute; bottom:12px; background:rgba(9,15,30,0.85); border:1px solid rgba(56,189,248,0.25); color:#F1F5F9; font-size:0.75rem; font-weight:700; padding:4px 14px; border-radius:999px; backdrop-filter:blur(4px);">
-          🔍 وجّه رمز الـ QR الموجود على بطاقة الطالب نحو المربع
+          وجّه رمز الـ QR الموجود على بطاقة الطالب نحو المربع
         </div>
       </div>
 
@@ -2866,7 +2866,7 @@
           <div style="flex:1;">
             <div style="display:flex; align-items:center; justify-content:space-between;">
               <strong id="qrScannedStudentName" style="color:#F8FAFC; font-size:1rem;">نزار تسنيم</strong>
-              <span class="status-pill status-pill--active">🟢 تم تسجيل الحضور</span>
+              <span class="status-pill status-pill--active">تم تسجيل الحضور</span>
             </div>
             <div id="qrScannedDetails" style="font-size:0.78rem; color:#94A3B8; margin-top:2px;">الفوج أ (مبتدئ) • الحصص المتبقية: 3</div>
           </div>
@@ -2893,7 +2893,7 @@
   <div class="modal-overlay" id="regDetailsModal">
     <div class="modal" style="max-width: 600px;">
       <div class="modal__header">
-        <h2 class="modal__title">📋 تفاصيل طلب التسجيل</h2>
+        <h2 class="modal__title">تفاصيل طلب التسجيل</h2>
         <button class="modal__close" onclick="closeRegistrationDetailsModal()">×</button>
       </div>
 
@@ -2907,7 +2907,7 @@
   <div class="modal-overlay" id="whatsappDispatchModal">
     <div class="modal" style="max-width: 520px;">
       <div class="modal__header">
-        <h2 class="modal__title">💬 إرسال إشعار واتساب لولي الأمر</h2>
+        <h2 class="modal__title">إرسال إشعار واتساب لولي الأمر</h2>
         <button class="modal__close" onclick="closeWhatsAppDispatchModal()">×</button>
       </div>
 
@@ -2917,16 +2917,16 @@
             <strong id="waStudentNameDisplay" style="color:#fff; display:block;">الطالب: -</strong>
             <span style="font-size:0.8rem; color:#94a3b8;">رقم ولي الأمر: <strong id="waParentPhoneDisplay" style="color:#25D366; font-family:monospace;">—</strong></span>
           </div>
-          <span style="font-size:1.8rem;">📱</span>
+          
         </div>
 
         <div class="form-group">
           <label style="font-size:0.85rem; color:var(--color-text-muted); font-weight:700;">اختر قالب الرسالة الجاهز:</label>
           <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:6px; margin-bottom:10px;">
-            <button type="button" class="btn btn--outline btn--small" onclick="selectWaTemplate('lesson')" style="font-size:0.75rem; padding:6px 4px; border-color:#38BDF8; color:#38BDF8; font-weight:700;">📚 تقرير درس اليوم</button>
-            <button type="button" class="btn btn--outline btn--small" onclick="selectWaTemplate('reminder')" style="font-size:0.75rem; padding:6px 4px;">📢 تذكير بالحصة</button>
-            <button type="button" class="btn btn--outline btn--small" onclick="selectWaTemplate('renewal')" style="font-size:0.75rem; padding:6px 4px;">💳 تجديد الحصص</button>
-            <button type="button" class="btn btn--outline btn--small" onclick="selectWaTemplate('kudos')" style="font-size:0.75rem; padding:6px 4px;">🌟 تهنئة وتميز</button>
+            <button type="button" class="btn btn--outline btn--small" onclick="selectWaTemplate('lesson')" style="font-size:0.75rem; padding:6px 4px; border-color:#38BDF8; color:#38BDF8; font-weight:700;">تقرير درس اليوم</button>
+            <button type="button" class="btn btn--outline btn--small" onclick="selectWaTemplate('reminder')" style="font-size:0.75rem; padding:6px 4px;">تذكير بالحصة</button>
+            <button type="button" class="btn btn--outline btn--small" onclick="selectWaTemplate('renewal')" style="font-size:0.75rem; padding:6px 4px;">تجديد الحصص</button>
+            <button type="button" class="btn btn--outline btn--small" onclick="selectWaTemplate('kudos')" style="font-size:0.75rem; padding:6px 4px;">تهنئة وتميز</button>
           </div>
         </div>
 
@@ -2938,7 +2938,7 @@
         <div class="modal__actions">
           <button type="button" class="btn btn--outline" onclick="closeWhatsAppDispatchModal()">إلغاء</button>
           <button type="submit" class="btn" style="background:#25D366; color:#fff; font-weight:700; display:flex; align-items:center; gap:6px;">
-            <span>🚀 فتح وإرسال عبر واتساب</span>
+            <span>إرسال عبر واتساب</span>
           </button>
         </div>
       </form>
@@ -2949,7 +2949,7 @@
   <div class="modal-overlay" id="addStudentSessionModal">
     <div class="modal" style="max-width: 520px;">
       <div class="modal__header">
-        <h2 class="modal__title">➕ تسجيل حصة حضور بالتاريخ للتلميذ</h2>
+        <h2 class="modal__title">تسجيل حصة حضور بالتاريخ للتلميذ</h2>
         <button class="modal__close" onclick="closeAddStudentSessionModal()">×</button>
       </div>
       <form onsubmit="submitAddStudentSession(event)">
@@ -2960,7 +2960,7 @@
             <strong id="sessionStudentNameDisplay" style="color:#fff; font-size:1rem; display:block;">-</strong>
             <span id="sessionStudentGroupDisplay" style="font-size:0.8rem; color:#94a3b8;">الفوج: -</span>
           </div>
-          <span style="font-size:1.6rem;">🤖</span>
+          
         </div>
 
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
@@ -2992,9 +2992,9 @@
           <div class="form-group">
             <label style="font-size:0.8rem; font-weight:700; color:#94a3b8;">حالة الحضور *</label>
             <select id="sessionStatusInput" class="form-input" required onchange="handleSessionStatusChange()">
-              <option value="present">✅ حاضر (Present)</option>
-              <option value="late">⏳ متأخر (Late)</option>
-              <option value="absent">❌ غائب (Absent)</option>
+              <option value="present">حاضر (Present)</option>
+              <option value="late">متأخر (Late)</option>
+              <option value="absent">غائب (Absent)</option>
             </select>
           </div>
 
@@ -3013,13 +3013,13 @@
           <label style="font-size:0.8rem; font-weight:700; color:#94a3b8;">علامة التسديد / الدفع لهذه الحصة</label>
           <select id="sessionPaymentMarkerInput" class="form-input">
             <option value="">بدون علامة (عادية)</option>
-            <option value="paid_next" selected>💳 دفع في الحصة التالية</option>
-            <option value="paid_this">💰 سدد في هذه الحصة</option>
+            <option value="paid_next" selected>دفع في الحصة التالية</option>
+            <option value="paid_this">سدد في هذه الحصة</option>
           </select>
         </div>
 
         <div class="form-group" id="sessionPaymentDateTimeContainer">
-          <label style="font-size:0.8rem; font-weight:700; color:#94a3b8;">🕒 تاريخ ووقت التسديد الدقيق</label>
+          <label style="font-size:0.8rem; font-weight:700; color:#94a3b8;">تاريخ ووقت التسديد الدقيق</label>
           <input type="datetime-local" id="sessionPaymentDateTimeInput" class="form-input">
         </div>
 
@@ -3032,7 +3032,7 @@
 
         <div class="modal__actions">
           <button type="button" class="btn btn--outline" onclick="closeAddStudentSessionModal()">إلغاء</button>
-          <button type="submit" class="btn btn--primary">💾 حفظ الحصة في السجل</button>
+          <button type="submit" class="btn btn--primary">حفظ الحصة في السجل</button>
         </div>
       </form>
     </div>
@@ -3065,7 +3065,7 @@
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
             <label style="font-size:0.82rem; font-weight:700; color:#F1F5F9; margin-bottom:0;">نص التقرير البيداغوجي (قابل للمراجعة والتعديل قبل الإرسال):</label>
             <button type="button" class="btn btn--outline btn--small" onclick="regenerateCurrentPedagogicalReport()" style="padding:2px 8px; font-size:0.75rem; border-color:rgba(56,189,248,0.3); color:#38BDF8;">
-              🔄 إعادة صياغة بديلة
+              إعادة صياغة بديلة
             </button>
           </div>
           <textarea id="pedagogicalReportText" class="form-input" style="height: 220px; font-family: 'Segoe UI', Tahoma, sans-serif; font-size: 0.88rem; line-height: 1.7; padding: 12px; resize: vertical;"></textarea>
@@ -3073,7 +3073,7 @@
 
         <!-- Pedagogical Recommendations Checklist -->
         <div style="background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.25); border-radius: 8px; padding: 10px 14px; font-size: 0.8rem; color: #CBD5E1;">
-          <span style="font-weight:700; color:#10B981;">💡 خيارات المتابعة:</span> التقرير جاهز للإرسال المباشر بنقرة واحدة لرقم هاتف الولي عبر واتساب، أو طباعته ككشف نقاط وتقييم شهري رسمي.
+          <span style="font-weight:700; color:#10B981;">خيارات المتابعة:</span> التقرير جاهز للإرسال المباشر بنقرة واحدة لرقم هاتف الولي عبر واتساب، أو طباعته ككشف نقاط وتقييم شهري رسمي.
         </div>
       </div>
 
@@ -3081,10 +3081,10 @@
         <button type="button" class="btn btn--outline" onclick="closePedagogicalReportModal()">إلغاء</button>
         <div style="display:flex; gap:8px;">
           <button type="button" class="btn btn--outline" onclick="printCurrentPedagogicalReport()">
-            🖨️ طباعة التقرير (A4)
+            طباعة التقرير (A4)
           </button>
           <button type="button" class="btn btn--primary" style="background:#25D366; border-color:#25D366; color:#fff;" onclick="sendCurrentPedagogicalReportViaWhatsApp()">
-            📲 إرسال للولي عبر الواتساب
+            إرسال للولي عبر الواتساب
           </button>
         </div>
       </div>
@@ -3170,7 +3170,7 @@
       </div>
 
       <div style="display: inline-block; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.5); color: #FCA5A5; font-size: 0.74rem; font-weight: 800; padding: 3px 14px; border-radius: 20px; margin-bottom: 14px; letter-spacing: 1px;">
-        ⚠️ تم تعليق الترخيص مؤقتاً • LICENSE SUSPENDED
+        تم تعليق الترخيص مؤقتاً • LICENSE SUSPENDED
       </div>
 
       <h2 style="font-size: 1.45rem; font-weight: 900; margin-bottom: 12px; color: #FFFFFF; letter-spacing: -0.5px;">

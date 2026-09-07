@@ -4,6 +4,36 @@
    ================================================ */
 
 document.addEventListener('DOMContentLoaded', () => {
+
+  // ==========================================
+  // VECTOR SVG ICONS LIBRARY (REPLACES ALL EMOJIS)
+  // ==========================================
+  const UI_ICONS = {
+    check: (s=12, stroke=2.5) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><polyline points="20 6 9 17 4 12"/></svg>`,
+    alert: (s=12, stroke=2.2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+    book: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
+    clock: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+    calendar: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>`,
+    hourglass: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>`,
+    printer: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>`,
+    card: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>`,
+    edit: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`,
+    trash: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`,
+    refresh: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>`,
+    idCard: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><rect width="20" height="14" x="2" y="5" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M14 10h4"/><path d="M14 14h4"/></svg>`,
+    whatsapp: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>`,
+    receipt: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`,
+    x: (s=12, stroke=2.5) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+    money: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>`,
+    file: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`,
+    user: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+    chart: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
+    plus: (s=12, stroke=2.5) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
+    dot: (color='#94A3B8') => `<span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:${color}; vertical-align:middle; margin-left:4px;"></span>`,
+    shield: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+    bot: (s=12, stroke=2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 9h.01"/><path d="M15 9h.01"/><path d="M10 15h4"/></svg>`
+  };
+  window.UI_ICONS = UI_ICONS;
   
   // ==========================================
   // 1. IN-MEMORY HIGH PERFORMANCE CACHE
@@ -204,12 +234,14 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const toast = document.createElement('div');
     toast.className = `toast toast--${type}`;
-    const icon = type === 'success' ? '✅' : (type === 'error' ? '❌' : '⚠️');
+    const iconSvg = type === 'success' ? UI_ICONS.check(14) : (type === 'error' ? UI_ICONS.x(14) : UI_ICONS.alert(14));
     
     const currentLang = (document.documentElement && document.documentElement.lang) || 'ar';
-    const text = (typeof dashTranslations !== 'undefined' && dashTranslations[currentLang]?.[messageKey]) || messageKey;
+    let text = (typeof dashTranslations !== 'undefined' && dashTranslations[currentLang]?.[messageKey]) || messageKey;
+    // Clean out any legacy emoji prefixes
+    text = (text || '').replace(/^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F900}-\u{1F9FF}\s]+/u, '').trim();
     
-    toast.innerHTML = `<span>${icon}</span> <span>${text}</span>`;
+    toast.innerHTML = `<span style="display:inline-flex; align-items:center;">${iconSvg}</span> <span>${text}</span>`;
     container.appendChild(toast);
     
     setTimeout(() => {
@@ -682,7 +714,7 @@ document.addEventListener('DOMContentLoaded', () => {
         retentionContainer.innerHTML = `
           <div style="background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.25); border-radius:10px; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
             <div style="display:flex; align-items:center; gap:10px;">
-              <span style="font-size:1.2rem;">🛡️</span>
+              ${UI_ICONS.shield(20)}
               <div>
                 <strong style="color:#10B981; font-size:0.88rem;">رادار استبقاء الطلاب ممتاز (Zero Retention Risk)</strong>
                 <div style="font-size:0.75rem; color:#94A3B8;">كافة الطلاب منتظمون في الحضور ولا توجد مخاطر انقطاع أو تأخرات حرجة.</div>
@@ -696,8 +728,8 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="card" style="border:1px solid rgba(239,68,68,0.28); background:linear-gradient(145deg, rgba(30,15,20,0.6) 0%, rgba(15,23,42,0.85) 100%); border-radius:12px; padding:16px 18px;">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
               <div style="display:flex; align-items:center; gap:10px;">
-                <div style="width:34px; height:34px; border-radius:8px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); display:flex; align-items:center; justify-content:center; color:#EF4444; font-size:1rem;">
-                  ⚠️
+                <div style="width:34px; height:34px; border-radius:8px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); display:flex; align-items:center; justify-content:center; color:#EF4444;">
+                  ${UI_ICONS.alert(18)}
                 </div>
                 <div>
                   <h3 class="card__title" style="margin:0; font-size:1.02rem; color:#F8FAFC;">رادار التنبؤ بالغياب والانسحاب (Retention & Risk Radar)</h3>
@@ -705,8 +737,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
               </div>
               <div style="display:flex; align-items:center; gap:8px;">
-                ${highRiskCount > 0 ? `<span class="risk-pill-high">🔴 ${highRiskCount} خطر مرتفع</span>` : ''}
-                ${medRiskCount > 0 ? `<span class="risk-pill-medium">🟡 ${medRiskCount} متابعة وتدارك</span>` : ''}
+                ${highRiskCount > 0 ? `<span class="risk-pill-high">${UI_ICONS.dot('#EF4444')} ${highRiskCount} خطر مرتفع</span>` : ''}
+                ${medRiskCount > 0 ? `<span class="risk-pill-medium">${UI_ICONS.dot('#F59E0B')} ${medRiskCount} متابعة وتدارك</span>` : ''}
                 <button class="btn btn--outline btn--small" style="font-size:0.75rem;" onclick="document.querySelector('[data-view=\\'students\\']').click(); document.getElementById('studentSubFilter').value = 'risk_high'; renderStudents();">
                   عرض كل الحالات
                 </button>
@@ -734,10 +766,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div style="display:flex; gap:6px; align-items:center; padding-top:6px; border-top:1px solid rgba(255,255,255,0.06);">
                       <button class="btn btn--small" style="background:#25D366; color:#fff; font-size:0.72rem; padding:3px 8px; flex:1;" onclick="openFriendlyRetentionWhatsApp('${s.id}')">
-                        💬 رسالة تدارك ودية
+                        ${UI_ICONS.whatsapp(12)} رسالة تدارك ودية
                       </button>
                       <button class="btn btn--outline btn--small" style="font-size:0.72rem; padding:3px 8px; border-color:rgba(16,185,129,0.35); color:#10B981;" onclick="openPedagogicalReportModal('${s.id}')">
-                        📊 تقييم
+                        ${UI_ICONS.chart(12)} تقييم
                       </button>
                       <button class="btn btn--outline btn--small" style="font-size:0.72rem; padding:3px 6px;" onclick="openStudentProfile('${s.id}')">
                         الملف
@@ -1131,25 +1163,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (hasStudiedToday) {
       if (isLastMakeup) {
-        badgeText = `🔄 تم تسجيل حصة تعويضية اليوم (${lastSessionTime}) بنجاح • الموعد القادم: ${nextDayName} ${nextDateStr}`;
+        badgeText = `تم تسجيل حصة تعويضية اليوم (${lastSessionTime}) بنجاح • الموعد القادم: ${nextDayName} ${nextDateStr}`;
         badgeStyle = 'background:rgba(168,85,247,0.15); color:#C084FC; border:1px solid rgba(168,85,247,0.35); font-weight:700;';
       } else {
-        badgeText = `✅ تم تسجيل حضور اليوم (${scheduledTime}) • الحصة القادمة: ${nextDayName} ${nextDateStr}`;
+        badgeText = `تم تسجيل حضور اليوم (${scheduledTime}) • الحصة القادمة: ${nextDayName} ${nextDateStr}`;
         badgeStyle = 'background:rgba(16,185,129,0.15); color:#10B981; border:1px solid rgba(16,185,129,0.3);';
       }
     } else if (isDueToday) {
-      badgeText = `🔴 موعد الحصة اليوم: ${nextDayName} ${nextDateStr} (${scheduledTime})!`;
+      badgeText = `موعد الحصة اليوم: ${nextDayName} ${nextDateStr} (${scheduledTime})!`;
       badgeStyle = 'background:rgba(239,68,68,0.18); color:#EF4444; border:1px solid rgba(239,68,68,0.35); font-weight:700;';
     } else if (diffDays !== null && diffDays > 7) {
-      badgeText = `⚠️ انقضى أسبوع (${diffDays} يوماً) — موعد الحصة: ${nextDayName} ${nextDateStr}`;
+      badgeText = `انقضى أسبوع (${diffDays} يوماً) — موعد الحصة: ${nextDayName} ${nextDateStr}`;
       badgeStyle = 'background:rgba(245,158,11,0.18); color:#F59E0B; border:1px solid rgba(245,158,11,0.35); font-weight:700;';
     } else if (diffDays !== null && diffDays > 0) {
       const remainingDays = 7 - diffDays;
-      const makeupNotice = isLastMakeup ? ' (تعويضية 🔄)' : '';
-      badgeText = `⏳ الحصة القادمة: ${nextDayName} ${nextDateStr} (بعد ${remainingDays} ${remainingDays === 1 ? 'يوم' : 'أيام'})${makeupNotice}`;
+      const makeupNotice = isLastMakeup ? ' (تعويضية)' : '';
+      badgeText = `الحصة القادمة: ${nextDayName} ${nextDateStr} (بعد ${remainingDays} ${remainingDays === 1 ? 'يوم' : 'أيام'})${makeupNotice}`;
       badgeStyle = 'background:rgba(56,189,248,0.12); color:#38BDF8; border:1px solid rgba(56,189,248,0.3);';
     } else {
-      badgeText = `🆕 الموعد القادم: ${nextDayName} ${nextDateStr} (${scheduledTime})`;
+      badgeText = `الموعد القادم: ${nextDayName} ${nextDateStr} (${scheduledTime})`;
       badgeStyle = 'background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid rgba(56,189,248,0.3);';
     }
 
@@ -1220,7 +1252,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renewalDate: now,
         renewalDateStr: 'مستحق الدفع فوراً',
         daysRemaining: -1,
-        renewalSummary: `⚠️ متأخر عن دفع: ${debtAmt.toLocaleString()} دج (${debtPeriodText})${noteStr}`,
+        renewalSummary: `متأخر عن دفع: ${debtAmt.toLocaleString()} دج (${debtPeriodText})${noteStr}`,
         lastAmount: lastPayment ? (Number(lastPayment.amountPaid) || 0) : 0,
         lastOpNumber: lastPayment ? (lastPayment.opNumber || lastPayment.id) : '—',
         paymentsCount: payments.length,
@@ -1496,20 +1528,20 @@ document.addEventListener('DOMContentLoaded', () => {
       if (hasDebtStatus) {
         sessionsBadge = `
           <div style="display:flex; flex-direction:column; gap:4px;">
-            <span class="payment-badge" style="background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid rgba(56,189,248,0.35); font-weight:800; font-size:0.75rem;">
-              📘 درس ${attendedUnpaid} حصص
+            <span class="payment-badge" style="background:rgba(2,132,199,0.12); color:#38BDF8; border:1px solid rgba(2,132,199,0.3); font-weight:800; font-size:0.75rem; display:inline-flex; align-items:center; gap:5px;">
+              ${UI_ICONS.book(13)} درس ${attendedUnpaid} حصص
             </span>
-            <span class="payment-badge overdue" style="font-weight:800; font-size:0.74rem; white-space:nowrap;" title="${stu.debtNotes || ''}">
-              ⚠️ متأخر عن دفع ${dSessions} حصص تدريبية (${dAmt.toLocaleString()} دج)
+            <span class="payment-badge overdue" style="font-weight:800; font-size:0.74rem; white-space:nowrap; display:inline-flex; align-items:center; gap:5px;" title="${stu.debtNotes || ''}">
+              ${UI_ICONS.alert(13)} متأخر عن دفع ${dSessions} حصص تدريبية (${dAmt.toLocaleString()} دج)
             </span>
           </div>
         `;
       } else if (sessions > 0) {
-        sessionsBadge = `<span class="payment-badge paid">✅ ${sessions} حصص (${balance.toLocaleString()} دج)</span>`;
+        sessionsBadge = `<span class="payment-badge paid" style="display:inline-flex; align-items:center; gap:5px;">${UI_ICONS.check(13)} ${sessions} حصص (${balance.toLocaleString()} دج)</span>`;
       } else if (balance < 0) {
-        sessionsBadge = `<span class="payment-badge overdue">⚠️ دين: ${Math.abs(balance).toLocaleString()} دج</span>`;
+        sessionsBadge = `<span class="payment-badge overdue" style="display:inline-flex; align-items:center; gap:5px;">${UI_ICONS.alert(13)} دين: ${Math.abs(balance).toLocaleString()} دج</span>`;
       } else {
-        sessionsBadge = `<span class="payment-badge partial">⏳ نفدت الحصص</span>`;
+        sessionsBadge = `<span class="payment-badge partial" style="display:inline-flex; align-items:center; gap:5px;">${UI_ICONS.hourglass(13)} نفدت الحصص</span>`;
       }
 
       let paymentTimelineBadge = '';
@@ -1519,15 +1551,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (timeline.status === 'active') {
           paymentTimelineBadge = `
             <div style="margin-top:5px; font-size:0.75rem; line-height:1.35;">
-              <span style="color:#10B981; font-weight:700;">🕒 ${timeline.elapsedText}</span>
+              <span style="color:#10B981; font-weight:700; display:inline-flex; align-items:center; gap:4px;">${UI_ICONS.clock(12)} ${timeline.elapsedText}</span>
               <br>
-              <span style="font-size:0.72rem; color:#64748B;">📅 التجديد: ${timeline.renewalDateStr} (متبقي ${timeline.daysRemaining} يوم)</span>
+              <span style="font-size:0.72rem; color:#64748B; display:inline-flex; align-items:center; gap:4px;">${UI_ICONS.calendar(12)} التجديد: ${timeline.renewalDateStr} (متبقي ${timeline.daysRemaining} يوم)</span>
             </div>
           `;
         } else if (timeline.status === 'due_soon') {
           paymentTimelineBadge = `
             <div style="margin-top:5px; font-size:0.75rem; color:#F59E0B; line-height:1.35;">
-              <span style="font-weight:700;">⏳ ${timeline.elapsedText}</span>
+              <span style="font-weight:700; display:inline-flex; align-items:center; gap:4px;">${UI_ICONS.hourglass(12)} ${timeline.elapsedText}</span>
               <br>
               <span style="background:rgba(245,158,11,0.15); color:#FBBF24; padding:2px 6px; border-radius:4px; font-weight:700; font-size:0.7rem;">مستحق التجديد خلال ${timeline.daysRemaining === 0 ? 'اليوم' : timeline.daysRemaining + ' أيام'}</span>
             </div>
@@ -1535,14 +1567,14 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           paymentTimelineBadge = `
             <div style="margin-top:5px; font-size:0.75rem; color:#EF4444; line-height:1.35;">
-              <span style="font-weight:700;">⚠️ ${timeline.elapsedText}</span>
+              <span style="font-weight:700; display:inline-flex; align-items:center; gap:4px;">${UI_ICONS.alert(12)} ${timeline.elapsedText}</span>
               <br>
               <span style="background:rgba(239,68,68,0.15); color:#F87171; padding:2px 6px; border-radius:4px; font-weight:700; font-size:0.7rem;">متأخر بـ ${Math.abs(timeline.daysRemaining)} يوم عن الشهر</span>
             </div>
           `;
         }
       } else {
-        paymentTimelineBadge = `<div style="margin-top:5px; font-size:0.72rem; color:#64748B;">⚪ لم يسدد أي اشتراك بعد</div>`;
+        paymentTimelineBadge = `<div style="margin-top:5px; font-size:0.72rem; color:#64748B; display:inline-flex; align-items:center; gap:4px;">${UI_ICONS.dot('#64748B')} لم يسدد أي اشتراك بعد</div>`;
       }
 
       return `
@@ -1559,7 +1591,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 const isOverdue = (timeline.status === 'overdue') || (balance < 0) || (sessions <= 0 && !timeline.hasPayment);
                 if (isOverdue && sessions <= 0) {
-                  return `<span style="display:inline-flex; align-items:center; gap:3px; background:rgba(239,68,68,0.18); border:1px solid rgba(239,68,68,0.5); color:#F87171; padding:2px 7px; border-radius:12px; font-size:0.68rem; font-weight:800; white-space:nowrap;" title="متأخر عن سداد الاشتراك المالي المستحق">⚠️ متأخر في الدفع</span>`;
+                  return `<span style="display:inline-flex; align-items:center; gap:4px; background:rgba(239,68,68,0.14); border:1px solid rgba(239,68,68,0.4); color:#F87171; padding:2px 7px; border-radius:4px; font-size:0.68rem; font-weight:800; white-space:nowrap;" title="متأخر عن سداد الاشتراك المالي المستحق">${UI_ICONS.alert(11)} متأخر في الدفع</span>`;
                 }
                 return '';
               })()}
@@ -1569,9 +1601,9 @@ document.addEventListener('DOMContentLoaded', () => {
               const nonDebtReasons = (rk.reasons || []).filter(r => !r.includes('تأخر تجديد') && !r.includes('غير مسددة'));
               if (nonDebtReasons.length > 0) {
                 if (rk.level === 'high') {
-                  return `<div style="margin-top:3px;"><span class="risk-pill-high" title="${nonDebtReasons.join(' • ')}">⚠️ ${nonDebtReasons[0]}</span></div>`;
+                  return `<div style="margin-top:3px;"><span class="risk-pill-high" title="${nonDebtReasons.join(' • ')}">${UI_ICONS.alert(11)} ${nonDebtReasons[0]}</span></div>`;
                 } else if (rk.level === 'medium') {
-                  return `<div style="margin-top:3px;"><span class="risk-pill-medium" title="${nonDebtReasons.join(' • ')}">🟡 ${nonDebtReasons[0]}</span></div>`;
+                  return `<div style="margin-top:3px;"><span class="risk-pill-medium" title="${nonDebtReasons.join(' • ')}">${UI_ICONS.dot('#FBBF24')} ${nonDebtReasons[0]}</span></div>`;
                 }
               }
               return '';
@@ -1579,9 +1611,9 @@ document.addEventListener('DOMContentLoaded', () => {
           </td>
           <td>
             <span style="font-weight:700; color:#F8FAFC;">${stu.group || 'غير محدد'}</span>
-            ${stu.day ? `<div style="font-size:0.75rem; color:#FBBF24; font-weight:700; margin-top:2px;">📅 يوم الدراسة: ${stu.day}</div>` : ''}
-            ${(stu.sessionTime || (stu.startTime ? (stu.startTime + ' - ' + (stu.endTime || '')) : '')) ? `<div style="font-size:0.75rem; color:#00E5FF; font-weight:700; margin-top:1px;">🕒 ${stu.sessionTime || (stu.startTime + ' - ' + (stu.endTime || ''))}</div>` : ''}
-            <small style="color:var(--color-accent);">${stu.level || ''}</small>
+            ${stu.day ? `<div style="font-size:0.75rem; color:#FBBF24; font-weight:700; margin-top:2px; display:inline-flex; align-items:center; gap:4px;">${UI_ICONS.calendar(12)} يوم الدراسة: ${stu.day}</div>` : ''}
+            ${(stu.sessionTime || (stu.startTime ? (stu.startTime + ' - ' + (stu.endTime || '')) : '')) ? `<div style="font-size:0.75rem; color:#38BDF8; font-weight:700; margin-top:1px; display:inline-flex; align-items:center; gap:4px;">${UI_ICONS.clock(12)} ${stu.sessionTime || (stu.startTime + ' - ' + (stu.endTime || ''))}</div>` : ''}
+            <small style="color:var(--text-muted); display:block; margin-top:1px;">${stu.level || ''}</small>
           </td>
           <td>
             <div>${stu.parentName || '—'}</div>
@@ -1593,14 +1625,14 @@ document.addEventListener('DOMContentLoaded', () => {
           </td>
           <td style="text-align: center;">
             <div style="display:inline-flex; gap:4px; flex-wrap:nowrap;">
-              <button class="btn btn--outline" style="padding: 4px 6px; font-size: 0.75rem;" title="الملف الشامل" onclick="openStudentProfile('${stu.id}')"> الملف</button>
-              <button class="btn btn--outline btn--small" style="padding: 4px 6px; font-size: 0.75rem; border-color:rgba(56,189,248,0.4); color:#38BDF8;" title="نقل التلميذ من فوج إلى فوج آخر" onclick="openTransferGroupModal('${stu.id}')">🔄 نقل الفوج</button>
-              <button class="btn btn--outline btn--small" style="padding: 4px 6px; font-size: 0.75rem; border-color:rgba(16,185,129,0.35); color:#10B981;" title="التقرير البيداغوجي والتقييم الشهري" onclick="openPedagogicalReportModal('${stu.id}')">تقييم</button>
-              <button class="btn btn--outline btn--small" style="padding: 4px 6px; font-size: 0.75rem; color:#F59E0B; border-color:rgba(245,158,11,0.35);" title="تعديل بيانات التلميذ" onclick="openEditStudentModal('${stu.id}')">✏️ تعديل</button>
-              <button class="btn btn--outline btn--small" style="padding: 4px 6px; font-size: 0.75rem; border-color:rgba(56,189,248,0.35); color:#38BDF8;" title="بطاقة الطالب الذكية (CR80)" onclick="openStudentIdCard('${stu.id}')">بطاقة</button>
-              <button class="btn btn--small" style="padding: 4px 6px; font-size: 0.75rem; background:#25D366; color:#fff;" title="إشعار واتساب للولي" onclick="openWhatsAppDispatchModal('${stu.id}')">واتساب</button>
-              <button class="btn btn--primary" style="padding: 4px 6px; font-size: 0.75rem;" title="تسجيل دفعة" onclick="openRecordPaymentModal('${stu.id}')">🧾 وصل</button>
-              <button class="btn-icon" style="width:26px; height:26px; border:none; color:#ef4444;" title="حذف" onclick="deleteStudent('${stu.id}')">حذف</button>
+              <button class="btn btn--outline" style="padding: 4px 8px; font-size: 0.75rem; display:inline-flex; align-items:center; gap:4px;" title="الملف الشامل" onclick="openStudentProfile('${stu.id}')">${UI_ICONS.file(12)} الملف</button>
+              <button class="btn btn--outline btn--small" style="padding: 4px 7px; font-size: 0.75rem; border-color:rgba(2,132,199,0.3); color:#38BDF8; display:inline-flex; align-items:center; gap:4px;" title="نقل التلميذ من فوج إلى فوج آخر" onclick="openTransferGroupModal('${stu.id}')">${UI_ICONS.refresh(12)} نقل</button>
+              <button class="btn btn--outline btn--small" style="padding: 4px 7px; font-size: 0.75rem; border-color:rgba(16,185,129,0.35); color:#10B981; display:inline-flex; align-items:center; gap:4px;" title="التقرير البيداغوجي والتقييم الشهري" onclick="openPedagogicalReportModal('${stu.id}')">${UI_ICONS.chart(12)} تقييم</button>
+              <button class="btn btn--outline btn--small" style="padding: 4px 7px; font-size: 0.75rem; color:#F59E0B; border-color:rgba(245,158,11,0.35); display:inline-flex; align-items:center; gap:4px;" title="تعديل بيانات التلميذ" onclick="openEditStudentModal('${stu.id}')">${UI_ICONS.edit(12)} تعديل</button>
+              <button class="btn btn--outline btn--small" style="padding: 4px 7px; font-size: 0.75rem; border-color:rgba(2,132,199,0.3); color:#38BDF8; display:inline-flex; align-items:center; gap:4px;" title="بطاقة الطالب الذكية (CR80)" onclick="openStudentIdCard('${stu.id}')">${UI_ICONS.idCard(12)} بطاقة</button>
+              <button class="btn btn--small" style="padding: 4px 8px; font-size: 0.75rem; background:#25D366; color:#fff; display:inline-flex; align-items:center; gap:4px;" title="إشعار واتساب للولي" onclick="openWhatsAppDispatchModal('${stu.id}')">${UI_ICONS.whatsapp(12)} واتساب</button>
+              <button class="btn btn--primary" style="padding: 4px 8px; font-size: 0.75rem; display:inline-flex; align-items:center; gap:4px;" title="تسجيل دفعة" onclick="openRecordPaymentModal('${stu.id}')">${UI_ICONS.receipt(12)} وصل</button>
+              <button class="btn-icon" style="width:26px; height:26px; border:none; color:#ef4444; display:inline-flex; align-items:center; justify-content:center;" title="حذف" onclick="deleteStudent('${stu.id}')">${UI_ICONS.trash(13)}</button>
             </div>
           </td>
         </tr>
@@ -1872,7 +1904,7 @@ document.addEventListener('DOMContentLoaded', () => {
       dateInput.value = cycle.nextSessionDate;
       window.__preserveAttDate = true;
       renderAttendance();
-      showToast(`🗓️ تم الانتقال لموعد الحصة القادمة (${cycle.nextDayName} ${cycle.nextSessionDate})`, 'success');
+      showToast(`تم الانتقال لموعد الحصة القادمة (${cycle.nextDayName} ${cycle.nextSessionDate})`, 'success');
     }
   };
 
@@ -1980,8 +2012,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     saveData('brainova_attendance', allAttendance);
     saveData('brainova_students', students);
-    const typeMsg = selectedType === 'makeup' ? ' (حصة تعويضية 🔄)' : (selectedType === 'extra' ? ' (حصة استثنائية ⭐)' : '');
-    showToast(`✅ تم حفظ وتثبيت سجل حضور وغياب (${savedCount}) تلميذ لفوج (${selectedGroup}) بتاريخ (${selectedDate})${typeMsg} بنجاح!`, 'success');
+    const typeMsg = selectedType === 'makeup' ? ' (حصة تعويضية)' : (selectedType === 'extra' ? ' (حصة استثنائية ⭐)' : '');
+    showToast(`تم حفظ وتثبيت سجل حضور وغياب (${savedCount}) تلميذ لفوج (${selectedGroup}) بتاريخ (${selectedDate})${typeMsg} بنجاح!`, 'success');
   };
 
   // --- PAYMENTS & RECEIPTS SYSTEM ---
@@ -2020,28 +2052,28 @@ document.addEventListener('DOMContentLoaded', () => {
     if (statsGrid) {
       statsGrid.innerHTML = `
         <div class="stat-card">
-          <div class="stat-card__icon">💰</div>
+          <div class="stat-card__icon" style="color:#10B981;">${UI_ICONS.money(24)}</div>
           <div class="stat-card__info">
             <span class="stat-card__title">إجمالي المداخيل المحصلة</span>
             <span class="stat-card__value" style="color:#10b981;">${totalCollected.toLocaleString()} دج</span>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-card__icon">⏳</div>
+          <div class="stat-card__icon" style="color:#EF4444;">${UI_ICONS.hourglass(24)}</div>
           <div class="stat-card__info">
             <span class="stat-card__title">المبالغ المتبقية / الديون</span>
             <span class="stat-card__value" style="color:#ef4444;">${totalDue.toLocaleString()} دج</span>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-card__icon">🧾</div>
+          <div class="stat-card__icon" style="color:#38BDF8;">${UI_ICONS.receipt(24)}</div>
           <div class="stat-card__info">
             <span class="stat-card__title">إجمالي الوصولات الصادرة</span>
             <span class="stat-card__value">${activeReceipts} وصل</span>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-card__icon">📈</div>
+          <div class="stat-card__icon" style="color:#818CF8;">${UI_ICONS.chart(24)}</div>
           <div class="stat-card__info">
             <span class="stat-card__title">نسبة انتظام الاشتراكات</span>
             <span class="stat-card__value" style="color:var(--color-primary);">${paidRate}%</span>
@@ -2068,9 +2100,9 @@ document.addEventListener('DOMContentLoaded', () => {
         ? `<span style="font-weight:800; color:#ef4444;">${p.unpaidPeriodText || (p.unpaidSessions ? p.unpaidSessions + ' حصص مستحقة' : 'غير مدفوع')}</span>`
         : `<span style="font-weight:700; color:var(--color-primary);">${p.sessionsRemaining || p.sessionsPurchased || 4} حصص</span>`;
       const methodCell = isUnpaid
-        ? `<span style="font-size:0.75rem; background:rgba(239,68,68,0.15); color:#f87171; padding:2px 6px; border-radius:4px; font-weight:700;">⚠️ دين معلق</span>`
+        ? `<span style="font-size:0.75rem; background:rgba(239,68,68,0.15); color:#f87171; padding:2px 6px; border-radius:4px; font-weight:700; display:inline-flex; align-items:center; gap:4px;">${UI_ICONS.alert(11)} دين معلق</span>`
         : `<span style="font-size:0.8rem; color:var(--color-text-muted);">${p.method || 'نقداً'}</span>`;
-      const printBtnText = isUnpaid ? '🖨️ وصل دين' : '🖨️ طباعة الوصل';
+      const printBtnText = isUnpaid ? `${UI_ICONS.printer(12)} وصل دين` : `${UI_ICONS.printer(12)} طباعة الوصل`;
 
       return `
         <tr style="${isUnpaid ? 'background:rgba(239,68,68,0.03);' : ''}">
@@ -2131,7 +2163,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (payAmountGroup) payAmountGroup.style.display = 'none';
       if (payMethodGroup) payMethodGroup.style.display = 'none';
       if (submitBtn) {
-        submitBtn.innerHTML = '⚠️ حفظ حالة التأخر وإصدار وصل دين (غير مدفوع)';
+        submitBtn.innerHTML = `${UI_ICONS.alert(13)} حفظ حالة التأخر وإصدار وصل دين (غير مدفوع)`;
         submitBtn.style.background = '#EF4444';
         submitBtn.style.borderColor = '#EF4444';
       }
@@ -2271,9 +2303,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (hasDebt) {
         banner.style.display = 'block';
         banner.innerHTML = `
-          <div>⚠️ <strong>تنبيه:</strong> هذا الطالب مسجل عليه تأخر في الدفع (دين: <strong>${dAmt.toLocaleString()} دج</strong> / درس <strong>${attendedUnpaid}</strong> حصص غير مسددة).</div>
+          <div>${UI_ICONS.alert(12)} <strong>تنبيه:</strong> هذا الطالب مسجل عليه تأخر في الدفع (دين: <strong>${dAmt.toLocaleString()} دج</strong> / درس <strong>${attendedUnpaid}</strong> حصص غير مسددة).</div>
           <div style="font-size:0.75rem; color:#A7F3D0; margin-top:3px;">
-            💡 عند تأكيد التسديد، سيتم شطب الدين فوراً وإلغاء حالة "متأخر في الدفع" تماماً ويصدر وصل رسمي مسدد.
+            عند تأكيد التسديد، سيتم شطب الدين فوراً وإلغاء حالة "متأخر في الدفع" تماماً ويصدر وصل رسمي مسدد.
           </div>
         `;
       } else {
@@ -2326,7 +2358,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let newPayment = null;
 
     if (mode === 'debt') {
-      // ⚠️ CASE 1: UNPAID / DEBT NOTICE RECEIPT
+      // CASE 1: UNPAID / DEBT NOTICE RECEIPT
       const debtSessions = parseInt(document.getElementById('payDebtSessionsInput')?.value, 10) || 4;
       const debtMonths = parseInt(document.getElementById('payDebtMonthsInput')?.value, 10) || 1;
       const debtAmount = parseInt(document.getElementById('payDebtAmount')?.value, 10) || (debtSessions * Math.round((Number(stu.monthlyFee) || 5000) / 4));
@@ -2377,7 +2409,7 @@ document.addEventListener('DOMContentLoaded', () => {
       saveData('brainova_payments', payments);
 
       closeRecordPaymentModal();
-      showToast('⚠️ تم تسجيل تأخر الدفع وإصدار إشعار دين غير مدفوع بنجاح!', 'warning');
+      showToast('تم تسجيل تأخر الدفع وإصدار إشعار دين غير مدفوع بنجاح!', 'warning');
       renderActiveView();
 
       if (autoPrint) {
@@ -2388,7 +2420,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // ✅ CASE 2: PAID RECEIPT (CLEARS DEBT COMPLETELY)
+    // CASE 2: PAID RECEIPT (CLEARS DEBT COMPLETELY)
     const amount = Number(document.getElementById('payAmount').value) || 0;
     const sessions = Number(document.getElementById('paySessions').value) || 4;
     const method = document.getElementById('payMethod').value;
@@ -2466,7 +2498,7 @@ document.addEventListener('DOMContentLoaded', () => {
     saveData('brainova_payments', payments);
 
     closeRecordPaymentModal();
-    showToast('✅ تم تسجيل الدفعة بنجاح وشطب حالة التأخر تماماً!', 'success');
+    showToast('تم تسجيل الدفعة بنجاح وشطب حالة التأخر تماماً!', 'success');
     renderActiveView();
 
     if (autoPrint) {
@@ -2652,7 +2684,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const elCurrentBalance = document.getElementById('rcptCurrentBalance');
     if (elCurrentBalance) {
       if (isUnpaid) {
-        elCurrentBalance.textContent = `⚠️ متأخر عن الدفع (مطلوب تسديد دين: ${debtAmount.toLocaleString()} دج)`;
+        elCurrentBalance.textContent = `متأخر عن الدفع (مطلوب تسديد دين: ${debtAmount.toLocaleString()} دج)`;
         elCurrentBalance.style.color = '#DC2626';
       } else {
         const remainingSessions = (stu && stu.sessionsRemaining !== undefined) ? stu.sessionsRemaining : (payment.sessionsPurchased || 4);
@@ -2751,15 +2783,15 @@ document.addEventListener('DOMContentLoaded', () => {
       let isDebtSession = false;
 
       if (att.status === 'absent') {
-        coverageBadge = '<span class="coverage-neutral">لم تُخصم (غياب) ⚪</span>';
+        coverageBadge = `<span class="coverage-neutral">${UI_ICONS.dot('#94A3B8')} لم تُخصم (غياب)</span>`;
       } else {
         runningAttendedIndex++;
         if (runningAttendedIndex <= coveredAttendedCount) {
-          coverageBadge = '<span class="coverage-paid">مغطاة بالاشتراك ✅</span>';
+          coverageBadge = `<span class="coverage-paid">${UI_ICONS.check(11)} مغطاة بالاشتراك</span>`;
         } else {
           isDebtSession = true;
           const debtSeq = runningAttendedIndex - coveredAttendedCount;
-          coverageBadge = `<span class="coverage-debt">غير مسددة (دين: حصة ${debtSeq}) ⚠️</span>`;
+          coverageBadge = `<span class="coverage-debt">${UI_ICONS.alert(11)} غير مسددة (دين: حصة ${debtSeq})</span>`;
         }
       }
 
@@ -2796,8 +2828,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="dossier-badges-row">
               <span class="dossier-tag">ID: <code style="font-family:var(--font-mono); color:#38BDF8;">${stu.id}</code></span>
               <span class="dossier-tag">الفوج: <strong>${stu.group || 'غير محدد'}</strong></span>
-              ${stu.day ? `<span class="dossier-tag dossier-tag--gold">📅 يوم الدراسة: ${stu.day}</span>` : ''}
-              ${(stu.sessionTime || (stu.startTime ? (stu.startTime + ' - ' + (stu.endTime || '')) : '')) ? `<span class="dossier-tag dossier-tag--accent">🕒 التوقيت: ${stu.sessionTime || (stu.startTime + ' - ' + (stu.endTime || ''))}</span>` : ''}
+              ${stu.day ? `<span class="dossier-tag dossier-tag--gold">${UI_ICONS.calendar(12)} يوم الدراسة: ${stu.day}</span>` : ''}
+              ${(stu.sessionTime || (stu.startTime ? (stu.startTime + ' - ' + (stu.endTime || '')) : '')) ? `<span class="dossier-tag dossier-tag--accent">${UI_ICONS.clock(12)} التوقيت: ${stu.sessionTime || (stu.startTime + ' - ' + (stu.endTime || ''))}</span>` : ''}
               <span class="dossier-tag">${stu.level || 'المستوى الأول'}</span>
             </div>
           </div>
@@ -2805,15 +2837,15 @@ document.addEventListener('DOMContentLoaded', () => {
         <div>
           ${hasDebtStatus ? `
             <div class="dossier-status-pill dossier-status-pill--debt">
-              <span>⚠️</span> متأخر عن دفع ${unpaidDebtSessions} حصص تدريبية (${debtAmount.toLocaleString()} دج)
+              ${UI_ICONS.alert(12)} متأخر عن دفع ${unpaidDebtSessions} حصص تدريبية (${debtAmount.toLocaleString()} دج)
             </div>
           ` : (sessionsRemaining > 0 ? `
             <div class="dossier-status-pill dossier-status-pill--active">
-              <span>✅</span> اشتراك سارٍ (متبقي ${sessionsRemaining} حصص)
+              ${UI_ICONS.check(12)} اشتراك سارٍ (متبقي ${sessionsRemaining} حصص)
             </div>
           ` : `
             <div class="dossier-status-pill dossier-status-pill--neutral">
-              <span>⏳</span> نفدت الحصص — بانتظار التجديد
+              ${UI_ICONS.hourglass(12)} نفدت الحصص — بانتظار التجديد
             </div>
           `)}
         </div>
@@ -2864,18 +2896,18 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <div class="dossier-debt-text">
               درس الطالب <strong>${stu.unpaidAttendedSessions || unpaidDebtSessions} حصص تدريبية</strong> دون تسديد مسبق. إجمالي المبلغ المستحق للدفع: <strong style="color:#FFF; font-family:var(--font-mono);">${debtAmount.toLocaleString()} دج</strong>.
-              ${stu.debtNotes ? `<div style="margin-top:4px; color:#E2E8F0; font-size:0.75rem;">📌 ملاحظات الولي / الإدارة: <em>${stu.debtNotes}</em></div>` : ''}
+              ${stu.debtNotes ? `<div style="margin-top:4px; color:#E2E8F0; font-size:0.75rem;">${UI_ICONS.edit(11)} ملاحظات الولي / الإدارة: <em>${stu.debtNotes}</em></div>` : ''}
             </div>
           </div>
           <div class="dossier-debt-actions">
             <button type="button" class="btn btn--small" onclick="closeStudentProfileModal(); openRecordPaymentModal('${stu.id}', 'paid')" style="background:#059669; color:#FFF; font-weight:700;">
-              💳 تسديد الحصص وإصدار وصل
+              ${UI_ICONS.card(12)} تسديد الحصص وإصدار وصل
             </button>
             <button type="button" class="btn btn--outline btn--small" onclick="closeStudentProfileModal(); openPrintDebtNoticeModal('${stu.id}')" style="color:#EF4444; border-color:rgba(239,68,68,0.4);">
-              🖨️ طباعة إشعار دين (0 دج)
+              ${UI_ICONS.printer(12)} طباعة إشعار دين (0 دج)
             </button>
             <button type="button" class="btn btn--outline btn--small" onclick="closeStudentProfileModal(); openWhatsAppDispatchModal('${stu.id}')" style="color:#25D366; border-color:rgba(37,211,102,0.4);">
-              📲 إشعار الولي واتساب
+              ${UI_ICONS.whatsapp(12)} إشعار الولي واتساب
             </button>
           </div>
         </div>
@@ -2935,7 +2967,7 @@ document.addEventListener('DOMContentLoaded', () => {
             لا توجد حصص مسجلة مطابقة لمعايير التصفية الحالية.
             <br>
             <button type="button" class="btn btn--outline btn--small" style="margin-top:10px;" onclick="openAddStudentSessionModal('${stu.id}')">
-              ➕ تسجيل أول حصة بالتاريخ الآن
+              تسجيل أول حصة بالتاريخ الآن
             </button>
           </div>
         ` : `
@@ -2983,8 +3015,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${att.note && att.note.trim() ? att.note : '<span style="color:var(--text-dim);">—</span>'}
                       </td>
                       <td style="text-align:center;">
-                        <button type="button" style="background:none; border:none; color:#EF4444; cursor:pointer; font-size:0.85rem;" title="حذف الحصة وتحديث الرصيد" onclick="deleteStudentSessionRecord('${att.id}', '${stu.id}')">
-                          🗑️
+                        <button type="button" style="background:none; border:none; color:#EF4444; cursor:pointer; font-size:0.85rem; display:inline-flex; align-items:center;" title="حذف الحصة وتحديث الرصيد" onclick="deleteStudentSessionRecord('${att.id}', '${stu.id}')">
+                          ${UI_ICONS.trash(13)}
                         </button>
                       </td>
                     </tr>
@@ -3035,8 +3067,8 @@ document.addEventListener('DOMContentLoaded', () => {
                       <td style="color:var(--text-sub);">${methodStr}</td>
                       <td style="color:#CBD5E1;">${p.notes || p.period || 'اشتراك دورة روبوتيك'}</td>
                       <td style="text-align:center;">
-                        <button type="button" class="btn btn--outline btn--small" onclick="openReceiptModal('${p.id}')">
-                          🖨️ طباعة
+                        <button type="button" class="btn btn--outline btn--small" style="display:inline-flex; align-items:center; gap:4px;" onclick="openReceiptModal('${p.id}')">
+                          ${UI_ICONS.printer(12)} طباعة
                         </button>
                       </td>
                     </tr>
@@ -3089,15 +3121,15 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="dossier-tab-pane ${activeTab === 'notes' ? 'active' : ''}" id="dossier-pane-notes">
         <div style="background:#111827; border:1px solid var(--border-card); border-radius:8px; padding:14px; margin-bottom:14px;">
           <div style="font-size:0.78rem; font-weight:700; color:#F8FAFC; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
-            <span>📝</span> الملاحظات البيداغوجية وسلوك الطالب في الورشة
+            ${UI_ICONS.file(13)} الملاحظات البيداغوجية وسلوك الطالب في الورشة
           </div>
           <textarea id="profileStudentNote" rows="3" class="form-input" placeholder="اكتب الملاحظات التربوية للتلميذ وتطوره في الروبوتيك والتفكير المنطقي..." style="width:100%; resize:vertical; font-size:0.82rem; margin-bottom:8px;">${stu.teacherNote || ''}</textarea>
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <button type="button" class="btn btn--outline btn--small" onclick="closeStudentProfileModal(); openPedagogicalReportModal('${stu.id}')" style="color:#10B981; border-color:rgba(16,185,129,0.35);">
-              📊 إصدار بطاقة التقييم الشهري
+              ${UI_ICONS.chart(12)} إصدار بطاقة التقييم الشهري
             </button>
             <button type="button" class="btn btn--primary btn--small" onclick="saveStudentTeacherNote('${stu.id}')">
-              💾 حفظ الملاحظة التربوية
+              ${UI_ICONS.check(12)} حفظ الملاحظة التربوية
             </button>
           </div>
         </div>
@@ -3107,14 +3139,14 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="dossier-footer-actions">
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
           <button type="button" class="btn btn--outline" onclick="closeStudentProfileModal()">إغلاق</button>
-          <button type="button" class="btn btn--outline" style="color:#38BDF8;" onclick="closeStudentProfileModal(); openTransferGroupModal('${stu.id}');">🔄 نقل الفوج</button>
-          <button type="button" class="btn btn--outline" style="color:#F59E0B;" onclick="closeStudentProfileModal(); openEditStudentModal('${stu.id}');">✏️ تعديل البيانات</button>
-          <button type="button" class="btn btn--outline" onclick="closeStudentProfileModal(); openStudentIdCard('${stu.id}');">🪪 بطاقة التلميذ</button>
-          <button type="button" class="btn btn--outline" style="color:#25D366; border-color:rgba(37,211,102,0.3);" onclick="closeStudentProfileModal(); openWhatsAppDispatchModal('${stu.id}');">📲 واتساب الولي</button>
+          <button type="button" class="btn btn--outline" style="color:#38BDF8; display:inline-flex; align-items:center; gap:4px;" onclick="closeStudentProfileModal(); openTransferGroupModal('${stu.id}');">${UI_ICONS.refresh(12)} نقل الفوج</button>
+          <button type="button" class="btn btn--outline" style="color:#F59E0B; display:inline-flex; align-items:center; gap:4px;" onclick="closeStudentProfileModal(); openEditStudentModal('${stu.id}');">${UI_ICONS.edit(12)} تعديل البيانات</button>
+          <button type="button" class="btn btn--outline" style="display:inline-flex; align-items:center; gap:4px;" onclick="closeStudentProfileModal(); openStudentIdCard('${stu.id}');">${UI_ICONS.idCard(12)} بطاقة التلميذ</button>
+          <button type="button" class="btn btn--outline" style="color:#25D366; border-color:rgba(37,211,102,0.3); display:inline-flex; align-items:center; gap:4px;" onclick="closeStudentProfileModal(); openWhatsAppDispatchModal('${stu.id}');">${UI_ICONS.whatsapp(12)} واتساب الولي</button>
         </div>
         <div style="display:flex; gap:8px;">
           <button type="button" class="btn btn--outline" onclick="window.printStudentDossier('${stu.id}')">
-            🖨️ طباعة كشف الطالب
+            ${UI_ICONS.printer(12)} طباعة كشف الطالب
           </button>
           <button type="button" class="btn btn--primary" onclick="closeStudentProfileModal(); openRecordPaymentModal('${stu.id}');">
             + تسجيل دفعة جديدة
@@ -3278,7 +3310,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     closeAddStudentSessionModal();
     const timeFeedback = paidAtValue ? ` • التسديد: ${paidAtValue}` : '';
-    showToast(`✅ تم تسجيل الحصة بالتاريخ (${sessionDate})${timeFeedback} بنجاح!`, 'success');
+    showToast(`تم تسجيل الحصة بالتاريخ (${sessionDate})${timeFeedback} بنجاح!`, 'success');
 
     // Refresh profile modal and active views
     openStudentProfile(studentId);
@@ -3297,7 +3329,7 @@ document.addEventListener('DOMContentLoaded', () => {
       att.paidMarker = 'paid_this';
       att.paidMarkerLabel = 'سدد في هذه الحصة';
       att.paidAt = currentDateTimeStr;
-      showToast(`✅ تم التغيير إلى: سدد في هذه الحصة (${currentDateTimeStr})`, 'success');
+      showToast(`تم التغيير إلى: سدد في هذه الحصة (${currentDateTimeStr})`, 'success');
     } else if (att.paidMarker === 'paid_this') {
       att.paidMarker = null;
       att.paidMarkerLabel = null;
@@ -3307,7 +3339,7 @@ document.addEventListener('DOMContentLoaded', () => {
       att.paidMarker = 'paid_next';
       att.paidMarkerLabel = 'دفع في الحصة التالية';
       att.paidAt = currentDateTimeStr;
-      showToast(`✅ تم وضع علامة: دفع في الحصة التالية (${currentDateTimeStr})`, 'success');
+      showToast(`تم وضع علامة: دفع في الحصة التالية (${currentDateTimeStr})`, 'success');
     }
 
     saveData('brainova_attendance', allAttendance);
@@ -3344,7 +3376,7 @@ document.addEventListener('DOMContentLoaded', () => {
       saveData('brainova_students', students);
     }
 
-    showToast('✅ تم حذف الحصة وتحديث رصيد وسجل التلميذ بدقة!', 'success');
+    showToast('تم حذف الحصة وتحديث رصيد وسجل التلميذ بدقة!', 'success');
     openStudentProfile(studentId);
     renderActiveView();
   };
@@ -3435,7 +3467,7 @@ document.addEventListener('DOMContentLoaded', () => {
       </head>
       <body>
         <div class="no-print" style="margin-bottom: 15px; text-align: left;">
-          <button onclick="window.print()" style="padding: 8px 16px; background: #0284c7; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">🖨️ طباعة الكشف (A4)</button>
+          <button onclick="window.print()" style="padding: 8px 16px; background: #0284c7; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">طباعة الكشف (A4)</button>
         </div>
         <div class="hdr">
           <div>
@@ -3528,7 +3560,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     saveData('brainova_students', students);
-    showToast('✅ تم حفظ الملاحظة التربوية بنجاح', 'success');
+    showToast('تم حفظ الملاحظة التربوية بنجاح', 'success');
     renderActiveView();
   };
 
@@ -3578,7 +3610,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     saveData('brainova_students', students);
     closeQuickNoteModal();
-    showToast('✅ تم حفظ الملاحظة ونشرها في بوابة الولي بنجاح!', 'success');
+    showToast('تم حفظ الملاحظة ونشرها في بوابة الولي بنجاح!', 'success');
     renderActiveView();
   };
 
@@ -3741,7 +3773,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (window.electronAPI && window.electronAPI.printDocument) {
       window.electronAPI.printDocument({ html: fullHtml, title: `بطاقة_التلميذ_${stu.name}` });
-      showToast(`تم إرسال بطاقة التلميذ (${stu.name}) للطباعة! 🪪`, 'success');
+      showToast(`تم إرسال بطاقة التلميذ (${stu.name}) للطباعة! �`, 'success');
     } else {
       const printWin = window.open('', '_blank');
       if (printWin) {
@@ -4259,7 +4291,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (!matchedStudent) {
-      showToast('⚠️ لم يتم العثور على طالب مطابق لهذا الرمز!', 'error');
+      showToast('لم يتم العثور على طالب مطابق لهذا الرمز!', 'error');
       return;
     }
 
@@ -4282,7 +4314,7 @@ document.addEventListener('DOMContentLoaded', () => {
       banner.style.display = 'block';
     }
 
-    showToast(`🟢 تم تسجيل حضور الطالب: ${matchedStudent.name}`, 'success');
+    showToast(`� تم تسجيل حضور الطالب: ${matchedStudent.name}`, 'success');
   }
 
   // --- 1-CLICK WHATSAPP DISPATCH SYSTEM ---
@@ -4328,25 +4360,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const stu = currentWaStudent;
 
     if (type === 'lesson') {
-      txtArea.value = `السلام عليكم ورحمة الله، ولي أمر التلميذ(ة) المبدع(ة) (${stu.name}) 📚
+      txtArea.value = `السلام عليكم ورحمة الله، ولي أمر التلميذ(ة) المبدع(ة) (${stu.name})
 يسعدنا إعلامكم بما تعلّمه وأنجزه ابنكم اليوم في ورشة الروبوتيك والذكاء الاصطناعي:
 • درس اليوم: [اكتب هنا عنوان الدرس أو المشروع]
 • الإنجاز: [أتم بنجاح تركيب الدارة والبرمجة والتطبيق العملي]
-نحيي شغفه واجتهاده الرائع ونتمنى له دوام التألق والتميز! 🤖👏
+نحيي شغفه واجتهاده الرائع ونتمنى له دوام التألق والتميز!
 أكاديمية Brainova Robotics`;
     } else if (type === 'reminder') {
-      txtArea.value = `السلام عليكم ورحمة الله، ولي أمر الطالب (${stu.name}) المحترم 
+      txtArea.value = `السلام عليكم ورحمة الله، ولي أمر الطالب (${stu.name}) المحترم
 نود تذكيركم بموعد حصة الروبوتيك القادمة لفوج (${stu.group || 'الروبوتيك'}) في مقر مدرسة Brainova Robotics.
-نتمنى لبطلنا الصغير دوام التألق والنشاط! 🚀`;
+نتمنى لبطلنا الصغير دوام التألق والنشاط!`;
     } else if (type === 'renewal') {
-      txtArea.value = `السلام عليكم ورحمة الله، ولي أمر الطالب (${stu.name}) 💳
+      txtArea.value = `السلام عليكم ورحمة الله، ولي أمر الطالب (${stu.name})
 نحيطكم علماً بأن رصيد الحصص المتبقي لابنكم هو (${stu.sessionsRemaining || 0} حصص).
 يرجى تجديد الاشتراك الشهري لمواصلة رحلة التدريب والمشاريع المبتكرة في النادي.
-شكراً لثقتكم بمدرسة Brainova Robotics ✨`;
+شكراً لثقتكم بمدرسة Brainova Robotics`;
     } else if (type === 'kudos') {
-      txtArea.value = `مرحباً ولي أمر الطالب (${stu.name}) 🌟
+      txtArea.value = `مرحباً ولي أمر الطالب (${stu.name})
 يسعدنا إعلامكم بالأداء المتميز والإبداع الكبير الذي أظهره بطلنا الصغير في ورشة الروبوتيك اليوم ونجاحه في إتمام مشروعه الميكانيكي والبرمجي!
-فخورون بإنجازاته وبمشاركته معنا في مدرسة Brainova Robotics 👏`;
+فخورون بإنجازاته وبمشاركته معنا في مدرسة Brainova Robotics`;
     }
   };
 
@@ -4356,13 +4388,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const rawPhone = currentWaStudent.parentPhone;
     if (!rawPhone || rawPhone === '—' || rawPhone.trim() === '') {
-      showToast('⚠️ لا يوجد رقم هاتف مسجل لولي أمر هذا الطالب! يرجى إضافته أولاً في ملف التلميذ.', 'warning');
+      showToast('لا يوجد رقم هاتف مسجل لولي أمر هذا الطالب! يرجى إضافته أولاً في ملف التلميذ.', 'warning');
       return;
     }
 
     const phone = formatAlgerianPhoneForWhatsApp(rawPhone);
     if (!phone || phone.length < 8) {
-      showToast('⚠️ رقم هاتف ولي الأمر غير صالح أو غير مكتمل!', 'error');
+      showToast('رقم هاتف ولي الأمر غير صالح أو غير مكتمل!', 'error');
       return;
     }
 
@@ -4377,7 +4409,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const res = await window.electronAPI.whatsapp.sendMessage(rawPhone, rawMsg);
           if (res && res.success) {
             closeWhatsAppDispatchModal();
-            showToast(`✅ أرسل البوت الرسالة بنجاح لولي أمر (${currentWaStudent.name}) مباشرة!`, 'success');
+            showToast(`أرسل البوت الرسالة بنجاح لولي أمر (${currentWaStudent.name}) مباشرة!`, 'success');
             return;
           }
         }
@@ -4394,7 +4426,7 @@ document.addEventListener('DOMContentLoaded', () => {
       window.open(url, '_blank');
     }
     closeWhatsAppDispatchModal();
-    showToast(`✅ تم فتح محادثة الواتساب لولي أمر الطالب (${currentWaStudent.name}) بنجاح!`, 'success');
+    showToast(`تم فتح محادثة الواتساب لولي أمر الطالب (${currentWaStudent.name}) بنجاح!`, 'success');
   };
 
   // --- REGISTRATIONS LOGIC ---
@@ -4527,18 +4559,18 @@ document.addEventListener('DOMContentLoaded', () => {
       ` : ''}
 
       <div style="font-size:0.8rem; color:var(--color-text-muted); margin-bottom:16px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px;">
-        <span>📅 تاريخ الإرسال: <strong style="color:#cbd5e1;">${reg.date || 'اليوم'}</strong></span>
-        <span>🏷️ المصدر: <strong style="color:var(--color-accent);">${reg.source || 'الموقع الرئيسي'}</strong></span>
+        <span>${UI_ICONS.calendar(12)} تاريخ الإرسال: <strong style="color:#cbd5e1;">${reg.date || 'اليوم'}</strong></span>
+        <span>المصدر: <strong style="color:var(--color-accent);">${reg.source || 'الموقع الرئيسي'}</strong></span>
       </div>
 
       <div class="modal__actions" style="display:flex; gap:8px; flex-wrap:wrap;">
         <button type="button" class="btn btn--outline" onclick="closeRegistrationDetailsModal()">إغلاق</button>
         ${reg.status === 'pending' ? `
-          <button type="button" class="btn btn--primary" style="background:#10B981;" onclick="acceptRegistration('${reg.id}'); closeRegistrationDetailsModal();">✅ قبول وتفعيل الطالب</button>
-          <button type="button" class="btn btn--outline" style="border-color:#EF4444; color:#EF4444;" onclick="rejectRegistration('${reg.id}'); closeRegistrationDetailsModal();">❌ رفض الطلب</button>
+          <button type="button" class="btn btn--primary" style="background:#10B981; display:inline-flex; align-items:center; gap:4px;" onclick="acceptRegistration('${reg.id}'); closeRegistrationDetailsModal();">${UI_ICONS.check(12)} قبول وتفعيل الطالب</button>
+          <button type="button" class="btn btn--outline" style="border-color:#EF4444; color:#EF4444; display:inline-flex; align-items:center; gap:4px;" onclick="rejectRegistration('${reg.id}'); closeRegistrationDetailsModal();">${UI_ICONS.x(12)} رفض الطلب</button>
         ` : ''}
-        <button type="button" class="btn" style="background:#25D366; color:#fff;" onclick="openRegistrationWhatsApp('${reg.id}')"> مراسلة الولي عبر واتساب</button>
-        <button type="button" class="btn-icon" style="color:#ef4444; border:none;" onclick="deleteRegistration('${reg.id}'); closeRegistrationDetailsModal();" title="حذف الطلب">حذف</button>
+        <button type="button" class="btn" style="background:#25D366; color:#fff; display:inline-flex; align-items:center; gap:4px;" onclick="openRegistrationWhatsApp('${reg.id}')">${UI_ICONS.whatsapp(12)} مراسلة الولي عبر واتساب</button>
+        <button type="button" class="btn-icon" style="color:#ef4444; border:none;" onclick="deleteRegistration('${reg.id}'); closeRegistrationDetailsModal();" title="حذف الطلب">${UI_ICONS.trash(13)}</button>
       </div>
     `;
 
@@ -4621,7 +4653,7 @@ document.addEventListener('DOMContentLoaded', () => {
       saveData('brainova_students', students);
     }
 
-    showToast(' تم قبول طلب التسجيل وتفعيل حساب الطالب بنجاح!', 'success');
+    showToast('تم قبول طلب التسجيل وتفعيل حساب الطالب بنجاح!', 'success');
     updateHeaderBadges();
     renderActiveView();
   };
@@ -4710,7 +4742,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <h3 style="font-size: 1.05rem; font-weight:800; color:#fff; margin-bottom:2px;">${g.name}</h3>
               <span style="font-size: 0.75rem; color:var(--color-primary); font-weight:700;">${g.level}</span>
             </div>
-            <button class="btn-icon" style="color:#EF4444; border:1px solid rgba(239,68,68,0.35); background:rgba(239,68,68,0.1); padding:4px 8px; font-weight:700; font-size:0.75rem; cursor:pointer;" onclick="deleteGroup('${g.id}')" title="حذف الفوج نهائياً">🗑️ حذف</button>
+            <button class="btn-icon" style="color:#EF4444; border:1px solid rgba(239,68,68,0.35); background:rgba(239,68,68,0.1); padding:4px 8px; font-weight:700; font-size:0.75rem; cursor:pointer;" onclick="deleteGroup('${g.id}')" title="حذف الفوج نهائياً">�️ حذف</button>
           </div>
           <div style="font-size:0.8rem; color:var(--color-text-muted); margin-bottom:6px;">
             <span> الفئة: <strong>${g.ageCategory || '8 - 11 سنة (ناشئين)'}</strong></span>
@@ -4733,14 +4765,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return `
               <div style="background:rgba(255,255,255,0.02); border:1px solid var(--color-border); border-radius:var(--radius-sm); padding:8px 10px; margin-bottom:10px; font-size:0.78rem;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                  <span style="color:var(--color-text-muted);">📅 موعد الحصة القادمة:</span>
+                  <span style="color:var(--color-text-muted);">${UI_ICONS.calendar(12)} موعد الحصة القادمة:</span>
                   <strong style="color:#38BDF8; font-weight:700; font-size:0.84rem;">${cycle.nextDayName} ${cycle.nextSessionDate || '—'}</strong>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                  <span style="color:var(--color-text-muted);">🕒 آخر حصة مسجلة:</span>
+                  <span style="color:var(--color-text-muted);">${UI_ICONS.clock(12)} آخر حصة مسجلة:</span>
                   <span style="color:${cycle.hasPreviousSession ? '#10B981' : '#94A3B8'}; font-weight:600;">
                     ${cycle.hasPreviousSession ? `${cycle.lastDayName} ${cycle.lastSessionDate}` : 'لا توجد حصص سابقة'}
-                    ${cycle.isLastMakeup ? '<span style="background:rgba(168,85,247,0.18); color:#C084FC; font-size:0.68rem; padding:1px 6px; border-radius:4px; font-weight:700; margin-right:4px;">تعويضية 🔄</span>' : ''}
+                    ${cycle.isLastMakeup ? '<span style="background:rgba(168,85,247,0.18); color:#C084FC; font-size:0.68rem; padding:1px 6px; border-radius:4px; font-weight:700; margin-right:4px;">حصة تعويضية</span>' : ''}
                   </span>
                 </div>
                 <div>
@@ -4754,11 +4786,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <span style="font-size:0.78rem; color:var(--color-text-muted);">الطلاب: <strong style="color:var(--color-text);">${studentCount} / ${g.maxStudents || 12}</strong></span>
             <div style="display:inline-flex; gap:6px; flex-wrap:wrap;">
               <button type="button" class="btn btn--primary btn--small" style="font-size:0.75rem; padding:5px 10px;" onclick="openQuickGroupAttendanceModal('${encodeURIComponent(g.name)}')">تسجيل الحضور</button>
-              <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px; color:#F59E0B; border-color:rgba(245,158,11,0.4);" onclick="openEditGroupModal('${g.id}')">✏️ تعديل الفوج</button>
+              <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px; color:#F59E0B; border-color:rgba(245,158,11,0.4);" onclick="openEditGroupModal('${g.id}')">${UI_ICONS.edit(12)} تعديل الفوج</button>
               <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px;" onclick="printGroupMonthlyAttendanceSheet('${encodeURIComponent(g.name)}')">طباعة القائمة</button>
               <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px;" onclick="openBatchBadgesModal('${encodeURIComponent(g.name)}')">بطاقات الفوج</button>
               <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px;" onclick="openGroupStudentsModal('${encodeURIComponent(g.name)}')">الطلاب (${studentCount})</button>
-              <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px; color:#EF4444; border-color:rgba(239,68,68,0.4); font-weight:700;" onclick="deleteGroup('${g.id}')" title="حذف الفوج">🗑️ حذف الفوج</button>
+              <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px; color:#EF4444; border-color:rgba(239,68,68,0.4); font-weight:700;" onclick="deleteGroup('${g.id}')" title="حذف الفوج">${UI_ICONS.trash(12)} حذف الفوج</button>
             </div>
           </div>
         </div>
@@ -4778,7 +4810,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (groupSelect) {
         groupSelect.value = groupName;
         renderAttendance();
-        showToast(`تم فتح شاشة الحضور لفوج (${groupName}) 📝`, 'info');
+        showToast(`تم فتح شاشة الحضور لفوج (${groupName}) �`, 'info');
       }
     }, 100);
   };
@@ -4838,7 +4870,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tbody.innerHTML = `
           <tr>
             <td colspan="5" style="text-align:center; padding:36px 20px; color:var(--color-text-muted);">
-              <div style="font-size:1.5rem; margin-bottom:8px;">👥</div>
+              
               <strong style="color:var(--color-text);">لا يوجد طلاب مسجلين في هذا الفوج حتى الآن.</strong>
               <div style="margin-top:12px;">
                 <button type="button" class="btn btn--primary btn--small" onclick="openAddStudentForCurrentGroup()">+ إضافة أول طالب لهذا الفوج الآن</button>
@@ -4867,7 +4899,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
                   <a href="tel:${stu.parentPhone}" dir="ltr" style="font-size:0.8rem; color:var(--color-primary); font-family:monospace;">${stu.parentPhone || '—'}</a>
                   ${cleanPhone ? `
-                    <a href="https://wa.me/${waPhone}" target="_blank" style="color:#25D366; font-size:0.75rem; text-decoration:none;" title="محادثة واتساب">💬</a>
+                    <a href="https://wa.me/${waPhone}" target="_blank" style="color:#25D366; font-size:0.75rem; text-decoration:none;" title="محادثة واتساب">�</a>
                   ` : ''}
                 </div>
               </td>
@@ -4879,9 +4911,9 @@ document.addEventListener('DOMContentLoaded', () => {
               </td>
               <td style="text-align: center;">
                 <div style="display:inline-flex; gap:6px;">
-                  <button type="button" class="btn btn--outline btn--small" style="padding:4px 8px; font-size:0.75rem;" onclick="closeGroupStudentsModal(); openStudentProfile('${stu.id}')">الملف</button>
-                  <button type="button" class="btn btn--outline btn--small" style="padding:4px 8px; font-size:0.75rem; color:#F59E0B; border-color:rgba(245,158,11,0.35);" onclick="closeGroupStudentsModal(); openEditStudentModal('${stu.id}')">✏️ تعديل</button>
-                  <button type="button" class="btn btn--primary btn--small" style="padding:4px 8px; font-size:0.75rem; background:#0284C7;" onclick="closeGroupStudentsModal(); openRecordPaymentModal('${stu.id}')">💳 دفع</button>
+                  <button type="button" class="btn btn--outline btn--small" style="padding:4px 8px; font-size:0.75rem; display:inline-flex; align-items:center; gap:4px;" onclick="closeGroupStudentsModal(); openStudentProfile('${stu.id}')">${UI_ICONS.file(12)} الملف</button>
+                  <button type="button" class="btn btn--outline btn--small" style="padding:4px 8px; font-size:0.75rem; color:#F59E0B; border-color:rgba(245,158,11,0.35); display:inline-flex; align-items:center; gap:4px;" onclick="closeGroupStudentsModal(); openEditStudentModal('${stu.id}')">${UI_ICONS.edit(12)} تعديل</button>
+                  <button type="button" class="btn btn--primary btn--small" style="padding:4px 8px; font-size:0.75rem; background:#0284C7; display:inline-flex; align-items:center; gap:4px;" onclick="closeGroupStudentsModal(); openRecordPaymentModal('${stu.id}')">${UI_ICONS.receipt(12)} دفع</button>
                 </div>
               </td>
             </tr>
@@ -4997,7 +5029,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedTime = document.getElementById('quickAttTime')?.value || '';
     if (noticeEl) {
       if (type === 'makeup') {
-        noticeEl.innerHTML = `<span style="color:#C084FC; font-weight:700;">🔄 وضع الحصة التعويضية (${selectedDate} • ${selectedTime}) — يمكنك إدخال أي وقت وتاريخ للتعويض بحرية تامة دون أي قيود.</span>`;
+        noticeEl.innerHTML = `<span style="color:#C084FC; font-weight:700;">وضع الحصة التعويضية (${selectedDate} • ${selectedTime}) — يمكنك إدخال أي وقت وتاريخ للتعويض بحرية تامة دون أي قيود.</span>`;
       } else if (type === 'extra') {
         noticeEl.innerHTML = `<span style="color:#F59E0B; font-weight:700;">⭐ حصة استثنائية / إضافية (${selectedDate} • ${selectedTime}) — ورشة خاصة أو نشاط تدريبي إضافي.</span>`;
       } else {
@@ -5034,7 +5066,7 @@ document.addEventListener('DOMContentLoaded', () => {
       window.__quickAttDraft = {};
       window.__quickAttDraftDate = cycle.nextSessionDate;
       renderQuickAttendanceStudents();
-      showToast(`🗓️ تم الانتقال لموعد الحصة القادمة (${cycle.nextDayName} ${cycle.nextSessionDate})`, 'success');
+      showToast(`تم الانتقال لموعد الحصة القادمة (${cycle.nextDayName} ${cycle.nextSessionDate})`, 'success');
     }
   };
 
@@ -5068,7 +5100,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (dateInput) dateInput.value = dateVal;
       }
       renderAttendance();
-      showToast(`تم فتح سجل الحضور الكامل لفوج "${groupName}" 📝`, 'success');
+      showToast(`تم فتح سجل الحضور الكامل لفوج "${groupName}" �`, 'success');
     }, 120);
   };
 
@@ -5116,9 +5148,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const noticeEl = document.getElementById('quickAttArchiveNotice');
     if (noticeEl) {
       if (existingAtt.length > 0) {
-        noticeEl.innerHTML = `<span style="color:#F59E0B;">⚠️ هذه الحصة مسجلة سابقاً في الأرشيف بتاريخ (${selectedDate}) — يمكنك مراجعة الغيابات وتعديلها.</span>`;
+        noticeEl.innerHTML = `<span style="color:#F59E0B;">هذه الحصة مسجلة سابقاً في الأرشيف بتاريخ (${selectedDate}) — يمكنك مراجعة الغيابات وتعديلها.</span>`;
       } else {
-        noticeEl.innerHTML = `<span style="color:#10B981;">✨ حصة أسبوعية جديدة (${selectedDate}) — لم تسجل بعد، جاهزة لرصد الغيابات وتثبيتها في الأرشيف.</span>`;
+        noticeEl.innerHTML = `<span style="color:#10B981;">حصة أسبوعية جديدة (${selectedDate}) — لم تسجل بعد، جاهزة لرصد الغيابات وتثبيتها في الأرشيف.</span>`;
       }
     }
 
@@ -5322,9 +5354,9 @@ document.addEventListener('DOMContentLoaded', () => {
     saveData('brainova_attendance', allAttendance);
     saveData('brainova_students', students);
 
-    const typeMsg = selectedType === 'makeup' ? ' (حصة تعويضية 🔄)' : (selectedType === 'extra' ? ' (حصة استثنائية ⭐)' : '');
+    const typeMsg = selectedType === 'makeup' ? ' (حصة تعويضية)' : (selectedType === 'extra' ? ' (حصة استثنائية ⭐)' : '');
     closeQuickGroupAttendanceModal();
-    showToast(`✅ تم حفظ حضور وغياب (${savedCount}) تلميذ لفوج (${groupName}) بتاريخ (${selectedDate} - ${selectedTime})${typeMsg} بنجاح!`, 'success');
+    showToast(`تم حفظ حضور وغياب (${savedCount}) تلميذ لفوج (${groupName}) بتاريخ (${selectedDate} - ${selectedTime})${typeMsg} بنجاح!`, 'success');
     renderActiveView();
   }
   window.saveQuickGroupAttendance = saveQuickGroupAttendance;
@@ -5425,13 +5457,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let rowsHtml = '';
     groupStudents.forEach((stu, idx) => {
       const timeline = getStudentPaymentTimeline(stu.id, stu, allPayments);
-      let payStatusText = 'مسدد ✅';
+      let payStatusText = 'مسدد بالكامل';
       let payStatusColor = '#15803d';
       if (timeline.status === 'overdue' || Number(stu.balance) < 0) {
-        payStatusText = 'مستحق ⚠️';
+        payStatusText = 'متأخر في الدفع';
         payStatusColor = '#b91c1c';
       } else if (!timeline.hasPayment) {
-        payStatusText = 'جديد ⏳';
+        payStatusText = 'اشتراك جديد';
         payStatusColor = '#d97706';
       }
 
@@ -5676,7 +5708,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <!-- Floating Bar for Browser Preview (Hidden on Print) -->
   <div class="no-print">
     <div style="display:flex; align-items:center; gap:10px;">
-      <span style="font-size:1.3rem;">📄</span>
+      
       <div>
         <strong style="font-size:0.95rem;">معاينة ورقة الحضور الشهرية — ${groupName}</strong>
         <div style="font-size:0.75rem; color:#94a3b8;">جاهزة للطباعة على ورق A4 بالعرض (Landscape)</div>
@@ -5684,10 +5716,10 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
     <div style="display:flex; gap:10px;">
       <button onclick="window.print()" style="background:#0284C7; color:#fff; border:none; padding:7px 18px; border-radius:6px; font-weight:800; cursor:pointer; font-family:inherit; font-size:0.85rem;">
-        🖨️ طباعة الورقة الآن (Print)
+        طباعة الورقة (A4)
       </button>
       <button onclick="window.close()" style="background:rgba(255,255,255,0.1); color:#fff; border:none; padding:7px 14px; border-radius:6px; cursor:pointer; font-family:inherit; font-size:0.85rem;">
-        ✕ إغلاق
+        إغلاق
       </button>
     </div>
   </div>
@@ -5752,7 +5784,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <table class="pedagogy-box">
     <thead>
       <tr>
-        <th colspan="2">📘 المحتوى البيداغوجي المنجز خلال الشهر (يملأ من طرف المؤطر):</th>
+        <th colspan="2">المحتوى البيداغوجي المنجز خلال الشهر (يملأ من طرف المؤطر):</th>
       </tr>
     </thead>
     <tbody>
@@ -5796,7 +5828,7 @@ document.addEventListener('DOMContentLoaded', () => {
         title: `قائمة حضور ${groupName}`,
         html: sheetHtml
       });
-      showToast(`جاري فتح ورقة الحضور الشهرية لفوج (${groupName}) للطباعة... 📄🖨️`, 'success');
+      showToast(`جاري فتح ورقة الحضور الشهرية لفوج (${groupName}) للطباعة... `, 'success');
     } else {
       const w = window.open('', '_blank');
       if (w) {
@@ -6022,7 +6054,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const scheduleHtml = details.roomSessions.length > 0
         ? details.roomSessions.map(s => `
             <span style="display:inline-flex; align-items:center; gap:4px; font-size:0.75rem; background:rgba(56,189,248,0.12); color:#38BDF8; padding:3px 8px; border-radius:6px; font-weight:600;">
-              📅 ${s.day || ''} (${s.startTime} - ${s.endTime}) • ${s.groupName || ''}
+              � ${s.day || ''} (${s.startTime} - ${s.endTime}) • ${s.groupName || ''}
             </span>
           `).join(' ')
         : '<span style="font-size:0.75rem; color:#64748B;">لا توجد حصص مجدولة حالياً لهذه القاعة</span>';
@@ -6043,7 +6075,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="font-size:0.78rem; color:#94A3B8;">${details.educatorSpecialty || 'مؤطر روبوتيك وذكاء اصطناعي'}</div>
               </div>
             </div>
-            ${details.educatorPhone ? `<div style="font-size:0.78rem; color:#64748B;">📞 الهاتف: <span dir="ltr" style="color:#CBD5E1;">${details.educatorPhone}</span></div>` : ''}
+            ${details.educatorPhone ? `<div style="font-size:0.78rem; color:#64748B;">الهاتف: <span dir="ltr" style="color:#CBD5E1;">${details.educatorPhone}</span></div>` : ''}
           </div>
 
           <!-- Room Specs Card -->
@@ -6546,10 +6578,10 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="schedule-session" style="border-right: 3px solid #38BDF8; padding: 6px 8px; margin-bottom: 4px;">
               <button class="schedule-session__delete" onclick="deleteSession('${s.id}')" title="حذف الحصة">&times;</button>
               <div class="schedule-session__title" style="font-weight:800; font-size:0.86rem; color:#FFFFFF; margin-bottom:3px;">${s.groupName}</div>
-              <div style="font-size:0.75rem; color:#94A3B8; margin-bottom:2px;">👨‍🏫 ${eduDisplay}</div>
+              <div style="font-size:0.75rem; color:#94A3B8; margin-bottom:2px;">${eduDisplay}</div>
               <div style="font-size:0.78rem; font-weight:800; color:#FBBF24; background:rgba(251,191,36,0.12); padding:2px 6px; border-radius:4px; display:inline-block; margin-bottom:4px;">⏰ ${timeSlotStr}</div>
-              ${s.room ? `<div style="font-size:0.73rem; color:#94A3B8; margin-bottom:4px;">🏛️ ${s.room}</div>` : ''}
-              <button type="button" class="btn btn--primary btn--small" style="padding:4px 8px; font-size:0.72rem; margin-top:4px; width:100%; background:#0284C7; font-weight:700;" onclick="openAttendanceForSession('${encodeURIComponent(s.groupName)}', '${timeSlotStr}')">📝 تسجيل الحضور</button>
+              ${s.room ? `<div style="font-size:0.73rem; color:#94A3B8; margin-bottom:4px;">${s.room}</div>` : ''}
+              <button type="button" class="btn btn--primary btn--small" style="padding:4px 8px; font-size:0.72rem; margin-top:4px; width:100%; background:#0284C7; font-weight:700;" onclick="openAttendanceForSession('${encodeURIComponent(s.groupName)}', '${timeSlotStr}')">� تسجيل الحضور</button>
             </div>
           `;
         });
@@ -6754,7 +6786,7 @@ document.addEventListener('DOMContentLoaded', () => {
     students.push(newStudent);
     saveData('brainova_students', students);
     closeAddStudentModal();
-    showToast(`✅ تم تسجيل التلميذ (${name}) بفوج (${group}) بدقة! 🚀`, 'success');
+    showToast(`تم تسجيل التلميذ (${name}) بفوج (${group}) بدقة! �`, 'success');
     renderActiveView();
   };
 
@@ -7045,7 +7077,7 @@ document.addEventListener('DOMContentLoaded', () => {
     saveData('brainova_students', students);
     closeEditStudentModal();
     const groupChangedMsg = prevGroup !== stu.group ? ` وتم نقله إلى (${stu.group})` : '';
-    showToast(`✅ تم تحديث بيانات التلميذ (${stu.name})${groupChangedMsg} بنجاح!`, 'success');
+    showToast(`تم تحديث بيانات التلميذ (${stu.name})${groupChangedMsg} بنجاح!`, 'success');
     renderActiveView();
   };
 
@@ -7112,10 +7144,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     preview.innerHTML = `
       <div style="color:#F8FAFC; font-weight:800; margin-bottom:4px;">تفاصيل الفوج المختار: ${grp.name}</div>
-      <div>📅 يوم الحصة: <strong style="color:#FBBF24;">${grp.day || 'السبت'}</strong></div>
-      <div>🕒 التوقيت: <strong style="color:#38BDF8;">${grp.timeSlot || '14:00 - 16:00'}</strong></div>
-      <div>🏫 القاعة: <strong>${room ? room.name : 'القاعة الرئيسية'}</strong></div>
-      <div>👨‍🏫 الأستاذ المؤطر: <strong>${edu ? edu.name : 'إدارة الأكاديمية'}</strong></div>
+      <div>${UI_ICONS.calendar(12)} يوم الحصة: <strong style="color:#FBBF24;">${grp.day || 'السبت'}</strong></div>
+      <div>${UI_ICONS.clock(12)} التوقيت: <strong style="color:#38BDF8;">${grp.timeSlot || '14:00 - 16:00'}</strong></div>
+      <div>القاعة: <strong>${room ? room.name : 'القاعة الرئيسية'}</strong></div>
+      <div>الأستاذ المؤطر: <strong>${edu ? edu.name : 'إدارة الأكاديمية'}</strong></div>
     `;
   };
 
@@ -7158,7 +7190,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     saveData('brainova_students', students);
     closeTransferGroupModal();
-    showToast(`✅ تم نقل التلميذ (${stu.name}) من فوج (${oldGroupName}) إلى فوج (${targetGroupName}) بنجاح! 🚀`, 'success');
+    showToast(`تم نقل التلميذ (${stu.name}) من فوج (${oldGroupName}) إلى فوج (${targetGroupName}) بنجاح! �`, 'success');
     renderActiveView();
   };
 
@@ -7281,7 +7313,7 @@ document.addEventListener('DOMContentLoaded', () => {
     saveData('brainova_schedule', schedules);
 
     closeAddGroupModal();
-    showToast(`✅ تم إنشاء الفوج (${name}) بموعد (${day} ${timeSlot}) بنجاح!`, 'success');
+    showToast(`تم إنشاء الفوج (${name}) بموعد (${day} ${timeSlot}) بنجاح!`, 'success');
     renderAll();
   };
 
@@ -7462,7 +7494,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     closeEditGroupModal();
-    showToast(`✅ تم تحديث يوم وتوقيت الفوج بنجاح (${newDay} - ${newTimeSlot})`, 'success');
+    showToast(`تم تحديث يوم وتوقيت الفوج بنجاح (${newDay} - ${newTimeSlot})`, 'success');
     renderAll();
   };
 
@@ -7502,7 +7534,7 @@ document.addEventListener('DOMContentLoaded', () => {
         saveData('brainova_students', students);
       }
 
-      showToast(`✅ تم حذف الفوج "${g.name}" وتنظيف الجدول بنجاح`, 'success');
+      showToast(`تم حذف الفوج "${g.name}" وتنظيف الجدول بنجاح`, 'success');
       renderAll();
     }
   };
@@ -7850,7 +7882,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const latestReg = currentRegs[0];
       lastKnownRegCount = currentRegs.length;
 
-      showToast(`🔔 استلمت طلب تسجيل جديد (${latestReg.studentName || 'طالب جديد'} - ${latestReg.parentName || 'ولي الأمر'})!`, 'success');
+      showToast(`استلمت طلب تسجيل جديد (${latestReg.studentName || 'طالب جديد'} - ${latestReg.parentName || 'ولي الأمر'})!`, 'success');
       updateHeaderBadges();
       if (currentView === 'overview' || currentView === 'registrations') {
         renderActiveView();
@@ -7904,7 +7936,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const result = await window.electronAPI.backup.export();
       const statusEl = document.getElementById('backupStatus');
       if (result.ok) {
-        if (statusEl) statusEl.textContent = `✅ تم حفظ النسخة بنجاح (${backupPayload.meta.totalStudents} طالب، ${backupPayload.meta.totalGroups} فوج)`;
+        if (statusEl) statusEl.textContent = `تم حفظ النسخة بنجاح (${backupPayload.meta.totalStudents} طالب، ${backupPayload.meta.totalGroups} فوج)`;
         showToast('تم تصدير النسخة الاحتياطية بنجاح!', 'success');
       } else {
         showToast('تم إلغاء التصدير', 'info');
@@ -7924,7 +7956,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       const statusEl = document.getElementById('backupStatus');
-      if (statusEl) statusEl.textContent = `✅ تم تنزيل النسخة (${backupPayload.meta.totalStudents} طالب، ${backupPayload.meta.totalGroups} فوج)`;
+      if (statusEl) statusEl.textContent = `تم تنزيل النسخة (${backupPayload.meta.totalStudents} طالب، ${backupPayload.meta.totalGroups} فوج)`;
       showToast('تم تنزيل النسخة الاحتياطية بنجاح!', 'success');
     }
   };
@@ -7982,7 +8014,7 @@ document.addEventListener('DOMContentLoaded', () => {
           renderAll();
 
           const statusEl = document.getElementById('backupStatus');
-          if (statusEl) statusEl.textContent = `✅ تمت استعادة البيانات بنجاح (${stuCount} طالب، ${grpCount} فوج)`;
+          if (statusEl) statusEl.textContent = `تمت استعادة البيانات بنجاح (${stuCount} طالب، ${grpCount} فوج)`;
           showToast('تمت استعادة قاعدة البيانات بنجاح وتحديث كافة الأقسام!', 'success');
           if (typeof logSecurityAuditEvent === 'function') {
             logSecurityAuditEvent('استيراد قاعدة بيانات', `استيراد يدوي (${stuCount} طالب)`, 'warning');
@@ -8033,20 +8065,20 @@ document.addEventListener('DOMContentLoaded', () => {
         tbody.innerHTML = files.map(f => `
           <tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
             <td style="padding:6px 10px; font-weight:700; color:#F8FAFC; font-family:monospace; direction:ltr; text-align:right;">
-              📁 ${f.name}
+              ${UI_ICONS.file(12)} ${f.name}
             </td>
             <td style="padding:6px 10px; color:#94A3B8; font-size:0.72rem;">
-              🕒 ${f.createdDateStr || '—'}
+              ${f.createdDateStr || '—'}
             </td>
             <td style="padding:6px 10px; color:#38BDF8; font-family:monospace;">
               ${f.sizeFormatted}
             </td>
             <td style="padding:6px 10px; text-align:center; white-space:nowrap;">
               <button type="button" class="btn btn--outline btn--small" style="padding:2px 8px; font-size:0.7rem; color:#10B981; border-color:rgba(16,185,129,0.3); background:rgba(16,185,129,0.06); font-weight:700;" onclick="restoreVaultBackup('${encodeURIComponent(f.path)}', '${f.name}')">
-                🔄 استعادة
+                ${UI_ICONS.refresh(11)} استعادة
               </button>
               <button type="button" style="background:none; border:none; color:#EF4444; cursor:pointer; font-size:0.8rem; margin-right:6px;" title="حذف النسخة" onclick="deleteVaultBackup('${encodeURIComponent(f.path)}', '${f.name}')">
-                🗑️
+                �️
               </button>
             </td>
           </tr>
@@ -8060,7 +8092,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.restoreVaultBackup = async function(encPath, fileName) {
     const filePath = decodeURIComponent(encPath);
     const confirmed = confirm(
-      `⚠️ تأكيد استعادة النسخة الاحتياطية (${fileName}):\n\n` +
+      `تأكيد استعادة النسخة الاحتياطية (${fileName}):\n\n` +
       `سيتم استبدال قاعدة البيانات الحالية بالكامل بالبيانات المخزنة في هذه النسخة.\n` +
       `هل أنت متأكد تماماً من رغبتك في الاستعادة؟`
     );
@@ -8077,7 +8109,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initializeData();
         renderAll();
         loadVaultBackupsList();
-        showToast(`✅ تمت استعادة النسخة (${fileName}) بنجاح وتحديث كافة الأقسام!`, 'success');
+        showToast(`تمت استعادة النسخة (${fileName}) بنجاح وتحديث كافة الأقسام!`, 'success');
       } else {
         showToast(`فشلت الاستعادة: ${res?.error || 'خطأ غير معروف'}`, 'error');
       }
@@ -8240,7 +8272,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.promptFactoryReset = function() {
-    const confirmation = prompt("⚠️ تحذير: هذه العملية ستقوم بتصفير جميع بيانات الطلاب، الحصص، الحضور، والمدفوعات لتبدأ قاعدة بيانات نظيفة للعمل الفعلي.\n\nللمتابعة ومسح البيانات، اكتب كلمة 'تصفير' أدناه:");
+    const confirmation = prompt("تحذير: هذه العملية ستقوم بتصفير جميع بيانات الطلاب، الحصص، الحضور، والمدفوعات لتبدأ قاعدة بيانات نظيفة للعمل الفعلي.\n\nللمتابعة ومسح البيانات، اكتب كلمة 'تصفير' أدناه:");
     if (confirmation === 'تصفير') {
       const emptyData = {
         brainova_students: [],
@@ -8258,7 +8290,7 @@ document.addEventListener('DOMContentLoaded', () => {
         saveData(k, v);
       });
 
-      showToast('✅ تم تصفير قاعدة البيانات وتهيئتها للعمل الفعلي بنجاح!', 'success');
+      showToast('تم تصفير قاعدة البيانات وتهيئتها للعمل الفعلي بنجاح!', 'success');
       renderAll();
     } else if (confirmation !== null) {
       alert('لم تتم كتابة كلمة "تصفير" بشكل صحيح. تم إلغاء العملية بأمان.');
@@ -8281,7 +8313,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     saveData('brainova_students', sampleStudents);
     saveData('brainova_payments', samplePayments);
-    showToast('✅ تم توليد البيانات التجريبية بنجاح!', 'success');
+    showToast('تم توليد البيانات التجريبية بنجاح!', 'success');
     renderAll();
   };
 
@@ -8296,7 +8328,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (newPass !== confirmPass) {
-      showToast('⚠️ كلمة المرور وتأكيدها غير متطابقين!', 'error');
+      showToast('كلمة المرور وتأكيدها غير متطابقين!', 'error');
       return;
     }
 
@@ -8316,7 +8348,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('adminConfirmPassword')) document.getElementById('adminConfirmPassword').value = '';
     
     updateAppLockUiState();
-    showToast('✅ تم تفعيل وحفظ كلمة مرور قفل التطبيق بنجاح!', 'success');
+    showToast('تم تفعيل وحفظ كلمة مرور قفل التطبيق بنجاح!', 'success');
   };
 
   window.removeAppPassword = function() {
@@ -8333,7 +8365,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     updateAppLockUiState();
-    showToast('🔓 تم إلغاء كلمة المرور، التطبيق أصبح مفتوحاً بدون قفل.', 'info');
+    showToast('تم إلغاء كلمة المرور، التطبيق أصبح مفتوحاً بدون قفل.', 'info');
   };
 
   window.updateAppLockUiState = function() {
@@ -8386,9 +8418,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const overlay = document.getElementById('localAppLockOverlay');
       if (overlay) overlay.style.display = 'none';
       if (input) input.value = '';
-      showToast('✅ تم فتح قفل التطبيق بنجاح!', 'success');
+      showToast('تم فتح قفل التطبيق بنجاح!', 'success');
     } else {
-      showToast('❌ كلمة المرور غير صحيحة، حاول مجدداً!', 'error');
+      showToast('كلمة المرور غير صحيحة، حاول مجدداً!', 'error');
       if (input) {
         input.style.borderColor = '#EF4444';
         input.value = '';
@@ -8409,7 +8441,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     saveData('brainova_app_lock_enabled', checked);
     updateAppLockUiState();
-    showToast(checked ? '🔒 تم تفعيل القفل بكلمة المرور!' : '🔓 تم تعطيل القفل، التطبيق مفتوح الآن.', 'info');
+    showToast(checked ? 'تم تفعيل القفل بكلمة المرور!' : 'تم تعطيل القفل، التطبيق مفتوح الآن.', 'info');
   };
 
   window.copyPortalUrl = function() {
@@ -8521,7 +8553,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     localStorage.setItem('brainova_wa_settings', JSON.stringify(newSettings));
-    showToast('✅ تم حفظ إعدادات وقوالب مراقب الواتساب الذكي بنجاح!', 'success');
+    showToast('تم حفظ إعدادات وقوالب مراقب الواتساب الذكي بنجاح!', 'success');
   }
   window.saveWhatsAppSettings = saveWhatsAppSettings;
 
@@ -8598,17 +8630,17 @@ document.addEventListener('DOMContentLoaded', () => {
         headerBadge.style.background = 'rgba(16,185,129,0.15)';
         headerBadge.style.color = '#10B981';
         headerBadge.style.borderColor = 'rgba(16,185,129,0.3)';
-        headerBadge.textContent = `🟢 متصل بالواتساب (+${statusObj.phone || ''})`;
+        headerBadge.textContent = `متصل بالواتساب (+${statusObj.phone || ''})`;
       } else if (statusObj?.status === 'waiting_qr') {
         headerBadge.style.background = 'rgba(245,158,11,0.15)';
         headerBadge.style.color = '#F59E0B';
         headerBadge.style.borderColor = 'rgba(245,158,11,0.3)';
-        headerBadge.textContent = '🟡 في انتظار مسح رمز QR';
+        headerBadge.textContent = 'في انتظار مسح رمز QR';
       } else {
         headerBadge.style.background = 'rgba(239,68,68,0.15)';
         headerBadge.style.color = '#EF4444';
         headerBadge.style.borderColor = 'rgba(239,68,68,0.3)';
-        headerBadge.textContent = '🔴 غير متصل بالواتساب';
+        headerBadge.textContent = 'غير متصل بالواتساب';
       }
     }
 
@@ -8675,7 +8707,7 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast('جاري إرسال الرسالة التجريبية...', 'info');
     const res = await window.electronAPI.whatsapp.sendMessage(phone, message);
     if (res && res.success) {
-      showToast(`✅ تم إرسال الرسالة التجريبية بنجاح إلى (${phone})!`, 'success');
+      showToast(`تم إرسال الرسالة التجريبية بنجاح إلى (${phone})!`, 'success');
     } else {
       showToast(`فشل الإرسال: ${res?.error || 'خطأ غير معروف'}`, 'error');
     }
@@ -8807,9 +8839,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const pName = (stu.parentName && stu.parentName.trim() && stu.parentName !== '—') ? `حضرة الولي الفاضل ${stu.parentName}` : `ولي أمر بطلنا العزيز ${stu.name}`;
     const lessonTitle = (titleInput?.value || '').trim() || 'ورشة الروبوتيك والذكاء الاصطناعي التطبيقي';
-    const achievement = (achieveInput?.value || '').trim() || 'إكمال المشروع والتطبيق العملي بنجاح 🤖';
+    const achievement = (achieveInput?.value || '').trim() || 'إكمال المشروع والتطبيق العملي بنجاح';
 
-    const text = `السلام عليكم ورحمة الله وبركاته،\n${pName} المحترم،\n\nيسعدنا في أكاديمية Brainova Robotics أن نشارككم ما تعلّمه وأنجزه ابنكم المبدع *${stu.name}* في حصة اليوم:\n\n📚 *عنوان الدرس:* ${lessonTitle}\n⚙️ *مستوى الإنجاز:* ${achievement}\n\nنحيي شغفه واجتهاده الرائع، ونتمنى له دوام التألق والتميز في عالم البرمجة والابتكار! 🚀👏\n\n*إدارة أكاديمية Brainova Robotics*`;
+    const text = `السلام عليكم ورحمة الله وبركاته،\n${pName} المحترم،\n\nيسعدنا في أكاديمية Brainova Robotics أن نشارككم ما تعلّمه وأنجزه ابنكم المبدع *${stu.name}* في حصة اليوم:\n\n*عنوان الدرس:* ${lessonTitle}\n*مستوى الإنجاز:* ${achievement}\n\nنحيي شغفه واجتهاده الرائع، ونتمنى له دوام التألق والتميز في عالم البرمجة والابتكار!\n\n*إدارة أكاديمية Brainova Robotics*`;
 
     msgEl.value = text;
   };
@@ -8830,7 +8862,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!stu) return;
 
     if (!stu.parentPhone || stu.parentPhone === '—') {
-      showToast('⚠️ لا يوجد رقم هاتف مسجل لولي أمر هذا الطالب! يرجى إضافته أولاً.', 'error');
+      showToast('لا يوجد رقم هاتف مسجل لولي أمر هذا الطالب! يرجى إضافته أولاً.', 'error');
       return;
     }
 
@@ -8853,7 +8885,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const res = await window.electronAPI.whatsapp.sendMessage(cleanPhone, rawMsg);
         if (res && res.success) {
-          showToast(`✅ تم إرسال تقرير الدرس لولي أمر (${stu.name}) بنجاح عبر البوت! 🚀`, 'success');
+          showToast(`تم إرسال تقرير الدرس لولي أمر (${stu.name}) بنجاح عبر البوت! �`, 'success');
           return;
         }
       } catch (err) {
@@ -8868,7 +8900,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       window.open(waUrl, '_blank');
     }
-    showToast(`✅ تم فتح محادثة ولي أمر (${stu.name}) لإرسال تقرير الدرس! 📲`, 'success');
+    showToast(`تم فتح محادثة ولي أمر (${stu.name}) لإرسال تقرير الدرس! �`, 'success');
   };
 
   // --- LIVE QUEUES: AUTOMATICALLY DETECTED PARENTS & STUDENTS ---
@@ -8892,7 +8924,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (overdueTbody) {
       if (overdueStudents.length === 0) {
-        overdueTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:18px; color:var(--color-text-dim);">🎉 رائع! لا يوجد أي تلاميذ متأخرين عن تسديد الشهر حالياً.</td></tr>`;
+        overdueTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:18px; color:var(--color-text-dim);">لا يوجد أي تلاميذ متأخرين عن تسديد الشهر حالياً.</td></tr>`;
       } else {
         overdueTbody.innerHTML = overdueStudents.map(s => {
           const timeline = getStudentPaymentTimeline(s.id, s, allPayments);
@@ -8907,7 +8939,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <td style="padding:10px 12px;"><span style="color:#EF4444; font-weight:700;">${timeline.elapsedText}</span></td>
               <td style="padding:10px 12px; text-align:center;">
                 <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; color:#25D366; border-color:rgba(37,211,102,0.4);" onclick="sendIndividualWaPaymentReminder('${s.id}')">
-                  ⚡ إرسال للولي
+                  ${UI_ICONS.whatsapp(12)} إرسال للولي
                 </button>
               </td>
             </tr>
@@ -8932,15 +8964,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (attTbody) {
       if (todayAtt.length === 0) {
-        attTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:18px; color:var(--color-text-dim);">✅ سجل الحضور ممتاز، لا يوجد متأخرون أو غائبون مسجلون.</td></tr>`;
+        attTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:18px; color:var(--color-text-dim);">سجل الحضور ممتاز، لا يوجد متأخرون أو غائبون مسجلون.</td></tr>`;
       } else {
         attTbody.innerHTML = todayAtt.map(a => {
           const stu = students.find(s => s.id === a.studentId) || {};
           const pName = stu.parentName && stu.parentName.trim() ? stu.parentName.trim() : `ولي أمر ${a.studentName || 'التلميذ'}`;
           const phone = stu.parentPhone || '<span style="color:#EF4444;">غير مسجل</span>';
           const statusBadge = a.status === 'late' 
-            ? '<span style="color:#F59E0B; background:rgba(245,158,11,0.1); padding:2px 8px; border-radius:4px; font-weight:700;">متأخر ⏳</span>'
-            : '<span style="color:#EF4444; background:rgba(239,68,68,0.1); padding:2px 8px; border-radius:4px; font-weight:700;">غائب ❌</span>';
+            ? '<span style="color:#F59E0B; background:rgba(245,158,11,0.1); padding:2px 8px; border-radius:4px; font-weight:700;">${UI_ICONS.clock(11)} متأخر</span>'
+            : '<span style="color:#EF4444; background:rgba(239,68,68,0.1); padding:2px 8px; border-radius:4px; font-weight:700;">${UI_ICONS.x(11)} غائب</span>';
           return `
             <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
               <td style="padding:10px 12px; font-weight:700; color:#f8fafc;">${a.studentName || stu.name}</td>
@@ -8950,7 +8982,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <td style="padding:10px 12px;">${statusBadge}</td>
               <td style="padding:10px 12px; text-align:center;">
                 <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; color:#25D366; border-color:rgba(37,211,102,0.4);" onclick="sendIndividualWaAttendanceAlert('${a.id}')">
-                  ⚡ إرسال للولي
+                  ${UI_ICONS.whatsapp(12)} إرسال للولي
                 </button>
               </td>
             </tr>
@@ -9015,7 +9047,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (res && res.success) {
       s.lastWaReminderDate = new Date().toISOString().slice(0, 10);
       saveData('brainova_students', students);
-      showToast(`✅ تم إرسال تذكير التسديد لولي أمر (${s.name}) بنجاح!`, 'success');
+      showToast(`تم إرسال تذكير التسديد لولي أمر (${s.name}) بنجاح!`, 'success');
       renderWaQueues();
     } else {
       showToast(`فشل الإرسال: ${res?.error || 'خطأ غير معروف'}`, 'error');
@@ -9059,7 +9091,7 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast(`جاري إرسال تنبيه الحضور لولي أمر (${s.name})...`, 'info');
     const res = await window.electronAPI.whatsapp.sendMessage(s.parentPhone, text);
     if (res && res.success) {
-      showToast(`✅ تم إرسال تنبيه الحضور لولي أمر (${s.name}) بنجاح!`, 'success');
+      showToast(`تم إرسال تنبيه الحضور لولي أمر (${s.name}) بنجاح!`, 'success');
     } else {
       showToast(`فشل الإرسال: ${res?.error || 'خطأ غير معروف'}`, 'error');
     }
@@ -9112,7 +9144,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await new Promise(r => setTimeout(r, 2500));
     }
 
-    showToast(`✅ تم إرسال (${count}) تنبيهات حضور للأولياء بنجاح!`, 'success');
+    showToast(`تم إرسال (${count}) تنبيهات حضور للأولياء بنجاح!`, 'success');
   }
   window.triggerBatchAttendanceAlerts = triggerBatchAttendanceAlerts;
 
@@ -9129,7 +9161,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const parentName = student.parentName && student.parentName.trim() ? student.parentName.trim() : `ولي أمر ${student.name}`;
       const template = status === 'late' ? settings.lateTemplate : settings.absentTemplate;
-      const typeNotice = sessionType === 'makeup' ? ' (حصة تعويضية 🔄)' : (sessionType === 'extra' ? ' (حصة استثنائية ⭐)' : '');
+      const typeNotice = sessionType === 'makeup' ? ' (حصة تعويضية)' : (sessionType === 'extra' ? ' (حصة استثنائية ⭐)' : '');
       const text = template
         .replace(/{student}/g, student.name || 'التلميذ')
         .replace(/{parent}/g, parentName)
@@ -9139,7 +9171,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const res = await window.electronAPI.whatsapp.sendMessage(student.parentPhone, text);
       if (res && res.success) {
-        showToast(`🤖 أرسل البوت تنبيهاً تلقائياً لولي أمر (${student.name}) عبر واتساب`, 'success');
+        showToast(`أرسل البوت تنبيهاً تلقائياً لولي أمر (${student.name}) عبر واتساب`, 'success');
       }
     } catch (e) {
       console.error('[WhatsApp Auto Attendance Error]:', e);
@@ -9171,7 +9203,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (overdueStudents.length === 0) {
-      if (!isSilentAuto) showToast('لا يوجد طلاب متأخرون عن التسديد حالياً! كل الاشتراكات مسواة 👍', 'success');
+      if (!isSilentAuto) showToast('لا يوجد طلاب متأخرون عن التسديد حالياً! كل الاشتراكات مسواة �', 'success');
       return;
     }
 
@@ -9206,7 +9238,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (sentCount > 0) {
       saveData('brainova_students', students);
-      showToast(`✅ أرسل البوت (${sentCount}) تذكير تسديد عبر واتساب للأولياء بنجاح!`, 'success');
+      showToast(`أرسل البوت (${sentCount}) تذكير تسديد عبر واتساب للأولياء بنجاح!`, 'success');
       renderWaQueues();
     } else if (!isSilentAuto) {
       showToast('تم إرسال تذكيرات لهؤلاء الأولياء اليوم مسبقاً لمنع التكرار.', 'info');
@@ -9238,7 +9270,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!logBox) return;
     const logs = getWaGuardianLogs();
     if (logs.length === 0) {
-      logBox.innerHTML = '<span style="color:#64748B;">🤖 المراقب الآلي في حالة استعداد وجاهز لبدء دورات الفحص...</span>';
+      logBox.innerHTML = '<span style="color:#64748B;">المراقب الآلي في حالة استعداد وجاهز لبدء دورات الفحص...</span>';
     } else {
       logBox.innerHTML = logs.map(l => `<div>${l}</div>`).join('');
     }
@@ -9339,7 +9371,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (res && res.success) {
           s.lastWaReminderDate = todayStr;
           actionsCount++;
-          addWaGuardianLog(`💳 [تسديد أوتوماتيكي] تم إرسال تذكير انتهاء الشهر لولي أمر (${s.name})`);
+          addWaGuardianLog(`[تسديد أوتوماتيكي] تم إرسال تذكير انتهاء الشهر لولي أمر (${s.name})`);
         }
         await new Promise(r => setTimeout(r, 2500));
       }
@@ -9396,7 +9428,7 @@ document.addEventListener('DOMContentLoaded', () => {
               if (res && res.success) preCount++;
               await new Promise(r => setTimeout(r, 2000));
             }
-            addWaGuardianLog(`🕒 [تذكير مسبق] أرسل البوت تذكيراً لحصة (${session.startTime}) لـ (${preCount}) أولياء في (${session.groupName}).`);
+            addWaGuardianLog(`[تذكير مسبق] أرسل البوت تذكيراً لحصة (${session.startTime}) لـ (${preCount}) أولياء في (${session.groupName}).`);
           }
         }
 
@@ -9438,7 +9470,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderWaQueues();
     if (isManual) {
-      showToast('✅ اكتملت دورة الفحص والتحليل الذاتي بنجاح!', 'success');
+      showToast('اكتملت دورة الفحص والتحليل الذاتي بنجاح!', 'success');
     }
   }
   window.runAutonomousGuardianLoop = runAutonomousGuardianLoop;
@@ -9586,9 +9618,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const todayStr = new Date().toLocaleDateString('ar-DZ', { month: 'long', year: 'numeric' });
 
     if (variant === 0) {
-      return `تقرير المتابعة والتقييم البيداغوجي والتقني الشهري 🤖✨
+      return `تقرير المتابعة والتقييم البيداغوجي والتقني الشهري 
 أكاديمية Brainova Robotics للروبوتيك والذكاء الاصطناعي
-📅 دورة: ${todayStr}
+دورة: ${todayStr}
 
 عناية ولي الأمر الفاضل: ${student.parentName || 'المحترم'}
 السلام عليكم ورحمة الله وبركاته،
@@ -9611,25 +9643,25 @@ ${latestNote ? `• ملاحظة المؤطر الميدانية: "${latestNote}
 
 3️⃣ توصيات وتوجيهات للشهر القادم:
 • تشجيع التلميذ(ة) على استعراض ما تعلمه ومواصلة الشغف في المنزل.
-${rem <= 1 ? '⚠️ تنبيه إداري لطيف: الاشتراك الشهري قارب على الانتهاء، يرجى التنسيق مع الإدارة لتجديد الاشتراك لضمان استمرارية مقعد التلميذ بالفوج.' : '• الاشتراك منتظم وساري المفعول.'}
+${rem <= 1 ? 'تنبيه إداري: الاشتراك الشهري قارب على الانتهاء، يرجى التنسيق مع الإدارة لتجديد الاشتراك لضمان استمرارية مقعد التلميذ بالفوج.' : '• الاشتراك منتظم وساري المفعول.'}
 
-مع خالص تحيات إدارة وأساتذة Brainova Robotics 🚀
+مع خالص تحيات إدارة وأساتذة Brainova Robotics
 أم البواقي، الجزائر`;
     } else {
-      return `كشف التقييم والتقدم البيداغوجي — Brainova Robotics 🎓
-📅 شهر: ${todayStr}
+      return `كشف التقييم والتقدم البيداغوجي — Brainova Robotics
+شهر: ${todayStr}
 
 أهلاً بحضرتكم، نضع بين أيديكم ملخص المسار التدريبي للابن(ة) المتميز(ة):
-👤 التلميذ: ${student.name}
-🏫 الفوج: ${student.group || 'فوج التدريب'} (${student.level || 'مبتدئ'})
-👨‍🏫 إشراف: ${educatorName}
+التلميذ: ${student.name}
+الفوج: ${student.group || 'فوج التدريب'} (${student.level || 'مبتدئ'})
+إشراف: ${educatorName}
 
-📊 مؤشرات الأداء والمواظبة:
+مؤشرات الأداء والمواظبة:
 - معدل الحضور الفعلي: ${attRate}%
 - الحصص المتبقية بالرصيد: ${rem} حصة
 - التفاعل الصفي: ممتاز ومتعاون جداً مع زملائه
 
-💡 التطور المهاري:
+التطور المهاري:
 - إتقان تركيب الأجزاء الروبوتية وبرمجتها بنجاح.
 - قدرة جيدة على حل المشكلات التقنية وتجاوز الأخطاء أثناء التجربة.
 ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
@@ -9705,7 +9737,7 @@ ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
     const textEl = document.getElementById('pedagogicalReportText');
     if (textEl) {
       textEl.value = generateStudentPedagogicalReport(currentPedagogicalStudentId, currentPedagogicalReportVariant);
-      showToast('🔄 تم تحديث صياغة التقرير بنجاح', 'info');
+      showToast('تم تحديث صياغة التقرير بنجاح', 'info');
     }
   }
 
@@ -9713,14 +9745,14 @@ ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
     if (!currentPedagogicalStudentId) return;
     const student = (getData('brainova_students') || []).find(s => s.id === currentPedagogicalStudentId);
     if (!student || !student.parentPhone) {
-      showToast('⚠️ لا يوجد رقم هاتف مسجل لولي أمر هذا التلميذ!', 'warning');
+      showToast('لا يوجد رقم هاتف مسجل لولي أمر هذا التلميذ!', 'warning');
       return;
     }
 
     const textEl = document.getElementById('pedagogicalReportText');
     const reportText = textEl ? textEl.value.trim() : '';
     if (!reportText) {
-      showToast('⚠️ نص التقرير فارغ!', 'warning');
+      showToast('نص التقرير فارغ!', 'warning');
       return;
     }
 
@@ -9729,13 +9761,13 @@ ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
       try {
         const res = await window.electronAPI.whatsapp.sendMessage(student.parentPhone, reportText);
         if (res.success) {
-          showToast(`✅ تم إرسال التقرير البيداغوجي لولي أمر ${student.name} بنجاح!`, 'success');
+          showToast(`تم إرسال التقرير البيداغوجي لولي أمر ${student.name} بنجاح!`, 'success');
           closePedagogicalReportModal();
         } else {
-          showToast(`⚠️ تعذر الإرسال: ${res.error}`, 'warning');
+          showToast(`تعذر الإرسال: ${res.error}`, 'warning');
         }
       } catch (err) {
-        showToast(`❌ خطأ في الإرسال: ${err.message}`, 'danger');
+        showToast(`خطأ في الإرسال: ${err.message}`, 'danger');
       }
     } else {
       let cleanPhone = String(student.parentPhone).replace(/[^\d]/g, '');
@@ -9817,18 +9849,18 @@ ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
   function openFriendlyRetentionWhatsApp(studentId) {
     const student = (getData('brainova_students') || []).find(s => s.id === studentId);
     if (!student || !student.parentPhone) {
-      showToast('⚠️ لا يوجد رقم هاتف مسجل لولي الأمر!', 'warning');
+      showToast('لا يوجد رقم هاتف مسجل لولي الأمر!', 'warning');
       return;
     }
 
     const rem = student.sessionsRemaining !== undefined ? student.sessionsRemaining : 4;
-    const msg = `السلام عليكم ورحمة الله وبركاته 🌸
+    const msg = `السلام عليكم ورحمة الله وبركاته
 تحية طيبة من إدارة أكاديمية Brainova Robotics، نأمل أن تكونوا والتلميذ(ة) العزيز(ة) "${student.name}" بأفضل حال.
 
 نود الاطمئنان عنكم بخصوص فوج "${student.group || 'الروبوتيك'}"، حيث افتقدنا حضور بطلنا الصغير ونتمنى أن يكون المانع خيراً.
 نحن دوماً هنا لتنسيق أي تعويض للحصص ودعم مساره التطبيقي المشوق.
 
-يسعدنا دوماً تواصلكم الكريم وتشريفكم لنا! 🤖✨
+يسعدنا دوماً تواصلكم الكريم وتشريفكم لنا! 
 إدارة أكاديمية Brainova Robotics`;
 
     if (window.electronAPI && window.electronAPI.whatsapp) {
@@ -9842,9 +9874,9 @@ ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
       } else {
         window.electronAPI.whatsapp.sendMessage(student.parentPhone, msg).then(res => {
           if (res.success) {
-            showToast(`✅ تم إرسال رسالة التدارك لولي أمر ${student.name} بنجاح!`, 'success');
+            showToast(`تم إرسال رسالة التدارك لولي أمر ${student.name} بنجاح!`, 'success');
           } else {
-            showToast(`⚠️ تعذر الإرسال: ${res.error}`, 'warning');
+            showToast(`تعذر الإرسال: ${res.error}`, 'warning');
           }
         });
       }
@@ -9949,14 +9981,14 @@ ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
   if (window.electronAPI && window.electronAPI.whatsapp && window.electronAPI.whatsapp.onMessageLogged) {
     window.electronAPI.whatsapp.onMessageLogged((log) => {
       loadWaChatLogs();
-      showToast(`🤖 رد آلي جديد على ${log.studentName}: "${log.incomingText.slice(0, 25)}..."`, 'info');
+      showToast(`رد آلي جديد على ${log.studentName}: "${log.incomingText.slice(0, 25)}..."`, 'info');
     });
   }
 
   // --- CLOUD AUTO-UPDATER EVENTS & UI TRIGGER ---
   window.checkAppUpdates = function() {
     if (window.electronAPI && window.electronAPI.checkForUpdates) {
-      showToast('🔍 جاري فحص المستودع السحابي للتأكد من وجود تحديثات...', 'info');
+      showToast('جاري فحص المستودع السحابي للتأكد من وجود تحديثات...', 'info');
       window.electronAPI.checkForUpdates();
     } else {
       showToast('فحص التحديثات التلقائية متاح داخل التطبيق المثبت (Production Build)', 'info');
@@ -9966,12 +9998,12 @@ ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
   if (window.electronAPI) {
     if (window.electronAPI.onUpdateAvailable) {
       window.electronAPI.onUpdateAvailable((ver) => {
-        showToast(`🚀 يتوفر تحديث جديد للبرنامج (v${ver})! جاري التحميل في الخلفية...`, 'info');
+        showToast(`يتوفر تحديث جديد للبرنامج (v${ver})! جاري التحميل في الخلفية...`, 'info');
       });
     }
     if (window.electronAPI.onUpdateDownloaded) {
       window.electronAPI.onUpdateDownloaded((ver) => {
-        showToast(`✅ تم اكتمال تحميل التحديث الجديد (v${ver}) بنجاح!`, 'success');
+        showToast(`تم اكتمال تحميل التحديث الجديد (v${ver}) بنجاح!`, 'success');
       });
     }
   }
@@ -9998,7 +10030,7 @@ ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
           const expDateStr = cmd.expiresAt.slice(0, 10);
           msgEl.innerHTML = `
             <div style="color:#FCA5A5; font-weight:800; font-size:1.05rem; margin-bottom:8px;">
-              ⚠️ انتهت فترة استخدام هذا التطبيق بتاريخ (${expDateStr})
+              انتهت فترة استخدام هذا التطبيق بتاريخ (${expDateStr})
             </div>
             <div>
               ${escapeHtml(cmd.broadcastMessage || 'انتهت مدة ترخيص الاستخدام المحددة لهذا الجهاز. يرجى مراجعة إدارة ISAACDEV لتجديد الاشتراك وتفعيل البرنامج.')}
@@ -10041,9 +10073,9 @@ ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
       applyRemoteLicenseStatus(cmds);
       const isLocked = cmds && (cmds.licenseStatus === 'locked' || isLicenseExpired(cmds));
       if (!isLocked) {
-        showToast('✅ تم استعادة وتفعيل الترخيص بنجاح!', 'success');
+        showToast('تم استعادة وتفعيل الترخيص بنجاح!', 'success');
       } else {
-        showToast('⚠️ لا يزال الترخيص معلقاً أو منتهي الصلاحية.', 'warning');
+        showToast('لا يزال الترخيص معلقاً أو منتهي الصلاحية.', 'warning');
       }
     }
   };
@@ -10099,7 +10131,7 @@ ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
     }
     if (window.electronAPI.onEmergencyWipe) {
       window.electronAPI.onEmergencyWipe(() => {
-        alert('⚠️ تم تنفيذ أمر مسح أمني طارئ من الإدارة المركزية (ISAACDEV).');
+        alert('تم تنفيذ أمر مسح أمني طارئ من الإدارة المركزية (ISAACDEV).');
         location.reload();
       });
     }
