@@ -391,22 +391,41 @@
         document.getElementById('rcptParentName').textContent = (student && student.parentName) || pay.parentName || 'ولي أمر التلميذ';
         document.getElementById('rcptLevelGroup').textContent = (pay.level || 'المستوى الأول') + ' • ' + (pay.group || 'الفوج أ');
 
+        function parseBrainovaDateLocal(str) {
+          if (!str) return null;
+          if (str instanceof Date) return isNaN(str.getTime()) ? null : str;
+          if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+            const d = new Date(str);
+            if (!isNaN(d.getTime())) return d;
+          }
+          const match = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+          if (match) {
+            const day = parseInt(match[1], 10);
+            const month = parseInt(match[2], 10) - 1;
+            const year = parseInt(match[3], 10);
+            const d = new Date(year, month, day, 12, 0, 0);
+            if (!isNaN(d.getTime())) return d;
+          }
+          const fallback = new Date(str);
+          return isNaN(fallback.getTime()) ? null : fallback;
+        }
+
         // Calculate Subscription Validity, First Session Date, and Expected Renewal Date
         const daysMap = { 'الأحد': 0, 'الاحد': 0, 'الإثنين': 1, 'الاثنين': 1, 'الثلاثاء': 2, 'الأربعاء': 3, 'الاربعاء': 3, 'الخميس': 4, 'الجمعة': 5, 'السبت': 6 };
         let payBaseDate = new Date();
         if (pay.paidAtIso) {
           payBaseDate = new Date(pay.paidAtIso);
         } else if (pay.date) {
-          const parts = pay.date.trim().split(' ')[0].split(/[\/\-]/);
-          if (parts.length === 3) {
-            payBaseDate = parts[0].length === 4 ? new Date(parts[0], parts[1]-1, parts[2]) : new Date(parts[2], parts[1]-1, parts[0]);
-          }
+          const parsed = parseBrainovaDateLocal(pay.date);
+          if (parsed) payBaseDate = parsed;
         }
         const purchasedSessions = pay.sessionsPurchased || 4;
+        const mCount = Number(pay && pay.monthsPurchased) || Math.max(1, Math.round(purchasedSessions / 4));
+        const periodLabel = mCount === 1 ? 'اشتراك شهري' : (mCount === 2 ? 'اشتراك شهرين' : `اشتراك ${mCount} أشهر`);
         
         const elValidity = document.getElementById('rcptSubscriptionValidity');
         if (elValidity) {
-          elValidity.textContent = purchasedSessions + ' حصص (' + (purchasedSessions === 4 ? 'اشتراك شهري' : 'باقة تدريبية') + ')';
+          elValidity.textContent = purchasedSessions + ' حصص (' + periodLabel + ')';
         }
 
         const elFirstSession = document.getElementById('rcptFirstSessionDate');
@@ -433,10 +452,9 @@
         if (elRenewal) {
           let renewalDateObj = null;
           if (pay && (pay.renewalIso || pay.renewalDate)) {
-            renewalDateObj = new Date(pay.renewalIso || pay.renewalDate);
+            renewalDateObj = parseBrainovaDateLocal(pay.renewalIso || pay.renewalDate);
           }
           if (!renewalDateObj || isNaN(renewalDateObj.getTime())) {
-            const mCount = Number(pay && pay.monthsPurchased) || Math.max(1, Math.round((Number(pay && pay.sessionsPurchased) || 4) / 4));
             renewalDateObj = new Date(payBaseDate);
             renewalDateObj.setMonth(renewalDateObj.getMonth() + mCount);
           }

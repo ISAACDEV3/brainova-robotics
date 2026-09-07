@@ -3162,7 +3162,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (isUnpaid) {
         elValidity.textContent = `${payment.unpaidSessions || payment.sessionsPurchased || 4} حصص (تنبيه تأخر التسديد)`;
       } else {
-        elValidity.textContent = `${purchasedSessions} حصص (${purchasedSessions === 4 ? 'اشتراك شهري' : 'باقة تدريبية'})`;
+        const mCount = Number(payment.monthsPurchased) || Math.max(1, Math.round(purchasedSessions / 4));
+        const periodLabel = mCount === 1 ? 'اشتراك شهري' : (mCount === 2 ? 'اشتراك شهرين' : `اشتراك ${mCount} أشهر`);
+        elValidity.textContent = `${purchasedSessions} حصص (${periodLabel})`;
       }
     }
 
