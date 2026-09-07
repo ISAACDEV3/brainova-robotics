@@ -50,6 +50,14 @@ git commit -m "chore: release v$newVer with cloud auto-update support" --allow-e
 git push origin main
 Write-Host "✅ Source code pushed to GitHub repository!" -ForegroundColor Green
 
+Write-Host "🧹 Cleaning old version binaries from dist..." -ForegroundColor Cyan
+$distPath = Join-Path $PSScriptRoot "dist"
+if (Test-Path $distPath) {
+    Get-ChildItem -Path $distPath -File -ErrorAction SilentlyContinue | Where-Object { 
+        ($_.Extension -in ".exe", ".blockmap") -and ($_.Name -notlike "*$newVer*") 
+    } | Remove-Item -Force
+}
+
 Write-Host "🔨 Building production binaries & uploading to GitHub Releases..." -ForegroundColor Cyan
 npx electron-builder --win --x64 --publish always
 

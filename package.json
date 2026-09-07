@@ -7,8 +7,10 @@
     "license":  "MIT",
     "scripts":  {
                     "start":  "electron .",
+                    "clean-old-dist":  "powershell -Command \"$ver = (Get-Content package.json | ConvertFrom-Json).version; Get-ChildItem -Path dist -File -ErrorAction SilentlyContinue | Where-Object { ($_.Extension -in '.exe', '.blockmap') -and ($_.Name -notlike ('*' + $ver + '*')) } | Remove-Item -Force\"",
+                    "prebuild":  "npm run clean-old-dist",
                     "build":  "electron-builder --win --x64",
-                    "build-portable":  "electron-builder --win portable --x64",
+                    "build-portable":  "npm run clean-old-dist && electron-builder --win portable --x64",
                     "deploy":  "powershell -ExecutionPolicy Bypass -File ./deploy-update.ps1"
                 },
     "devDependencies":  {
