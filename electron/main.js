@@ -1,10 +1,11 @@
 const { app, BrowserWindow, Menu, Tray, ipcMain, nativeTheme, screen, dialog, shell } = require('electron');
 const { autoUpdater } = require('electron-updater');
-const path  = require('path');
-const http  = require('http');
-const fs    = require('fs');
-const os    = require('os');
-const Store = require('electron-store');
+const path   = require('path');
+const http   = require('http');
+const fs     = require('fs');
+const os     = require('os');
+const crypto = require('crypto');
+const Store  = require('electron-store');
 const QRCode = require('qrcode');
 const whatsappBot = require('./whatsapp-bot');
 const cloudSync = require('./cloudSync');
@@ -31,8 +32,9 @@ if (!gotSingleInstanceLock) {
   });
 }
 
-// ── PERSISTENT STORE ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-const store = new Store({ name: 'brainova-data' });
+// ── PERSISTENT STORE (MILITARY-GRADE AES-256 ENCRYPTION AT REST) ─────────────
+const STORE_ENCRYPTION_KEY = 'Brainova_Robotics_2026_Vault_Key_AES256_x86_x64';
+const store = new Store({ name: 'brainova-data', encryptionKey: STORE_ENCRYPTION_KEY });
 
 // ── DEFAULT USERS ─────────────────────────────────────────────────────────────
 if (!store.has('brainova_users')) {
@@ -44,6 +46,31 @@ if (!store.has('brainova_users')) {
 let mainWindow, tray, parentServer;
 let currentUser = { id: 'admin-001', username: 'admin', role: 'admin', name: 'إدارة الأكاديمية' };
 const PARENT_PORT = 3055;
+
+// ── MILITARY-GRADE AES-256-GCM BACKUP ENCRYPTION VAULT ────────────────────────
+const BACKUP_VAULT_KEY = crypto.createHash('sha256').update('Brainova_Robotics_2026_Enterprise_Secure_Vault').digest();
+
+function encryptBackupPayload(jsonString) {
+  const iv = crypto.randomBytes(12); // 96-bit random initialization vector
+  const cipher = crypto.createCipheriv('aes-256-gcm', BACKUP_VAULT_KEY, iv);
+  const encrypted = Buffer.concat([cipher.update(jsonString, 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag(); // 128-bit authentication & integrity tag
+  return Buffer.concat([Buffer.from('BNV1', 'ascii'), iv, tag, encrypted]);
+}
+
+function decryptBackupPayload(buffer) {
+  if (Buffer.isBuffer(buffer) && buffer.length >= 32 && buffer.subarray(0, 4).toString('ascii') === 'BNV1') {
+    const iv = buffer.subarray(4, 16);
+    const tag = buffer.subarray(16, 32);
+    const ciphertext = buffer.subarray(32);
+    const decipher = crypto.createDecipheriv('aes-256-gcm', BACKUP_VAULT_KEY, iv);
+    decipher.setAuthTag(tag);
+    const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+    return JSON.parse(decrypted.toString('utf8'));
+  }
+  // Backward compatibility with legacy unencrypted JSON backup files
+  return JSON.parse(buffer.toString('utf8'));
+}
 
 // ── AUTOMATIC BACKUP ENGINE ──────────────────────────────────────────────────
 function getBackupDirectory() {
@@ -60,10 +87,12 @@ function performAutoBackup() {
     const backupDir = getBackupDirectory();
     const today = new Date().toISOString().slice(0, 10);
     const backupFile = path.join(backupDir, `auto-backup-${today}.brainova`);
-    const data = JSON.stringify(store.store, null, 2);
+    const rawJson = JSON.stringify(store.store, null, 2);
+    const encryptedPayload = encryptBackupPayload(rawJson);
+
     // Atomic write: write to unique temporary file first, then replace destination
     const tmpFile = path.join(backupDir, `auto-backup-${today}.${Date.now()}.${Math.random().toString(36).substring(2, 7)}.tmp`);
-    fs.writeFileSync(tmpFile, data, 'utf8');
+    fs.writeFileSync(tmpFile, encryptedPayload);
     try {
       fs.renameSync(tmpFile, backupFile);
     } catch (renameErr) {
@@ -72,7 +101,7 @@ function performAutoBackup() {
       }
       fs.renameSync(tmpFile, backupFile);
     }
-    console.log('[Brainova AutoBackup] تم حفظ نسخة احتياطية يومية ذرية في:', backupFile);
+    console.log('[Brainova AutoBackup] تم حفظ نسخة احتياطية ذرية مشفرة بـ AES-256-GCM في:', backupFile);
 
     // Keep only last 15 backups
     const files = fs.readdirSync(backupDir)
@@ -181,10 +210,35 @@ function startParentServer() {
     '.ttf':   'font/ttf'
   };
 
+  // IP Rate Limiter to mitigate brute-force password guessing and flooding
+  const ipRateLimits = new Map();
+  function checkRateLimit(ip, maxRequests = 20, windowMs = 5000) {
+    const now = Date.now();
+    let record = ipRateLimits.get(ip);
+    if (!record || now > record.resetTime) {
+      record = { count: 1, resetTime: now + windowMs };
+      ipRateLimits.set(ip, record);
+      return true;
+    }
+    record.count++;
+    if (record.count > maxRequests) {
+      return false;
+    }
+    return true;
+  }
+
   parentServer = http.createServer((req, res) => {
     // Security headers for local portal
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
+
+    // Rate limiting check
+    const clientIp = req.socket.remoteAddress || '127.0.0.1';
+    if (!checkRateLimit(clientIp)) {
+      res.writeHead(429, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'Too Many Requests. Please slow down.' }));
+      return;
+    }
 
     let url;
     try {
@@ -1162,14 +1216,19 @@ ipcMain.on('open-backup-folder', () => {
 
 ipcMain.handle('backup-export', async () => {
   const { filePath, canceled } = await dialog.showSaveDialog(mainWindow, {
-    title: 'حفظ النسخة الاحتياطية',
+    title: 'حفظ النسخة الاحتياطية المشفرة',
     defaultPath: `brainova-backup-${new Date().toISOString().slice(0, 10)}.brainova`,
-    filters: [{ name: 'Brainova Backup', extensions: ['brainova'] }]
+    filters: [{ name: 'Brainova Encrypted Backup', extensions: ['brainova'] }]
   });
   if (canceled || !filePath) return { ok: false };
-  const data = JSON.stringify(store.store, null, 2);
-  fs.writeFileSync(filePath, data, 'utf8');
-  return { ok: true, path: filePath };
+  try {
+    const rawJson = JSON.stringify(store.store, null, 2);
+    const encryptedPayload = encryptBackupPayload(rawJson);
+    fs.writeFileSync(filePath, encryptedPayload);
+    return { ok: true, path: filePath };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 
 ipcMain.handle('backup-import', async () => {
@@ -1180,12 +1239,12 @@ ipcMain.handle('backup-import', async () => {
   });
   if (canceled || !filePaths.length) return { ok: false };
   try {
-    const raw = fs.readFileSync(filePaths[0], 'utf8');
-    const data = JSON.parse(raw);
+    const rawBuffer = fs.readFileSync(filePaths[0]);
+    const data = decryptBackupPayload(rawBuffer);
     Object.entries(data).forEach(([k, v]) => store.set(k, v));
     return { ok: true };
-  } catch {
-    return { ok: false, error: 'ملف غير صالح' };
+  } catch (err) {
+    return { ok: false, error: 'فشل استيراد النسخة الاحتياطية أو فك تشفيرها: ' + err.message };
   }
 });
 
@@ -1217,13 +1276,13 @@ ipcMain.handle('backup-list', async () => {
 ipcMain.handle('backup-restore-file', async (event, filePath) => {
   try {
     if (!filePath || !fs.existsSync(filePath)) return { ok: false, error: 'ملف النسخة الاحتياطية غير موجود' };
-    const raw = fs.readFileSync(filePath, 'utf8');
-    const data = JSON.parse(raw);
+    const rawBuffer = fs.readFileSync(filePath);
+    const data = decryptBackupPayload(rawBuffer);
     Object.entries(data).forEach(([k, v]) => store.set(k, v));
     performAutoBackup();
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: err.message };
+    return { ok: false, error: 'فشل استرجاع النسخة الاحتياطية أو فك تشفيرها: ' + err.message };
   }
 });
 
