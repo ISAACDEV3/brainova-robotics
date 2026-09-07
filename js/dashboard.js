@@ -4,6 +4,9 @@
    ================================================ */
 
 document.addEventListener('DOMContentLoaded', () => {
+  if (window.electronAPI && window.electronAPI.maximize) {
+    try { window.electronAPI.maximize(); } catch(e) {}
+  }
 
   // ==========================================
   // VECTOR SVG ICONS LIBRARY (REPLACES ALL EMOJIS)

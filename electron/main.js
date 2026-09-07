@@ -268,8 +268,8 @@ function createMain(splash) {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
 
   mainWindow = new BrowserWindow({
-    width:    Math.min(1440, width),
-    height:   Math.min(900, height),
+    width:    width,
+    height:   height,
     minWidth: 1024,
     minHeight: 640,
     show: false,
@@ -285,6 +285,9 @@ function createMain(splash) {
     }
   });
 
+  // Maximize the window immediately so it fills the entire screen
+  mainWindow.maximize();
+
   mainWindow.loadFile(path.join(__dirname, '..', 'dashboard.html'));
 
   // Ensure external links and print receipts open in user's default browser (Google Chrome, etc.)
@@ -295,11 +298,20 @@ function createMain(splash) {
     return { action: 'deny' };
   });
 
+  mainWindow.on('show', () => {
+    try {
+      if (!mainWindow.isMaximized()) {
+        mainWindow.maximize();
+      }
+    } catch(e) {}
+  });
+
   mainWindow.once('ready-to-show', () => {
     setTimeout(() => {
       if (splash && !splash.isDestroyed()) splash.close();
+      try { mainWindow.maximize(); } catch(e) {}
       mainWindow.show();
-      mainWindow.center();
+      mainWindow.focus();
       performAutoBackup();
       setupAutoUpdater();
 
