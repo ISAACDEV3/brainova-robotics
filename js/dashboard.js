@@ -1529,20 +1529,20 @@ document.addEventListener('DOMContentLoaded', () => {
       if (hasDebtStatus) {
         sessionsBadge = `
           <div style="display:flex; flex-direction:column; gap:4px;">
-            <span class="payment-badge" style="background:rgba(2,132,199,0.12); color:#38BDF8; border:1px solid rgba(2,132,199,0.3); font-weight:800; font-size:0.75rem; display:inline-flex; align-items:center; gap:5px;">
+            <span class="payment-badge" style="background:rgba(2,132,199,0.12); color:#38BDF8; border:1px solid rgba(2,132,199,0.3); padding:3px 8px; border-radius:5px; font-weight:800; font-size:0.75rem; display:inline-flex; align-items:center; gap:5px;">
               ${UI_ICONS.book(13)} درس ${attendedUnpaid} حصص
             </span>
-            <span class="payment-badge overdue" style="font-weight:800; font-size:0.74rem; white-space:nowrap; display:inline-flex; align-items:center; gap:5px;" title="${stu.debtNotes || ''}">
+            <span class="payment-badge overdue" style="background:rgba(239,68,68,0.16); color:#EF4444; border:1px solid rgba(239,68,68,0.45); padding:3px 8px; border-radius:5px; font-weight:800; font-size:0.74rem; white-space:nowrap; display:inline-flex; align-items:center; gap:5px;" title="${stu.debtNotes || ''}">
               ${UI_ICONS.alert(13)} متأخر عن دفع ${dSessions} حصص تدريبية (${dAmt.toLocaleString()} دج)
             </span>
           </div>
         `;
       } else if (sessions > 0) {
-        sessionsBadge = `<span class="payment-badge paid" style="display:inline-flex; align-items:center; gap:5px;">${UI_ICONS.check(13)} ${sessions} حصص (${balance.toLocaleString()} دج)</span>`;
+        sessionsBadge = `<span class="payment-badge paid" style="background:rgba(16,185,129,0.14); color:#10B981; border:1px solid rgba(16,185,129,0.35); padding:3px 8px; border-radius:5px; font-weight:800; font-size:0.74rem; display:inline-flex; align-items:center; gap:5px;">${UI_ICONS.check(13)} ${sessions} حصص (${balance.toLocaleString()} دج)</span>`;
       } else if (balance < 0) {
-        sessionsBadge = `<span class="payment-badge overdue" style="display:inline-flex; align-items:center; gap:5px;">${UI_ICONS.alert(13)} دين: ${Math.abs(balance).toLocaleString()} دج</span>`;
+        sessionsBadge = `<span class="payment-badge overdue" style="background:rgba(239,68,68,0.16); color:#EF4444; border:1px solid rgba(239,68,68,0.45); padding:3px 8px; border-radius:5px; font-weight:800; font-size:0.74rem; display:inline-flex; align-items:center; gap:5px;">${UI_ICONS.alert(13)} دين: ${Math.abs(balance).toLocaleString()} دج</span>`;
       } else {
-        sessionsBadge = `<span class="payment-badge partial" style="display:inline-flex; align-items:center; gap:5px;">${UI_ICONS.hourglass(13)} نفدت الحصص</span>`;
+        sessionsBadge = `<span class="payment-badge partial" style="background:rgba(245,158,11,0.14); color:#F59E0B; border:1px solid rgba(245,158,11,0.35); padding:3px 8px; border-radius:5px; font-weight:800; font-size:0.74rem; display:inline-flex; align-items:center; gap:5px;">${UI_ICONS.hourglass(13)} نفدت الحصص</span>`;
       }
 
       let paymentTimelineBadge = '';
@@ -3210,7 +3210,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <div>
           ${hasDebtStatus ? `
-            <div class="dossier-status-pill dossier-status-pill--debt">
+            <div class="dossier-status-pill dossier-status-pill--debt" style="background:rgba(239,68,68,0.18); color:#EF4444; border:1px solid rgba(239,68,68,0.5); font-weight:800;">
               ${UI_ICONS.alert(12)} متأخر عن دفع ${unpaidDebtSessions} حصص تدريبية (${debtAmount.toLocaleString()} دج)
             </div>
           ` : (sessionsRemaining > 0 ? `

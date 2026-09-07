@@ -1848,6 +1848,36 @@ html[dir="ltr"] #toastContainer {
   color: #FBBF24;
 }
 
+/* Student Table Payment Badges */
+.payment-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.payment-badge.overdue {
+  background: rgba(239, 68, 68, 0.16) !important;
+  color: #EF4444 !important;
+  border: 1px solid rgba(239, 68, 68, 0.45) !important;
+}
+
+.payment-badge.paid {
+  background: rgba(16, 185, 129, 0.14) !important;
+  color: #10B981 !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+}
+
+.payment-badge.partial {
+  background: rgba(245, 158, 11, 0.14) !important;
+  color: #F59E0B !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+}
+
 .dossier-status-pill {
   display: inline-flex;
   align-items: center;
@@ -1859,9 +1889,9 @@ html[dir="ltr"] #toastContainer {
 }
 
 .dossier-status-pill--debt {
-  background: rgba(239, 68, 68, 0.14);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  color: #FCA5A5;
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  color: #EF4444;
 }
 
 .dossier-status-pill--active {
