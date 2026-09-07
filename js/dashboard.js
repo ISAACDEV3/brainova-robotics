@@ -4476,10 +4476,7 @@ document.addEventListener('DOMContentLoaded', () => {
     infoEl.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <span>الطلاب المسجلون بالفوج: <strong style="color:#38BDF8; font-size:1rem;">${students.length}</strong></span>
-        <span>عدد صفحات A4: <strong style="color:#10B981;">${pagesCount} صفحة</strong> (8 بطاقات بالصفحة)</span>
-      </div>
-      <div style="font-size:0.75rem; color:#94A3B8; margin-top:6px;">
-        مجهزة بمسافات وهوامش قياسية وخطوط قص دقيقة لسهولة التقطيع والتغليف الحراري (Lamination).
+        <span>عدد صفحات A4: <strong style="color:#10B981;">${pagesCount} صفحة</strong></span>
       </div>
     `;
   };
@@ -4507,7 +4504,7 @@ document.addEventListener('DOMContentLoaded', () => {
     for (const stu of students) {
       const cardHtml = await getStudentBadgeHtml(stu);
       badgesHtmlArray.push(`
-        <div style="page-break-inside:avoid; border:1px dashed #7DD3FC; border-radius:3.5mm; padding:0; background:#FFFFFF;">
+        <div style="page-break-inside:avoid; border:1px solid #E2E8F0; border-radius:3.5mm; padding:0; background:#FFFFFF;">
           ${cardHtml}
         </div>
       `);
@@ -4517,21 +4514,51 @@ document.addEventListener('DOMContentLoaded', () => {
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>بطاقات طلاب فوج - ${groupName}</title>
+  <title>بطاقات فوج ${groupName}</title>
   <style>
-    @page { size: A4 portrait; margin: 10mm 8mm; }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', system-ui, sans-serif; }
-    body { width: 100%; background: #FFFFFF; color: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .sheet-header { text-align: center; margin-bottom: 6mm; border-bottom: 1px solid #E2E8F0; padding-bottom: 2mm; }
-    .sheet-header h2 { font-size: 13pt; color: #0F172A; }
-    .sheet-header p { font-size: 8pt; color: #64748B; margin-top: 1mm; }
-    .cards-grid { display: grid; grid-template-columns: 85.6mm 85.6mm; gap: 6mm 6mm; justify-content: center; }
+    @page {
+      size: A4 portrait;
+      margin: 10mm 8mm;
+    }
+    body {
+      font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #FFFFFF;
+      color: #0F172A;
+    }
+    .sheet-header {
+      text-align: center;
+      margin-bottom: 8mm;
+      border-bottom: 2px solid #E2E8F0;
+      padding-bottom: 4mm;
+    }
+    .sheet-header h2 {
+      margin: 0 0 4px 0;
+      font-size: 16px;
+      color: #0284C7;
+    }
+    .sheet-header p {
+      margin: 0;
+      font-size: 12px;
+      color: #64748B;
+    }
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6mm 8mm;
+      justify-items: center;
+      align-items: center;
+    }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
   </style>
 </head>
 <body>
   <div class="sheet-header">
     <h2>أكاديمية براينوفا للروبوتيك والذكاء الاصطناعي — بطاقات طلاب ${groupName}</h2>
-    <p>إجمالي البطاقات: ${students.length} بطاقة • قص على الخطوط المتقطعة للتغليف الحراري (Lamination)</p>
+    <p>إجمالي البطاقات: ${students.length} بطاقة</p>
   </div>
   <div class="cards-grid">
     ${badgesHtmlArray.join('')}
