@@ -2900,28 +2900,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const actualAttended = stuAtt.filter(a => a.status === 'present' || a.status === 'late').length;
 
     const hasDebt = !!(stu.hasDebt || Number(stu.debtAmount) > 0 || Number(stu.unpaidSessions) > 0 || Number(stu.unpaidMonths) > 0 || (stu.unpaidAttendedSessions && stu.unpaidAttendedSessions > 0));
-    const banner = document.getElementById('payDebtNoticeBanner');
     const attendedUnpaid = (stu.unpaidAttendedSessions !== undefined && stu.unpaidAttendedSessions !== null && Number(stu.unpaidAttendedSessions) > 0)
       ? Number(stu.unpaidAttendedSessions)
       : (Number(stu.unpaidSessions) > 0 ? Number(stu.unpaidSessions) : (actualAttended > 0 ? actualAttended : (hasDebt ? 1 : 0)));
 
     const dAmt = Number(stu.debtAmount) || (attendedUnpaid * perSession);
     const dMonths = Number(stu.unpaidMonths) || Math.floor(attendedUnpaid / 4);
-
-    if (banner) {
-      if (hasDebt) {
-        banner.style.display = 'block';
-        banner.innerHTML = `
-          <div>${UI_ICONS.alert(12)} <strong>تنبيه:</strong> هذا الطالب مسجل عليه تأخر في الدفع (دين: <strong>${dAmt.toLocaleString()} دج</strong> / درس <strong>${attendedUnpaid}</strong> حصص غير مسددة).</div>
-          <div style="font-size:0.75rem; color:#A7F3D0; margin-top:3px;">
-            عند تأكيد التسديد، سيتم شطب الدين فوراً وإلغاء حالة "متأخر في الدفع" تماماً ويصدر وصل رسمي مسدد.
-          </div>
-        `;
-      } else {
-        banner.style.display = 'none';
-        banner.innerHTML = '';
-      }
-    }
 
     // Pre-populate debt fields for debt mode
     const debtSessionsInput = document.getElementById('payDebtSessionsInput');

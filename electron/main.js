@@ -858,7 +858,7 @@ ipcMain.on('print-receipt', (event, payload) => {
     const balanceNum = (pay && pay.currentBalance !== undefined && pay.currentBalance >= 0)
       ? pay.currentBalance
       : ((stu && stu.balance !== undefined && stu.balance >= 0) ? stu.balance : amountNum);
-    const balanceStr = isUnpaid ? `⚠️ دين معلق: ${debtAmountNum.toLocaleString()} دج` : `${remainingSessions} حصص متاحة / ${Number(balanceNum).toLocaleString()} دج`;
+    const balanceStr = isUnpaid ? `دين معلق: ${debtAmountNum.toLocaleString()} دج` : `${remainingSessions} حصص متاحة / ${Number(balanceNum).toLocaleString()} دج`;
 
     // Subscription Validity, First Session Date, and Expected Renewal Date
     const daysMap = { 'الأحد': 0, 'الاحد': 0, 'الإثنين': 1, 'الاثنين': 1, 'الثلاثاء': 2, 'الأربعاء': 3, 'الاربعاء': 3, 'الخميس': 4, 'الجمعة': 5, 'السبت': 6 };
