@@ -304,6 +304,11 @@ document.addEventListener('DOMContentLoaded', () => {
   window.showToast = showToast;
 
   // --- TAB SWITCHING ---
+  window.switchView = function(viewName) {
+    const targetLink = document.querySelector(`.sidebar__nav a[data-view="${viewName}"]`);
+    if (targetLink) targetLink.click();
+  };
+
   const navLinks = document.querySelectorAll('.sidebar__nav a[data-view]');
   const views = document.querySelectorAll('.dashboard-view');
 
@@ -331,6 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'payments': 'المدفوعات والوصولات',
         'registrations': 'طلبات التسجيل الجديدة',
         'educators': 'طاقم التدريس',
+        'whatsapp': 'بوت واتساب الآلي',
         'settings': 'إعدادات النظام'
       };
       const titleEl = document.getElementById('topbarViewTitle');
