@@ -1021,6 +1021,20 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   window.getArabicDayName = getArabicDayName;
 
+  function getArabicMonthYearName(yearMonthStr) {
+    if (!yearMonthStr) return '';
+    const parts = yearMonthStr.split('-');
+    if (parts.length < 2) return yearMonthStr;
+    const year = parts[0];
+    const mIdx = parseInt(parts[1], 10) - 1;
+    const months = [
+      'جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان',
+      'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+    ];
+    return `${months[mIdx] || parts[1]} ${year}`;
+  }
+  window.getArabicMonthYearName = getArabicMonthYearName;
+
   function formatIsoDate(d) {
     if (!d || isNaN(d.getTime())) return '';
     const year = d.getFullYear();
@@ -6378,10 +6392,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // ── MULTI-WEEK / MULTI-MONTH CROSS-TABLE MATRIX ──────────
+  // ── MULTI-WEEK / MULTI-MONTH CROSS-TABLE MATRIX (SEGMENTED BY MONTH) ────
+  window.setDossierMatrixMonth = function(monthKey) {
+    window.__currentDossierMatrixMonth = monthKey;
+    renderGroupDossierMatrix();
+  };
+
   window.renderGroupDossierMatrix = function() {
     const groupName = window.__currentDossierGroupName;
     const container = document.getElementById('dossierMatrixContainer');
+    const filterContainer = document.getElementById('dossierMatrixMonthFilter');
     if (!groupName || !container) return;
 
     const allStudents = getData('brainova_students') || [];
@@ -6407,24 +6427,68 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (dates.length === 0) {
+      if (filterContainer) filterContainer.style.display = 'none';
       container.innerHTML = `
         <div style="text-align: center; padding: 48px 16px; color: var(--color-text-muted);">
           <div style="margin-bottom: 8px;">${UI_ICONS.calendar(36)}</div>
           <strong style="display:block; font-size:0.95rem; color:#fff; margin-bottom:4px;">لا توجد حصص مسجلة في هذا الفوج حتى الآن</strong>
-          <span style="font-size:0.8rem;">عند تسجيل حضور الحصص الأسبوعية ستظهر المصفوفة الزمنية للتتبع التلقائي هنا لكل الأسابيع والأشهر.</span>
+          <span style="font-size:0.8rem;">عند تسجيل حضور الحصص الأسبوعية ستظهر المصفوفة الزمنية للتتبع التلقائي هنا مقسمة بالأشهر والدورات.</span>
         </div>
       `;
       return;
     }
 
-    const theadDatesHtml = dates.map((d, idx) => {
+    // Extract all unique months (YYYY-MM)
+    const uniqueMonths = [...new Set(dates.map(d => d.slice(0, 7)))].filter(Boolean);
+
+    // Default to the latest active month so historical records don't cram
+    if (!window.__currentDossierMatrixMonth || (window.__currentDossierMatrixMonth !== 'all' && !uniqueMonths.includes(window.__currentDossierMatrixMonth))) {
+      window.__currentDossierMatrixMonth = uniqueMonths[uniqueMonths.length - 1];
+    }
+    const currentMonth = window.__currentDossierMatrixMonth || 'all';
+
+    // Render Month Filter Pills Bar
+    if (filterContainer) {
+      filterContainer.style.display = 'flex';
+      const monthButtonsHtml = uniqueMonths.map(m => {
+        const mCount = dates.filter(d => d.startsWith(m)).length;
+        const isActive = (currentMonth === m);
+        const mName = getArabicMonthYearName(m);
+        return `
+          <button type="button" class="btn btn--small" onclick="setDossierMatrixMonth('${m}')"
+            style="${isActive ? 'background:#0284C7; color:#fff; font-weight:800; border:1px solid #38BDF8; box-shadow:0 0 10px rgba(2,132,199,0.35);' : 'background:rgba(255,255,255,0.05); color:#94A3B8; border:1px solid var(--color-border); font-weight:600;'} padding:4px 12px; font-size:0.78rem; border-radius:6px; cursor:pointer; transition:all 0.15s ease;">
+            📅 ${mName} <span style="opacity:0.75; font-size:0.7rem; margin-right:4px;">(${mCount} حصص)</span>
+          </button>
+        `;
+      }).join('');
+
+      const allIsActive = (currentMonth === 'all');
+      filterContainer.innerHTML = `
+        <div style="display:flex; align-items:center; gap:8px; font-size:0.78rem; color:#94A3B8; margin-left:8px; font-weight:700;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" x2="10"/></svg>
+          تصفح الشهر:
+        </div>
+        ${monthButtonsHtml}
+        <button type="button" class="btn btn--small" onclick="setDossierMatrixMonth('all')"
+          style="${allIsActive ? 'background:#0284C7; color:#fff; font-weight:800; border:1px solid #38BDF8; box-shadow:0 0 10px rgba(2,132,199,0.35);' : 'background:rgba(255,255,255,0.05); color:#94A3B8; border:1px solid var(--color-border); font-weight:600;'} padding:4px 12px; font-size:0.78rem; border-radius:6px; cursor:pointer; transition:all 0.15s ease;">
+          كل الأشهر (${dates.length} حصة)
+        </button>
+      `;
+    }
+
+    // Filter dates according to selected month
+    const activeDates = (currentMonth === 'all') ? dates : dates.filter(d => d.startsWith(currentMonth));
+
+    const theadDatesHtml = activeDates.map((d, idx) => {
       const isMakeup = groupAtt.some(a => a.date === d && (a.sessionType === 'makeup' || (a.note && a.note.includes('تعويض'))));
       const dayName = getArabicDayName(d);
+      const overallIdx = dates.indexOf(d) + 1;
       return `
-        <th style="min-width: 62px; text-align: center; padding: 6px 4px; border-left: 1px solid rgba(255,255,255,0.06);">
-          <div style="font-weight: 800; color: ${isMakeup ? '#F59E0B' : '#38BDF8'}; font-size: 0.76rem;">حصة ${idx + 1}</div>
-          <div style="font-size: 0.68rem; color: #94A3B8; font-family: monospace; margin-top: 1px;">${d.slice(5)}</div>
-          <div style="font-size: 0.65rem; color: #64748B;">${dayName}</div>
+        <th style="min-width: 78px; text-align: center; padding: 6px 6px; border-left: 1px solid rgba(255,255,255,0.06);">
+          <div style="font-weight: 800; color: ${isMakeup ? '#F59E0B' : '#38BDF8'}; font-size: 0.78rem;">حصة ${idx + 1}</div>
+          ${currentMonth !== 'all' ? `<div style="font-size:0.65rem; color:#64748B;">(رقم ${overallIdx})</div>` : ''}
+          <div style="font-size: 0.70rem; color: #E2E8F0; font-family: monospace; font-weight:700; margin-top: 2px;">${d.slice(5)}</div>
+          <div style="font-size: 0.68rem; color: #94A3B8;">${dayName}</div>
           ${isMakeup ? '<span style="font-size:0.6rem; background:rgba(245,158,11,0.2); color:#F59E0B; padding:1px 3px; border-radius:3px; display:inline-block; margin-top:2px;">تعويض</span>' : ''}
         </th>
       `;
@@ -6432,7 +6496,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const tbodyHtml = groupStudents.map((stu, sIdx) => {
       let presCount = 0, lateCount = 0, absDeduct = 0, absHeld = 0, totalAtt = 0;
-      const cells = dates.map(d => {
+      const cells = activeDates.map(d => {
         const record = groupAtt.find(a => a.date === d && (a.studentId === stu.id || a.studentName === stu.name));
         if (!record) {
           return `<td style="text-align:center;"><span class="matrix-cell matrix-cell--empty">—</span></td>`;
@@ -6481,9 +6545,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const tfootHtml = `
       <tr style="background: rgba(255,255,255,0.03); font-weight: 700; border-top: 1.5px solid var(--color-border);">
         <td class="matrix-sticky-col" colspan="3" style="text-align: right; padding: 8px 12px; color: #94A3B8;">
-          معدل حضور الفوج لكل حصة:
+          معدل حضور الفوج:
         </td>
-        ${dates.map(d => {
+        ${activeDates.map(d => {
           const dayAtt = groupAtt.filter(a => a.date === d);
           const p = dayAtt.filter(a => a.status === 'present' || a.status === 'late').length;
           const tot = dayAtt.length;
@@ -6495,7 +6559,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </td>`;
         }).join('')}
         <td colspan="5" style="border-right: 1px solid var(--color-border); text-align:center; color:#94A3B8; font-size:0.75rem;">
-          إجمالي الحصص المنعقدة: <strong>${dates.length}</strong>
+          ${currentMonth !== 'all' ? `حصص شهر ${getArabicMonthYearName(currentMonth)}: <strong>${activeDates.length}</strong>` : `إجمالي الحصص المنعقدة: <strong>${dates.length}</strong>`}
         </td>
       </tr>
     `;
@@ -6525,7 +6589,7 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
   };
 
-  // ── PRINT MATRIX (A4 LANDSCAPE) ──────────────────────────
+  // ── PRINT MATRIX (SMART A4 LANDSCAPE - SEGMENTED BY MONTH) ──
   window.printGroupDossierMatrix = function() {
     const groupName = window.__currentDossierGroupName;
     if (!groupName) return;
@@ -6548,128 +6612,150 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const printDate = new Date().toLocaleDateString('ar-DZ', { year: 'numeric', month: 'long', day: 'numeric' });
+    const currentMonth = window.__currentDossierMatrixMonth || 'all';
 
-    let theadCols = dates.map((d, idx) => {
-      const dayName = getArabicDayName(d);
-      return `<th style="border: 1px solid #334155; padding: 4px; font-size: 9px; text-align: center;">حصة ${idx + 1}<br><span style="font-size:8px;">${d.slice(5)}</span><br><span style="font-size:7.5px;">${dayName}</span></th>`;
-    }).join('');
-
-    let rowsHtml = groupStudents.map((stu, sIdx) => {
-      let pres = 0, late = 0, absD = 0, absH = 0, tot = 0;
-      const cells = dates.map(d => {
-        const record = groupAtt.find(a => a.date === d && (a.studentId === stu.id || a.studentName === stu.name));
-        if (!record) return `<td style="border: 1px solid #94A3B8; padding: 3px; font-size: 8.5px; text-align:center; color:#94A3B8;">—</td>`;
-        tot++;
-        if (record.status === 'present') {
-          pres++;
-          return `<td style="border: 1px solid #94A3B8; padding: 3px; font-size: 9px; text-align:center; font-weight:700; color:#059669;">ح</td>`;
-        } else if (record.status === 'late') {
-          late++;
-          return `<td style="border: 1px solid #94A3B8; padding: 3px; font-size: 8.5px; text-align:center; font-weight:700; color:#D97706;">ت</td>`;
-        } else {
-          const isHold = record.holdAbsence === true || record.deductSession === false;
-          if (isHold) {
-            absH++;
-            return `<td style="border: 1px solid #94A3B8; padding: 3px; font-size: 8.5px; text-align:center; font-weight:700; color:#7C3AED;">م</td>`;
-          } else {
-            absD++;
-            return `<td style="border: 1px solid #94A3B8; padding: 3px; font-size: 8.5px; text-align:center; font-weight:700; color:#DC2626;">غ</td>`;
-          }
-        }
+    // Helper to generate a single month matrix table for printing
+    function generateMonthTableHtml(monthDates, monthTitle) {
+      const theadCols = monthDates.map((d, idx) => {
+        const dayName = getArabicDayName(d);
+        return `<th style="border: 1px solid #334155; padding: 4px; font-size: 9.5px; text-align: center; min-width:55px;">حصة ${idx + 1}<br><span style="font-size:8.5px; font-weight:700;">${d.slice(5)}</span><br><span style="font-size:8px; color:#475569;">${dayName}</span></th>`;
       }).join('');
 
-      const rate = tot > 0 ? Math.round(((pres + late) / tot) * 100) : 100;
+      const rowsHtml = groupStudents.map((stu, sIdx) => {
+        let pres = 0, late = 0, absD = 0, absH = 0, tot = 0;
+        const cells = monthDates.map(d => {
+          const record = groupAtt.find(a => a.date === d && (a.studentId === stu.id || a.studentName === stu.name));
+          if (!record) return `<td style="border: 1px solid #94A3B8; padding: 3px; font-size: 9px; text-align:center; color:#94A3B8;">—</td>`;
+          tot++;
+          if (record.status === 'present') {
+            pres++;
+            return `<td style="border: 1px solid #94A3B8; padding: 3px; font-size: 9.5px; text-align:center; font-weight:800; color:#059669;">ح</td>`;
+          } else if (record.status === 'late') {
+            late++;
+            return `<td style="border: 1px solid #94A3B8; padding: 3px; font-size: 9px; text-align:center; font-weight:800; color:#D97706;">ت</td>`;
+          } else {
+            const isHold = record.holdAbsence === true || record.deductSession === false;
+            if (isHold) {
+              absH++;
+              return `<td style="border: 1px solid #94A3B8; padding: 3px; font-size: 9px; text-align:center; font-weight:800; color:#7C3AED;">م</td>`;
+            } else {
+              absD++;
+              return `<td style="border: 1px solid #94A3B8; padding: 3px; font-size: 9px; text-align:center; font-weight:800; color:#DC2626;">غ</td>`;
+            }
+          }
+        }).join('');
+
+        const rate = tot > 0 ? Math.round(((pres + late) / tot) * 100) : 100;
+
+        return `
+          <tr>
+            <td style="border: 1px solid #94A3B8; padding: 4px; text-align:center;">${sIdx + 1}</td>
+            <td style="border: 1px solid #94A3B8; padding: 4px; font-family:monospace; font-weight:700;">${stu.id}</td>
+            <td style="border: 1px solid #94A3B8; padding: 4px; text-align:right; font-weight:700;">${stu.name}</td>
+            ${cells}
+            <td style="border: 1px solid #94A3B8; padding: 4px; text-align:center; font-weight:700; color:#059669;">${pres}</td>
+            <td style="border: 1px solid #94A3B8; padding: 4px; text-align:center; font-weight:700; color:#D97706;">${late}</td>
+            <td style="border: 1px solid #94A3B8; padding: 4px; text-align:center; font-weight:700; color:#DC2626;">${absD}</td>
+            <td style="border: 1px solid #94A3B8; padding: 4px; text-align:center; font-weight:700; color:#7C3AED;">${absH}</td>
+            <td style="border: 1px solid #94A3B8; padding: 4px; text-align:center; font-weight:800;">${rate}%</td>
+          </tr>
+        `;
+      }).join('');
 
       return `
-        <tr>
-          <td style="border: 1px solid #94A3B8; padding: 4px; text-align:center;">${sIdx + 1}</td>
-          <td style="border: 1px solid #94A3B8; padding: 4px; font-family:monospace; font-weight:700;">${stu.id}</td>
-          <td style="border: 1px solid #94A3B8; padding: 4px; text-align:right; font-weight:700;">${stu.name}</td>
-          ${cells}
-          <td style="border: 1px solid #94A3B8; padding: 4px; text-align:center; font-weight:700; color:#059669;">${pres}</td>
-          <td style="border: 1px solid #94A3B8; padding: 4px; text-align:center; font-weight:700; color:#D97706;">${late}</td>
-          <td style="border: 1px solid #94A3B8; padding: 4px; text-align:center; font-weight:700; color:#DC2626;">${absD}</td>
-          <td style="border: 1px solid #94A3B8; padding: 4px; text-align:center; font-weight:700; color:#7C3AED;">${absH}</td>
-          <td style="border: 1px solid #94A3B8; padding: 4px; text-align:center; font-weight:800;">${rate}%</td>
-        </tr>
+        <div class="print-month-section" style="margin-bottom: 24px; page-break-inside: avoid;">
+          <div class="header">
+            <div>
+              <h1 class="title">أكاديمية براينوفا للروبوتيك — BRAINOVA ROBOTICS</h1>
+              <div style="font-size:12px; font-weight:800; color:#0284C7; margin-top:2px;">المصفوفة الزمنية وسجل الحضور — ${monthTitle}</div>
+            </div>
+            <div style="text-align:left; font-size:10px; color:#64748B;">
+              <div>تاريخ الاستخراج: <strong>${printDate}</strong></div>
+              <div>الفوج: <strong>${groupName}</strong></div>
+            </div>
+          </div>
+
+          <div class="meta-box">
+            <div>اسم الفوج: <strong>${groupName}</strong></div>
+            <div>المستوى: <strong>${matchedGroup.level || 'دورة الروبوتيك'}</strong></div>
+            <div>المدرب المشرف: <strong>${matchedGroup.educator || matchedGroup.educatorName || 'غير محدد'}</strong></div>
+            <div>حصص الدورة: <strong>${monthDates.length} حصص</strong></div>
+            <div>عدد الطلاب: <strong>${groupStudents.length} تلميذ</strong></div>
+          </div>
+
+          <div class="legend">
+            <span style="color:#059669;">ح: حاضر</span>
+            <span style="color:#D97706;">ت: متأخر</span>
+            <span style="color:#DC2626;">غ: غائب (مخصوم)</span>
+            <span style="color:#7C3AED;">م: غائب محفوظ للتعويض</span>
+          </div>
+
+          <table class="table">
+            <thead>
+              <tr>
+                <th style="width:24px;">#</th>
+                <th style="width:60px;">ID</th>
+                <th style="width:130px; text-align:right;">اسم التلميذ الكامل</th>
+                ${theadCols}
+                <th style="width:38px; background:#064E3B; color:#fff;">حاضر</th>
+                <th style="width:38px; background:#78350F; color:#fff;">تأخر</th>
+                <th style="width:38px; background:#7F1D1D; color:#fff;">مخصوم</th>
+                <th style="width:38px; background:#581C87; color:#fff;">محفوظ</th>
+                <th style="width:48px; background:#0F172A; color:#fff;">الالتزام</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+
+          <div class="signatures">
+            <div class="sig-box">توقيع وختم الأستاذ المشرف</div>
+            <div class="sig-box">توقيع وختم إدارة الأكاديمية</div>
+          </div>
+        </div>
       `;
-    }).join('');
+    }
+
+    let tablesHtml = '';
+    if (currentMonth !== 'all') {
+      const monthDates = dates.filter(d => d.startsWith(currentMonth));
+      tablesHtml = generateMonthTableHtml(monthDates, `شهر ${getArabicMonthYearName(currentMonth)}`);
+    } else {
+      // Group by month and generate paginated sections
+      const uniqueMonths = [...new Set(dates.map(d => d.slice(0, 7)))].filter(Boolean);
+      tablesHtml = uniqueMonths.map((m, i) => {
+        const mDates = dates.filter(d => d.startsWith(m));
+        const isLast = (i === uniqueMonths.length - 1);
+        return `
+          ${generateMonthTableHtml(mDates, `شهر ${getArabicMonthYearName(m)}`)}
+          ${!isLast ? '<div style="page-break-after: always;"></div>' : ''}
+        `;
+      }).join('');
+    }
 
     const printHtml = `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>المصفوفة الزمنية للحضور والغياب — ${groupName}</title>
+  <title>مصفوفة حضور فوج ${groupName}</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    @page { size: A4 landscape; margin: 8mm; }
+    @page { size: A4 landscape; margin: 10mm; }
     * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    body { font-family: 'Cairo', Tahoma, sans-serif; color: #0F172A; background: #fff; margin: 0; padding: 8px; font-size: 10px; }
+    body { font-family: 'Cairo', Tahoma, sans-serif; color: #0F172A; background: #fff; margin: 0; padding: 4px; font-size: 10px; }
     .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0284C7; padding-bottom: 8px; margin-bottom: 10px; }
     .title { font-size: 16px; font-weight: 900; color: #0284C7; margin: 0; }
     .meta-box { display: flex; justify-content: space-between; background: #F8FAFC; border: 1px solid #CBD5E1; padding: 6px 12px; border-radius: 6px; margin-bottom: 10px; font-size: 10.5px; }
     .legend { display: flex; gap: 14px; font-size: 9.5px; margin-bottom: 8px; font-weight: 700; }
     .table { width: 100%; border-collapse: collapse; border: 1.5px solid #0F172A; }
-    .table th { background: #0F172A; color: #fff; border: 1px solid #334155; padding: 4px 2px; font-size: 9px; text-align: center; }
+    .table th { background: #0F172A; color: #fff; border: 1px solid #334155; padding: 5px 3px; font-size: 9px; text-align: center; }
     .signatures { display: flex; justify-content: space-between; margin-top: 18px; padding: 0 40px; }
     .sig-box { text-align: center; width: 220px; border-top: 1px dashed #64748B; padding-top: 6px; font-weight: 700; font-size: 11px; }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div>
-      <h1 class="title">أكاديمية براينوفا للروبوتيك والذكاء الاصطناعي — BRAINOVA ROBOTICS</h1>
-      <div style="font-size:12px; font-weight:700; color:#334155; margin-top:2px;">المصفوفة الزمنية وسجل الحضور والغياب الشامل (Multi-Week Attendance Matrix)</div>
-    </div>
-    <div style="text-align:left; font-size:10px; color:#64748B;">
-      <div>تاريخ الاستخراج: <strong>${printDate}</strong></div>
-      <div>الفوج: <strong>${groupName}</strong></div>
-    </div>
-  </div>
-
-  <div class="meta-box">
-    <div>اسم الفوج: <strong>${groupName}</strong></div>
-    <div>المستوى: <strong>${matchedGroup.level || 'دورة الروبوتيك'}</strong></div>
-    <div>المدرب المشرف: <strong>${matchedGroup.educator || matchedGroup.educatorName || 'غير محدد'}</strong></div>
-    <div>عدد الحصص المنعقدة: <strong>${dates.length} حصة</strong></div>
-    <div>إجمالي الطلاب: <strong>${groupStudents.length} تلميذ</strong></div>
-  </div>
-
-  <div class="legend">
-    <span style="color:#059669;">ح: حاضر</span>
-    <span style="color:#D97706;">ت: متأخر</span>
-    <span style="color:#DC2626;">غ: غائب (مخصوم)</span>
-    <span style="color:#7C3AED;">م: غائب محفوظ للتعويض</span>
-  </div>
-
-  <table class="table">
-    <thead>
-      <tr>
-        <th style="width:24px;">#</th>
-        <th style="width:60px;">ID</th>
-        <th style="width:130px; text-align:right;">اسم التلميذ الكامل</th>
-        ${theadCols}
-        <th style="width:36px; background:#064E3B; color:#fff;">حاضر</th>
-        <th style="width:36px; background:#78350F; color:#fff;">تأخر</th>
-        <th style="width:36px; background:#7F1D1D; color:#fff;">مخصوم</th>
-        <th style="width:36px; background:#581C87; color:#fff;">محفوظ</th>
-        <th style="width:45px; background:#0F172A; color:#fff;">الالتزام</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${rowsHtml}
-    </tbody>
-  </table>
-
-  <div class="signatures">
-    <div class="sig-box">
-      توقيع وختم الأستاذ المشرف
-    </div>
-    <div class="sig-box">
-      توقيع وختم إدارة الأكاديمية
-    </div>
-  </div>
-
+  ${tablesHtml}
   <script>
     window.onload = function() {
       setTimeout(function() {
@@ -6697,7 +6783,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // ── EXPORT MATRIX CSV ────────────────────────────────────
+  // ── EXPORT MATRIX CSV (RESPECTS ACTIVE MONTH FILTER) ──────
   window.exportGroupDossierMatrixCSV = function() {
     const groupName = window.__currentDossierGroupName;
     if (!groupName) return;
@@ -6716,10 +6802,13 @@ document.addEventListener('DOMContentLoaded', () => {
       return da - db;
     });
 
-    const headers = ['ID', 'اسم التلميذ', ...dates.map((d, i) => `"حصة ${i+1} (${d})"`), 'مجموع الحضور', 'مجموع التأخر', 'غياب مخصوم', 'غياب محفوظ', 'نسبة الالتزام %'];
+    const currentMonth = window.__currentDossierMatrixMonth || 'all';
+    const activeDates = (currentMonth === 'all') ? dates : dates.filter(d => d.startsWith(currentMonth));
+
+    const headers = ['ID', 'اسم التلميذ', ...activeDates.map((d, i) => `"حصة ${i+1} (${d})"`), 'مجموع الحضور', 'مجموع التأخر', 'غياب مخصوم', 'غياب محفوظ', 'نسبة الالتزام %'];
     const rows = groupStudents.map(stu => {
       let p = 0, l = 0, ad = 0, ah = 0, tot = 0;
-      const statusCols = dates.map(d => {
+      const statusCols = activeDates.map(d => {
         const record = groupAtt.find(a => a.date === d && (a.studentId === stu.id || a.studentName === stu.name));
         if (!record) return '"—"';
         tot++;
@@ -6748,7 +6837,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `مصفوفة_حضور_${groupName.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`;
+    const monthSuffix = currentMonth !== 'all' ? `_${currentMonth}` : '';
+    link.download = `مصفوفة_حضور_${groupName.replace(/\s+/g, '_')}${monthSuffix}.csv`;
     link.click();
     showToast(`تم تصدير مصفوفة الحضور (${groupName}) بنجاح!`, 'success');
   };
