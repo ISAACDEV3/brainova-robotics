@@ -47,8 +47,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // ── Parent & Registration Portal
   getPortalInfo:             () => ipcRenderer.invoke('get-portal-info'),
-  getRegistrationPortalInfo: () => ipcRenderer.invoke('get-registration-portal-info'),
-  getNetworkInfo:            () => ipcRenderer.invoke('get-network-info'),
   onNewRegistration:         (callback) => ipcRenderer.on('new-registration', (_, reg) => callback(reg)),
 
   // ── User Management

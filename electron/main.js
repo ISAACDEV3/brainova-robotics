@@ -337,18 +337,6 @@ function startParentServer() {
       }
     }
 
-    if (pathname === '/api/network-info') {
-      const ip = getLocalIP();
-      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({
-        ok: true,
-        ip,
-        port: PARENT_PORT,
-        registrationUrl: `http://${ip}:${PARENT_PORT}/index.html#register`,
-        parentPortalUrl: `http://${ip}:${PARENT_PORT}/parent.html`
-      }));
-      return;
-    }
     if (pathname === '/api/student') {
       const u = (url.searchParams.get('u') || '').trim();
       const p = (url.searchParams.get('p') || '').trim();
@@ -1468,28 +1456,6 @@ ipcMain.handle('get-portal-info', async () => {
   } catch {
     return { ip, port: PARENT_PORT, url, qr: null };
   }
-});
-
-// ── IPC: REGISTRATION PORTAL INFO + QR CODE ──────────────────────────────────
-ipcMain.handle('get-registration-portal-info', async () => {
-  const ip = getLocalIP();
-  const regUrl = `http://${ip}:${PARENT_PORT}/index.html#register`;
-  try {
-    const qr = await QRCode.toDataURL(regUrl, { width: 280, margin: 2, color: { dark: '#0284C7', light: '#FFFFFF' } });
-    return { ip, port: PARENT_PORT, url: regUrl, qr };
-  } catch {
-    return { ip, port: PARENT_PORT, url: regUrl, qr: null };
-  }
-});
-
-ipcMain.handle('get-network-info', async () => {
-  const ip = getLocalIP();
-  return {
-    ip,
-    port: PARENT_PORT,
-    registrationUrl: `http://${ip}:${PARENT_PORT}/index.html#register`,
-    parentPortalUrl: `http://${ip}:${PARENT_PORT}/parent.html`
-  };
 });
 
 // ── IPC: GENERATE QR CODE FOR BADGES / TICKETS ──────────────────────────────

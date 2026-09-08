@@ -5583,63 +5583,6 @@ document.addEventListener('DOMContentLoaded', () => {
     renderActiveView();
   };
 
-  // --- REGISTRATION QR & NETWORK MODAL ---
-  window.openRegistrationQrModal = async function() {
-    const modal = document.getElementById('regQrModal');
-    const img = document.getElementById('regQrModalImg');
-    const input = document.getElementById('regQrModalUrlInput');
-    if (!modal) return;
-
-    let targetUrl = `${window.location.origin}/index.html#register`;
-    let qrDataUrl = null;
-
-    if (window.electronAPI && window.electronAPI.getRegistrationPortalInfo) {
-      try {
-        const info = await window.electronAPI.getRegistrationPortalInfo();
-        if (info && info.url) {
-          targetUrl = info.url;
-          qrDataUrl = info.qr;
-        }
-      } catch (err) {
-        console.warn('Error fetching registration portal info:', err);
-      }
-    }
-
-    if (input) input.value = targetUrl;
-    if (img) {
-      img.src = qrDataUrl || `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(targetUrl)}`;
-    }
-
-    modal.classList.add('active');
-  };
-
-  window.closeRegistrationQrModal = function() {
-    const modal = document.getElementById('regQrModal');
-    if (modal) modal.classList.remove('active');
-  };
-
-  window.copyRegistrationQrUrl = function() {
-    const input = document.getElementById('regQrModalUrlInput');
-    if (!input || !input.value) return;
-    navigator.clipboard.writeText(input.value).then(() => {
-      showToast('تم نسخ رابط الاستمارة بنجاح!', 'success');
-    }).catch(() => {
-      input.select();
-      document.execCommand('copy');
-      showToast('تم نسخ الرابط!', 'success');
-    });
-  };
-
-  window.openRegistrationUrlInBrowser = function() {
-    const input = document.getElementById('regQrModalUrlInput');
-    const url = (input && input.value) ? input.value : `${window.location.origin}/index.html#register`;
-    if (window.electronAPI && window.electronAPI.openExternal) {
-      window.electronAPI.openExternal(url);
-    } else {
-      window.open(url, '_blank');
-    }
-  };
-
   // --- EDUCATORS ---
   function renderEducators() {
     const educators = filterData(getData('brainova_educators'), searchQuery);
