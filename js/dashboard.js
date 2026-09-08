@@ -2497,7 +2497,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const groupName = groupSelect ? groupSelect.value : '';
     if (groupName) {
       openGroupDossierModal(encodeURIComponent(groupName));
-      switchDossierTab('matrix');
+      switchGroupDossierTab('matrix');
     } else {
       showToast('يرجى تحديد الفوج أولاً', 'info');
     }
@@ -3312,12 +3312,107 @@ document.addEventListener('DOMContentLoaded', () => {
       qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=2&data=${encodeURIComponent(portalUrl)}`;
     }
 
+    const btnPrint = document.getElementById('rcptPrintBtn');
+    const btnSettle = document.getElementById('rcptSettlePaidBtn');
+    if (isUnpaid) {
+      if (btnPrint) {
+        btnPrint.textContent = 'طباعة إشعار دين (يبقى مديوناً)';
+        btnPrint.style.background = '#EF4444';
+        btnPrint.style.borderColor = '#DC2626';
+      }
+      if (btnSettle) {
+        btnSettle.style.display = 'inline-flex';
+        btnSettle.textContent = `تسديد وشطب الدين (${debtAmount.toLocaleString()} دج) وطباعة وصل مدفوع`;
+      }
+    } else {
+      if (btnPrint) {
+        btnPrint.textContent = 'طباعة وصل تسديد (مدفوع بالكامل)';
+        btnPrint.style.background = '#0284C7';
+        btnPrint.style.borderColor = '#0284C7';
+      }
+      if (btnSettle) {
+        btnSettle.style.display = 'none';
+      }
+    }
+
     document.getElementById('receiptModal').classList.add('active');
+  };
+
+  window.settleDebtAndPrintPaidReceipt = function() {
+    const payments = getData('brainova_payments') || [];
+    const payment = payments.find(p => p.id === currentActiveReceiptPaymentId);
+    if (!payment) return;
+
+    const students = getData('brainova_students') || [];
+    const stu = students.find(s => s.id === payment.studentId);
+    if (!stu) return;
+
+    const debtAmount = Number(payment.debtAmount || stu.debtAmount || 5000);
+    const sessions = Number(payment.unpaidSessions || stu.unpaidSessions || stu.unpaidAttendedSessions || 4);
+
+    // 1. Clear all student debt & cancel late status completely
+    stu.hasDebt = false;
+    stu.debtAmount = 0;
+    stu.unpaidMonths = 0;
+    stu.unpaidSessions = 0;
+    stu.unpaidAttendedSessions = 0;
+    stu.debtNotes = '';
+    stu.balance = Math.max(0, stu.balance || 0);
+    stu.lastPaymentDate = format24hDateTime(new Date());
+    stu.lastPaymentAmount = debtAmount;
+
+    saveData('brainova_students', students);
+
+    // 2. Convert this payment to full paid settlement
+    payment.status = 'paid';
+    payment.isDebt = false;
+    payment.amountPaid = debtAmount;
+    payment.method = 'نقداً (تسديد كامل الدين)';
+    payment.notes = (payment.notes ? payment.notes + ' • ' : '') + 'تم تسديد كامل الدين والمستحقات السابقة';
+    payment.wasDebtSettled = true;
+    payment.currentBalance = stu.balance;
+    payment.sessionsPurchased = sessions;
+
+    saveData('brainova_payments', payments);
+
+    showToast('تم تسديد الدين بالكامل وشطب حالة التأخر عن الطالب بنجاح!', 'success');
+
+    // 3. Re-render the receipt modal so it shows the paid green version
+    openReceiptModal(payment.id);
+
+    // 4. Update UI in background
+    renderActiveView();
+
+    // 5. Trigger print dialog
+    setTimeout(() => {
+      triggerAppPrint();
+    }, 250);
   };
 
   window.triggerAppPrint = function() {
     const payments = getData('brainova_payments') || [];
     const payment = payments.find(p => p.id === currentActiveReceiptPaymentId) || payments[0];
+    if (!payment) return;
+
+    // When printing a paid receipt: guarantee that student debt is wiped clean and late status removed
+    const isUnpaid = payment.status === 'unpaid' || payment.isDebt || Number(payment.amountPaid) === 0;
+    if (!isUnpaid && payment.studentId) {
+      const students = getData('brainova_students') || [];
+      const stu = students.find(s => s.id === payment.studentId);
+      if (stu) {
+        let changed = false;
+        if (stu.hasDebt) { stu.hasDebt = false; changed = true; }
+        if (Number(stu.debtAmount) > 0) { stu.debtAmount = 0; changed = true; }
+        if (Number(stu.unpaidSessions) > 0) { stu.unpaidSessions = 0; changed = true; }
+        if (Number(stu.unpaidAttendedSessions) > 0) { stu.unpaidAttendedSessions = 0; changed = true; }
+        if (Number(stu.unpaidMonths) > 0) { stu.unpaidMonths = 0; changed = true; }
+        if (stu.debtNotes) { stu.debtNotes = ''; changed = true; }
+        if (changed) {
+          saveData('brainova_students', students);
+          renderActiveView();
+        }
+      }
+    }
 
     if (window.electronAPI && window.electronAPI.printReceipt) {
       window.electronAPI.printReceipt({ id: currentActiveReceiptPaymentId, payment });
@@ -3525,21 +3620,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
       <!-- 4. Segmented Dossier Tabs -->
       <div class="dossier-nav-tabs">
-        <button type="button" class="dossier-tab-btn ${activeTab === 'sessions' ? 'active' : ''}" onclick="window.switchDossierTab('${stu.id}', 'sessions')">
+        <button type="button" class="dossier-tab-btn ${activeTab === 'sessions' ? 'active' : ''}" data-dossier-tab="sessions" onclick="window.switchStudentProfileTab('${stu.id}', 'sessions')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          سجل الحصص والأسابيع (${totalSessions})
+          سجل الحصص (${totalSessions})
         </button>
-        <button type="button" class="dossier-tab-btn ${activeTab === 'payments' ? 'active' : ''}" onclick="window.switchDossierTab('${stu.id}', 'payments')">
+        <button type="button" class="dossier-tab-btn ${activeTab === 'payments' ? 'active' : ''}" data-dossier-tab="payments" onclick="window.switchStudentProfileTab('${stu.id}', 'payments')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
-          المعاملات المالية والوصولات (${payments.length})
+          المعاملات والوصولات (${payments.length})
         </button>
-        <button type="button" class="dossier-tab-btn ${activeTab === 'guardian' ? 'active' : ''}" onclick="window.switchDossierTab('${stu.id}', 'guardian')">
+        <button type="button" class="dossier-tab-btn ${activeTab === 'guardian' ? 'active' : ''}" data-dossier-tab="guardian" onclick="window.switchStudentProfileTab('${stu.id}', 'guardian')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           بيانات التلميذ والولي
         </button>
-        <button type="button" class="dossier-tab-btn ${activeTab === 'notes' ? 'active' : ''}" onclick="window.switchDossierTab('${stu.id}', 'notes')">
+        <button type="button" class="dossier-tab-btn ${activeTab === 'notes' ? 'active' : ''}" data-dossier-tab="notes" onclick="window.switchStudentProfileTab('${stu.id}', 'notes')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-          الملاحظات والتقييم التربوي
+          الملاحظات والتقييم
+        </button>
+        <button type="button" class="dossier-tab-btn ${activeTab === 'notify' ? 'active' : ''}" data-dossier-tab="notify" onclick="window.switchStudentProfileTab('${stu.id}', 'notify')" style="color:#22C55E;">
+          ${UI_ICONS.whatsapp(14)}
+          إشعار الولي واتساب
         </button>
       </div>
 
@@ -3748,6 +3847,61 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>
 
+      <!-- TAB 5: GUARDIAN NOTIFICATION & DIRECT MESSAGING -->
+      <div class="dossier-tab-pane ${activeTab === 'notify' ? 'active' : ''}" id="dossier-pane-notify">
+        <div style="background:#111827; border:1px solid var(--border-card); border-radius:10px; padding:16px; margin-bottom:14px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:10px; flex-wrap:wrap; gap:8px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="color:#22C55E;">${UI_ICONS.whatsapp(18)}</span>
+              <div>
+                <div style="font-size:0.88rem; font-weight:800; color:#F8FAFC;">إشعار ومراسلة ولي أمر التلميذ عبر واتساب</div>
+                <div style="font-size:0.75rem; color:#94A3B8;">الولي: <strong>${stu.parentName || 'غير مسجل'}</strong> • الهاتف: <strong dir="ltr" style="font-family:var(--font-mono); color:#38BDF8;">${stu.parentPhone || 'غير مسجل'}</strong></div>
+              </div>
+            </div>
+            ${stu.parentPhone ? `
+              <a href="https://wa.me/${stu.parentPhone.replace(/\D/g, '').replace(/^0/, '213')}" target="_blank" class="btn btn--small" style="background:#25D366; color:#FFF; font-weight:700; display:inline-flex; align-items:center; gap:6px;">
+                ${UI_ICONS.whatsapp(13)} فتح محادثة WhatsApp
+              </a>
+            ` : ''}
+          </div>
+
+          <div style="margin-bottom:12px;">
+            <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700; margin-bottom:6px;">نماذج الرسائل السريعة (انقر للتطبيق المباشر):</div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              ${hasDebtStatus ? `
+                <button type="button" class="btn btn--small btn--outline" style="color:#EF4444; border-color:rgba(239,68,68,0.4); font-size:0.75rem;" onclick="window.setDossierNotifyMsg('السلام عليكم ولي أمر التلميذ(ة) ${stu.name}، نعلمكم بوجود مستحقات دراسية متأخرة قدرها ${debtAmount.toLocaleString()} دج عن ${unpaidDebtSessions} حصص تدريبية. يرجى تسوية الاشتراك لمواصلة التدريب بشكل منتظم. شكراً لتعاونكم.')">
+                  ${UI_ICONS.alert(11)} نموذج إشعار المستحقات والتأخر
+                </button>
+              ` : ''}
+              <button type="button" class="btn btn--small btn--outline" style="font-size:0.75rem;" onclick="window.setDossierNotifyMsg('السلام عليكم ولي أمر التلميذ(ة) ${stu.name}، نعلمكم بغياب الطالب عن حصة الروبوتيك اليوم، يرجى إعلامنا بسبب الغياب للتنسيق البيداغوجي. تحيات إدارة براينوفا.')">
+                ${UI_ICONS.clock(11)} نموذج تنبيه الغياب
+              </button>
+              <button type="button" class="btn btn--small btn--outline" style="font-size:0.75rem;" onclick="window.setDossierNotifyMsg('السلام عليكم ولي أمر التلميذ(ة) ${stu.name}، تم إنجاز درس الروبوتيك اليوم بنجاح وأظهر التلميذ تفاعلاً وإبداعاً مميزاً في التطبيق العملي. تحياتنا!')">
+                ${UI_ICONS.check(11)} نموذج إشادة وتقرير الدرس
+              </button>
+              <button type="button" class="btn btn--small btn--outline" style="font-size:0.75rem;" onclick="window.setDossierNotifyMsg('السلام عليكم ولي أمر التلميذ(ة) ${stu.name}، نود إعلامكم باقتراب موعد تجديد الاشتراك الشهري لمواصلة تدريبات الروبوتيك. نشكر ثقتكم المستمرة.')">
+                ${UI_ICONS.card(11)} نموذج تذكير التجديد
+              </button>
+            </div>
+          </div>
+
+          <div style="margin-bottom:12px;">
+            <textarea id="dossierNotifyCustomText" rows="3" class="form-input" placeholder="اكتب نص الرسالة أو اختر نموذجاً من الأعلى..." style="width:100%; resize:vertical; font-size:0.84rem; line-height:1.5;">${hasDebtStatus ? `السلام عليكم ولي أمر التلميذ(ة) ${stu.name}، نعلمكم بوجود مستحقات دراسية متأخرة قدرها ${debtAmount.toLocaleString()} دج عن ${unpaidDebtSessions} حصص تدريبية. يرجى تسوية الاشتراك لمواصلة التدريب. شكراً لتعاونكم.` : `السلام عليكم ولي أمر التلميذ(ة) ${stu.name}، تحية طيبة من إدارة أكاديمية براينوفا للروبوتيك.`}</textarea>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <button type="button" class="btn btn--outline btn--small" onclick="closeStudentProfileModal(); openWhatsAppDispatchModal('${stu.id}')" style="color:#38BDF8; border-color:rgba(56,189,248,0.35);">
+              ${UI_ICONS.bot(12)} فتح نافذة بوت واتساب الشاملة
+            </button>
+            <div style="display:flex; gap:8px;">
+              <button type="button" class="btn btn--small" style="background:#059669; color:#FFF; font-weight:700;" onclick="window.sendDossierNotifyWhatsApp('${stu.parentPhone}')">
+                ${UI_ICONS.whatsapp(12)} إرسال الرسالة للولي عبر واتساب
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 5. Footer Actions -->
       <div class="dossier-footer-actions">
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -3773,8 +3927,49 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   window.openStudentProfile = openStudentProfile;
 
+  window.switchStudentProfileTab = function(studentId, tabName) {
+    const modal = document.getElementById('studentProfileModal');
+    if (modal) {
+      modal.querySelectorAll('.dossier-tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-dossier-tab') === tabName);
+      });
+      modal.querySelectorAll('.dossier-tab-pane').forEach(pane => {
+        pane.classList.toggle('active', pane.id === `dossier-pane-${tabName}`);
+      });
+    }
+  };
+
   window.switchDossierTab = function(studentId, tabName) {
-    openStudentProfile(studentId, tabName, 'all');
+    window.switchStudentProfileTab(studentId, tabName);
+  };
+
+  window.setDossierNotifyMsg = function(msg) {
+    const txt = document.getElementById('dossierNotifyCustomText');
+    if (txt) {
+      txt.value = msg;
+      txt.focus();
+    }
+  };
+
+  window.sendDossierNotifyWhatsApp = function(rawPhone) {
+    const txt = document.getElementById('dossierNotifyCustomText');
+    const msg = txt ? txt.value.trim() : '';
+    if (!msg) {
+      showToast('يرجى كتابة نص الرسالة أولاً', 'error');
+      return;
+    }
+    const cleanPhone = (rawPhone || '').replace(/\D/g, '').replace(/^0/, '213');
+    if (!cleanPhone || cleanPhone.length < 9) {
+      showToast('رقم هاتف الولي غير صالح أو غير مسجل!', 'error');
+      return;
+    }
+    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+    if (window.electronAPI && window.electronAPI.openExternal) {
+      window.electronAPI.openExternal(url);
+    } else {
+      window.open(url, '_blank');
+    }
+    showToast('جاري فتح محادثة واتساب لإرسال الإشعار...', 'success');
   };
 
   window.filterDossierSessions = function(studentId, filterName) {
@@ -5727,7 +5922,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('dossierStudentSearch');
     if (searchInput) searchInput.value = '';
 
-    switchDossierTab(window.__activeDossierTab || 'cases');
+    switchGroupDossierTab(window.__activeGroupDossierTab || 'cases');
 
     const modal = document.getElementById('groupDossierModal');
     if (modal) modal.classList.add('active');
@@ -6159,10 +6354,10 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast(`تم تصدير ملف الفوج (${groupName}) بصيغة CSV بنجاح!`, 'success');
   };
 
-  // ── DOSSIER TAB SWITCHER ─────────────────────────────────
-  window.__activeDossierTab = 'cases';
-  window.switchDossierTab = function(tabName) {
-    window.__activeDossierTab = tabName;
+  // ── GROUP DOSSIER TAB SWITCHER ──────────────────────────
+  window.__activeGroupDossierTab = 'cases';
+  window.switchGroupDossierTab = function(tabName) {
+    window.__activeGroupDossierTab = tabName;
     const btnCases = document.getElementById('dossierTabBtnCases');
     const btnMatrix = document.getElementById('dossierTabBtnMatrix');
     const btnSessions = document.getElementById('dossierTabBtnSessions');
