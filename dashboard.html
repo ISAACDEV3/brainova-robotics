@@ -45,6 +45,7 @@
           <li><a href="#" data-view="students" data-i18n="dash_students"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></span> الطلاب</a></li>
           <li><a href="#" data-view="attendance" data-i18n="dash_attendance"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span> الحضور والغياب</a></li>
           <li><a href="#" data-view="groups" data-i18n="dash_groups"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span> الأفواج والفئات</a></li>
+          <li><a href="#" data-view="lessons" id="navLessons"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span> دفتر الدروس والمنهاج</a></li>
           <li><a href="#" data-view="rooms" data-i18n="dash_rooms"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 7v14"/><path d="M21 7v14"/><path d="M7 21V11a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v10"/><path d="M12 14v1"/></svg></span> القاعات</a></li>
           <li><a href="#" data-view="courses" data-i18n="dash_courses"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/></svg></span> المناهج والدورات</a></li>
           <li><a href="#" data-view="schedule" data-i18n="dash_schedule"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg></span> الجدول الزمني</a></li>
@@ -605,6 +606,56 @@
                 <!-- Rendered by JS -->
               </tbody>
             </table>
+          </div>
+        </section>
+
+        <!-- ===== GROUP LESSONS JOURNAL VIEW (دفتر الدروس والمنهاج المنجز) ===== -->
+        <section id="view-lessons" class="dashboard-view">
+          <div class="page-header">
+            <div>
+              <div class="dash-breadcrumb">الشؤون الأكاديمية <span style="opacity:0.4;">/</span> دفتر الدروس والمنهاج</div>
+              <h1 class="page-title">دفتر الدروس والمنهاج المنجز</h1>
+              <p class="page-subtitle">توثيق ومتابعة ما درسه كل فوج في حصصه يدوياً مع إمكانية إرسال تقارير لأولياء الأمور عبر واتساب وتغذية بوت الرد الآلي.</p>
+            </div>
+            <div style="display:flex; gap: 8px; flex-wrap: wrap;">
+              <button type="button" class="btn btn--outline btn--small" onclick="printLessonsViewJournal()" style="display:inline-flex; align-items:center; gap:6px; color:#38BDF8; border-color:rgba(56,189,248,0.4);">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+                طباعة دفتر المنهاج (A4)
+              </button>
+              <button type="button" class="btn btn--primary btn--small" onclick="openAddLessonFromMainView()" style="display:inline-flex; align-items:center; gap:6px; background:#0284C7; border-color:#0284C7; font-weight:700;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                + تسجيل درس جديد للحصة
+              </button>
+            </div>
+          </div>
+
+          <!-- Controls Bar -->
+          <div class="table-controls" style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px; background:rgba(255,255,255,0.02); padding:12px 14px; border-radius:8px; border:1px solid var(--color-border);">
+            <div style="display:flex; align-items:center; gap:12px; flex:1; flex-wrap:wrap;">
+              <div style="min-width:240px;">
+                <label for="mainLessonsGroupSelect" style="font-size:0.75rem; color:#94A3B8; display:block; margin-bottom:4px; font-weight:700;">اختر الفوج الدراسي:</label>
+                <select id="mainLessonsGroupSelect" class="form-input" style="height:36px; font-size:0.85rem; font-weight:700;" onchange="onMainLessonsGroupChange()">
+                  <!-- Rendered dynamically by JS -->
+                </select>
+              </div>
+              <div style="min-width:240px; flex:1;">
+                <label for="mainLessonsSearchInput" style="font-size:0.75rem; color:#94A3B8; display:block; margin-bottom:4px; font-weight:700;">بحث في المحاور والدروس:</label>
+                <div style="position:relative;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute; right:10px; top:11px; width:14px; height:14px; color:#94A3B8; pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input type="text" id="mainLessonsSearchInput" class="form-input" placeholder="بحث بعنوان الدرس، الأستاذ، العتاد والملاحظات..." style="padding-right:32px; height:36px; font-size:0.82rem; width:100%;" oninput="renderLessonsView()">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Group Identity & Stats Cards -->
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; margin-bottom:16px;" id="mainLessonsKpiCards">
+            <!-- Rendered by JS -->
+          </div>
+
+          <!-- Main Lessons Stream Container -->
+          <div id="mainLessonsContainer" style="display: flex; flex-direction: column; gap: 12px;">
+            <!-- Rendered by JS -->
           </div>
         </section>
 

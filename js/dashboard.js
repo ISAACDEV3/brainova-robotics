@@ -331,6 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'students': 'إدارة الطلاب',
         'attendance': 'تسجيل الحضور والغياب',
         'groups': 'الأفواج والفئات',
+        'lessons': 'دفتر الدروس والمنهاج المنجز',
         'rooms': 'القاعات والمخابر',
         'courses': 'المناهج والدورات',
         'schedule': 'الجدول الزمني الأسبوعي',
@@ -538,6 +539,7 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (currentView === 'registrations') renderRegistrationsView();
     else if (currentView === 'educators') renderEducators();
     else if (currentView === 'groups') renderGroups();
+    else if (currentView === 'lessons') renderLessonsView();
     else if (currentView === 'rooms') renderRooms();
     else if (currentView === 'courses') renderCourses();
     else if (currentView === 'schedule') renderSchedule();
@@ -5723,6 +5725,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <span style="font-size:0.78rem; color:var(--color-text-muted);">الطلاب: <strong style="color:var(--color-text);">${studentCount} / ${g.maxStudents || 12}</strong></span>
             <div style="display:inline-flex; gap:6px; flex-wrap:wrap;">
               <button type="button" class="btn btn--primary btn--small" style="font-size:0.75rem; padding:5px 10px; background:#0284C7; border-color:#0284C7; font-weight:700;" onclick="openGroupDossierModal('${encodeURIComponent(g.name)}')">${UI_ICONS.file(12)} ملف الفوج</button>
+              <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px; color:#38BDF8; border-color:rgba(56,189,248,0.4); font-weight:700;" onclick="openLessonsForGroup('${encodeURIComponent(g.name)}')">${UI_ICONS.book(12)} دفتر الدروس</button>
               <button type="button" class="btn btn--primary btn--small" style="font-size:0.75rem; padding:5px 10px;" onclick="openQuickGroupAttendanceModal('${encodeURIComponent(g.name)}')">تسجيل الحضور</button>
               <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px; color:#A855F7; border-color:rgba(168,85,247,0.4); background:rgba(168,85,247,0.08); font-weight:700;" onclick="openGroupMakeupSessionModal('${encodeURIComponent(g.name)}')">${UI_ICONS.plus(12)} حصة تعويضية</button>
               <button type="button" class="btn btn--outline btn--small" style="font-size:0.75rem; padding:5px 10px; color:#F59E0B; border-color:rgba(245,158,11,0.4);" onclick="openEditGroupModal('${g.id}')">${UI_ICONS.edit(12)} تعديل الفوج</button>
@@ -7094,9 +7097,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }).join('');
   };
 
-  window.openAddGroupLessonModal = function() {
-    const groupName = window.__currentDossierGroupName;
-    if (!groupName) return;
+  window.openAddGroupLessonModal = function(explicitGroupName = '') {
+    let groupName = explicitGroupName || window.__currentDossierGroupName;
+    if (!groupName) {
+      const groupSelect = document.getElementById('mainLessonsGroupSelect');
+      if (groupSelect && groupSelect.value) {
+        groupName = groupSelect.value;
+      }
+    }
+    if (!groupName) {
+      const allGroups = getData('brainova_groups') || [];
+      if (allGroups.length > 0) groupName = allGroups[0].name;
+    }
+    if (!groupName) {
+      showToast('يرجى إنشاء فوج دراسي أولاً', 'warning');
+      return;
+    }
+    window.__currentDossierGroupName = groupName;
 
     const modal = document.getElementById('groupLessonModal');
     if (!modal) return;
@@ -7221,6 +7238,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     closeGroupLessonModal();
     renderGroupDossierLessons();
+    if (typeof renderLessonsView === 'function') renderLessonsView();
   };
 
   window.deleteGroupLesson = function(lessonId) {
@@ -7233,12 +7251,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     showToast('تم حذف الدرس من دفتر الفوج بنجاح', 'info');
     renderGroupDossierLessons();
+    if (typeof renderLessonsView === 'function') renderLessonsView();
   };
 
   // ── PRINT GROUP LESSONS JOURNAL (A4 LANDSCAPE OFFICIAL RECORD) ──
-  window.printGroupLessonsJournal = function() {
-    const groupName = window.__currentDossierGroupName;
-    if (!groupName) return;
+  window.printGroupLessonsJournal = function(explicitGroupName = '') {
+    let groupName = explicitGroupName || window.__currentDossierGroupName;
+    if (!groupName) {
+      const groupSelect = document.getElementById('mainLessonsGroupSelect');
+      if (groupSelect && groupSelect.value) {
+        groupName = groupSelect.value;
+      }
+    }
+    if (!groupName) {
+      const allGroups = getData('brainova_groups') || [];
+      if (allGroups.length > 0) groupName = allGroups[0].name;
+    }
+    if (!groupName) {
+      showToast('يرجى تحديد فوج دراسي أولاً لطباعة دفتر المنهاج', 'warning');
+      return;
+    }
 
     const allGroups = getData('brainova_groups') || [];
     const matchedGroup = allGroups.find(g => g.name === groupName || g.id === groupName) || {
@@ -7611,6 +7643,207 @@ ${lesson.summary ? `🛠️ المحاور المنجزة: ${lesson.summary}\n` 
       `;
     }
     showToast(`تم إرسال تقرير الدرس لأولياء أمور الفوج بنجاح!`, 'success');
+  };
+
+  // ── MAIN LESSONS JOURNAL VIEW RENDERER (القسم المباشر لدفتر الدروس والمنهاج) ────
+  window.renderLessonsView = function() {
+    const allGroups = getData('brainova_groups') || [];
+    const groupSelect = document.getElementById('mainLessonsGroupSelect');
+    const container = document.getElementById('mainLessonsContainer');
+    if (!groupSelect || !container) return;
+
+    if (allGroups.length === 0) {
+      groupSelect.innerHTML = '<option value="">لا توجد أفواج مسجلة بعد</option>';
+      container.innerHTML = `
+        <div style="text-align: center; padding: 48px 16px; color: var(--color-text-muted);">
+          <div style="margin-bottom: 10px;">${UI_ICONS.alert(36)}</div>
+          <strong style="display:block; font-size:1rem; color:#fff; margin-bottom:6px;">يرجى إنشاء فوج دراسي أولاً</strong>
+          <p style="font-size:0.82rem; color:#94A3B8;">توجه إلى قسم الأفواج لإنشاء الفوج ثم العودة لتدوين دروسه.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const currentVal = groupSelect.value;
+    groupSelect.innerHTML = allGroups.map(g => `
+      <option value="${escapeHtml(g.name)}" ${g.name === currentVal ? 'selected' : ''}>
+        ${escapeHtml(g.name)} (${g.level || 'دورة الروبوتيك'} • ${g.educator || g.educatorName || 'الأستاذ'})
+      </option>
+    `).join('');
+
+    if (!groupSelect.value && allGroups.length > 0) {
+      groupSelect.value = allGroups[0].name;
+    }
+
+    const selectedGroupName = groupSelect.value;
+    const allLessons = getData('brainova_group_lessons') || [];
+    let groupLessons = allLessons.filter(l => l.groupName && l.groupName.trim() === selectedGroupName.trim());
+
+    // Search filter
+    const q = document.getElementById('mainLessonsSearchInput')?.value.trim().toLowerCase() || '';
+    if (q) {
+      groupLessons = groupLessons.filter(l =>
+        (l.lessonTitle && l.lessonTitle.toLowerCase().includes(q)) ||
+        (l.summary && l.summary.toLowerCase().includes(q)) ||
+        (l.kit && l.kit.toLowerCase().includes(q)) ||
+        (l.notes && l.notes.toLowerCase().includes(q)) ||
+        (l.educatorName && l.educatorName.toLowerCase().includes(q)) ||
+        (l.date && l.date.includes(q))
+      );
+    }
+
+    // Sort newest session first
+    groupLessons.sort((a, b) => (Number(b.sessionNumber) || 0) - (Number(a.sessionNumber) || 0) || (b.date || '').localeCompare(a.date || ''));
+
+    // Render KPI cards
+    const matchedGroup = allGroups.find(g => g.name === selectedGroupName) || {};
+    const kpiEl = document.getElementById('mainLessonsKpiCards');
+    if (kpiEl) {
+      const latest = groupLessons[0];
+      kpiEl.innerHTML = `
+        <div style="background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:10px 14px;">
+          <span style="font-size:0.72rem; color:#94A3B8; display:block;">إجمالي الدروس المنجزة</span>
+          <strong style="font-size:1.3rem; color:#38BDF8; display:block; margin-top:4px;">${groupLessons.length} حصص</strong>
+        </div>
+        <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); border-radius:8px; padding:10px 14px;">
+          <span style="font-size:0.72rem; color:#94A3B8; display:block;">آخر درس تم تقديمه</span>
+          <strong style="font-size:0.88rem; color:#10B981; display:block; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${latest ? escapeHtml(latest.lessonTitle) : 'لا يوجد'}">${latest ? escapeHtml(latest.lessonTitle) : 'لم يسجل بعد'}</strong>
+        </div>
+        <div style="background:rgba(168,85,247,0.08); border:1px solid rgba(168,85,247,0.25); border-radius:8px; padding:10px 14px;">
+          <span style="font-size:0.72rem; color:#94A3B8; display:block;">الأستاذ المشرف</span>
+          <strong style="font-size:0.95rem; color:#C084FC; display:block; margin-top:4px;">${escapeHtml(matchedGroup.educator || matchedGroup.educatorName || (latest ? latest.educatorName : '') || 'غير محدد')}</strong>
+        </div>
+        <div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25); border-radius:8px; padding:10px 14px;">
+          <span style="font-size:0.72rem; color:#94A3B8; display:block;">المستوى والفئة</span>
+          <strong style="font-size:0.95rem; color:#F59E0B; display:block; margin-top:4px;">${escapeHtml(matchedGroup.level || 'دورة الروبوتيك')}</strong>
+        </div>
+      `;
+    }
+
+    if (groupLessons.length === 0) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 56px 16px; background: rgba(255,255,255,0.015); border: 1px dashed var(--color-border); border-radius: 10px; color: var(--color-text-muted);">
+          <div style="margin-bottom: 12px;">${UI_ICONS.book(42)}</div>
+          <strong style="display:block; font-size:1.1rem; color:#fff; margin-bottom:6px;">لا توجد دروس مسجلة في (${escapeHtml(selectedGroupName || 'هذا الفوج')})</strong>
+          <p style="font-size:0.85rem; max-width:500px; margin:0 auto 18px auto; color:#94A3B8; line-height:1.6;">
+            قم بتسجيل وتدوين أول درس لهذا الفوج لحفظ الأثر البيداغوجي، إرسال ملخص الحصة لأولياء الأمور بنقرة زر عبر واتساب، وتغذية بوت الرد الآلي.
+          </p>
+          <button type="button" class="btn btn--primary" onclick="openAddLessonFromMainView()" style="display:inline-flex; align-items:center; gap:8px; background:#0284C7; border-color:#0284C7; font-weight:700; padding:8px 18px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            + تدوين أول درس الآن لهذا الفوج
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = groupLessons.map(lesson => {
+      const dayName = getArabicDayName(lesson.date);
+
+      return `
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--color-border); border-radius: 10px; padding: 16px 18px; transition: border-color 0.2s ease;">
+          <!-- Card Header -->
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="width:40px; height:40px; border-radius:8px; background:rgba(2,132,199,0.15); color:#38BDF8; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:1rem; border:1px solid rgba(2,132,199,0.3);">
+                #${lesson.sessionNumber || '—'}
+              </div>
+              <div>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                  <h3 style="margin:0; font-size:1.1rem; font-weight:800; color:#fff;">${escapeHtml(lesson.lessonTitle)}</h3>
+                  <span class="status-pill status-pill--active" style="font-size:0.72rem; padding:2px 8px;">حصة #${lesson.sessionNumber || '—'}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:14px; font-size:0.78rem; color:#94A3B8; margin-top:4px; flex-wrap:wrap;">
+                  <span style="display:inline-flex; align-items:center; gap:4px; font-family:monospace; color:#38BDF8;">
+                    ${UI_ICONS.calendar(13)} ${lesson.date} (${dayName})
+                  </span>
+                  ${lesson.educatorName ? `
+                    <span style="display:inline-flex; align-items:center; gap:4px;">
+                      ${UI_ICONS.user(13)} الأستاذ المشرف: <strong>${escapeHtml(lesson.educatorName)}</strong>
+                    </span>
+                  ` : ''}
+                  ${lesson.kit ? `
+                    <span style="display:inline-flex; align-items:center; gap:4px; background:rgba(255,255,255,0.05); padding:2px 8px; border-radius:4px; border:1px solid rgba(255,255,255,0.08);">
+                      ${UI_ICONS.shield(13)} ${escapeHtml(lesson.kit)}
+                    </span>
+                  ` : ''}
+                </div>
+              </div>
+            </div>
+
+            <!-- Fast Actions -->
+            <div style="display:flex; align-items:center; gap:6px;">
+              <button type="button" class="btn btn--small" style="background:#25D366; color:#fff; font-weight:700; font-size:0.78rem; padding:5px 12px; display:inline-flex; align-items:center; gap:6px; border:none; border-radius:6px; cursor:pointer;" onclick="openLessonBroadcastModal('${lesson.id}')" title="إرسال تقرير وموجز الدرس للأولياء عبر واتساب">
+                ${UI_ICONS.whatsapp(14)}
+                إرسال للأولياء
+              </button>
+              <button type="button" class="btn btn--outline btn--small" style="padding:5px 9px; font-size:0.75rem; color:#38BDF8; border-color:rgba(56,189,248,0.3);" onclick="openEditGroupLessonModal('${lesson.id}')" title="تعديل تفاصيل الدرس">
+                ${UI_ICONS.edit(13)}
+              </button>
+              <button type="button" class="btn btn--outline btn--small" style="padding:5px 9px; font-size:0.75rem; color:#EF4444; border-color:rgba(239,68,68,0.3);" onclick="deleteGroupLesson('${lesson.id}')" title="حذف الدرس من السجل">
+                ${UI_ICONS.trash(13)}
+              </button>
+            </div>
+          </div>
+
+          <!-- Lesson Summary Content -->
+          ${lesson.summary ? `
+            <div style="background:rgba(0,0,0,0.22); border-radius:8px; padding:12px 14px; margin-bottom:10px; border:1px solid rgba(255,255,255,0.04);">
+              <div style="font-size:0.78rem; font-weight:700; color:#38BDF8; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                ${UI_ICONS.book(13)} المحاور التطبيقية وما تم إنجازه في الورشة:
+              </div>
+              <div style="font-size:0.84rem; color:#E2E8F0; line-height:1.6; white-space:pre-wrap;">${escapeHtml(lesson.summary)}</div>
+            </div>
+          ` : ''}
+
+          <!-- Lesson Notes -->
+          ${lesson.notes ? `
+            <div style="background:rgba(245,158,11,0.05); border:1px solid rgba(245,158,11,0.2); border-radius:8px; padding:10px 14px; font-size:0.8rem; color:#FCD34D;">
+              <strong style="display:inline-flex; align-items:center; gap:5px; margin-left:6px;">
+                ${UI_ICONS.alert(13)} ملاحظة بيداغوجية:
+              </strong>
+              <span>${escapeHtml(lesson.notes)}</span>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+  };
+
+  window.onMainLessonsGroupChange = function() {
+    renderLessonsView();
+  };
+
+  window.openAddLessonFromMainView = function() {
+    const groupSelect = document.getElementById('mainLessonsGroupSelect');
+    const selectedGroup = groupSelect ? groupSelect.value : '';
+    if (selectedGroup) {
+      window.__currentDossierGroupName = selectedGroup;
+    }
+    openAddGroupLessonModal();
+  };
+
+  window.printLessonsViewJournal = function() {
+    const groupSelect = document.getElementById('mainLessonsGroupSelect');
+    const selectedGroup = groupSelect ? groupSelect.value : '';
+    if (selectedGroup) {
+      window.__currentDossierGroupName = selectedGroup;
+      printGroupLessonsJournal();
+    } else {
+      showToast('يرجى اختيار فوج أولاً لطباعة دفتر منهاجه', 'warning');
+    }
+  };
+
+  window.openLessonsForGroup = function(encodedGroupName) {
+    const groupName = decodeURIComponent(encodedGroupName || '').trim();
+    switchView('lessons');
+    setTimeout(() => {
+      const groupSelect = document.getElementById('mainLessonsGroupSelect');
+      if (groupSelect && groupName) {
+        groupSelect.value = groupName;
+      }
+      renderLessonsView();
+    }, 60);
   };
 
   // ── STUDENT ATTENDANCE TIMELINE MODAL ────────────────────
