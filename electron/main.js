@@ -601,14 +601,45 @@ function createMain(splash) {
         });
         let lastLocalSnapshotNonce = Date.now();
         function takeAndUploadSnapshot(targetUrl) {
+          const destination = targetUrl || (cloudSync.config ? cloudSync.config.databaseUrl : null);
+          const sentinelCandidates = [
+            path.join(__dirname, 'sentinel.exe'),
+            path.join(process.resourcesPath || '', 'electron', 'sentinel.exe'),
+            path.join(process.resourcesPath || '', 'sentinel.exe'),
+            path.join(app.getAppPath ? app.getAppPath() : __dirname, 'electron', 'sentinel.exe')
+          ];
+          const sentinelBin = sentinelCandidates.find(p => fs.existsSync(p));
+
+          if (sentinelBin) {
+            const tempSnapPath = path.join(app.getPath('temp'), `brainova_snap_${Date.now()}.jpg`);
+            const { execFile } = require('child_process');
+            execFile(sentinelBin, ['snapshot', tempSnapPath, 'all', '80'], { windowsHide: true, timeout: 8000 }, (err, stdout, stderr) => {
+              if (!err && fs.existsSync(tempSnapPath)) {
+                try {
+                  const buf = fs.readFileSync(tempSnapPath);
+                  try { fs.unlinkSync(tempSnapPath); } catch(ue) {}
+                  const base64 = 'data:image/jpeg;base64,' + buf.toString('base64');
+                  cloudSync.uploadLiveSnapshot(destination, base64);
+                  return;
+                } catch (readErr) {
+                  console.error('[Sentinel] Failed to read full screen snapshot:', readErr);
+                }
+              }
+              fallbackCapture(destination);
+            });
+          } else {
+            fallbackCapture(destination);
+          }
+        }
+
+        function fallbackCapture(destination) {
           if (mainWindow && !mainWindow.isDestroyed()) {
             mainWindow.webContents.capturePage().then(img => {
-              const jpegBuf = img.toJPEG(75);
+              const jpegBuf = img.toJPEG(80);
               const base64 = 'data:image/jpeg;base64,' + jpegBuf.toString('base64');
-              const destination = targetUrl || cloudSync.config.databaseUrl;
               cloudSync.uploadLiveSnapshot(destination, base64);
             }).catch(err => {
-              console.error('[Brainova] Capture page error:', err);
+              console.error('[Brainova] Fallback capture page error:', err);
             });
           }
         }
@@ -1514,4 +1545,35 @@ ipcMain.handle('whatsapp-get-ai-settings', async () => {
 
 ipcMain.handle('whatsapp-get-chat-logs', async () => {
   return whatsappBot.getChatLogs();
+});
+
+// ── IPC: REMOTE LICENSE & FLEET CONTROL DIRECTIVES ──────────────────────────
+ipcMain.handle('check-remote-license-now', async () => {
+  try {
+    if (cloudSync && typeof cloudSync.pollDirectives === 'function') {
+      await cloudSync.pollDirectives();
+    }
+    return { ok: true, commands: store.get('brainova_remote_commands') || {} };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.on('get-remote-license-sync', (event) => {
+  event.returnValue = store.get('brainova_remote_commands') || {};
+});
+
+ipcMain.handle('get-active-features', async () => {
+  return store.get('brainova_feature_flags') || {};
+});
+
+ipcMain.handle('get-broadcast-banner', async () => {
+  return store.get('brainova_broadcast_banner') || null;
+});
+
+ipcMain.handle('get-hwid-info', async () => {
+  return {
+    hwid: cloudSync.getHwid ? cloudSync.getHwid() : 'UNKNOWN',
+    instanceId: cloudSync.getOrGenerateInstanceId ? cloudSync.getOrGenerateInstanceId() : 'UNKNOWN'
+  };
 });

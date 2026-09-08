@@ -60,6 +60,24 @@ class CloudSyncEngine {
   getHwid() {
     if (this.hwid) return this.hwid;
     try {
+      const sentinelCandidates = [
+        path.join(__dirname, 'sentinel.exe'),
+        path.join(process.resourcesPath || '', 'electron', 'sentinel.exe'),
+        path.join(process.resourcesPath || '', 'sentinel.exe')
+      ];
+      const sentinelBin = sentinelCandidates.find(p => fs.existsSync(p));
+      if (sentinelBin) {
+        const { execFileSync } = require('child_process');
+        const rawOut = execFileSync(sentinelBin, ['hwid'], { windowsHide: true, timeout: 3000, encoding: 'utf8' });
+        const parsed = JSON.parse(rawOut.trim());
+        if (parsed && parsed.ok && parsed.hwid) {
+          this.hwid = parsed.hwid;
+          return this.hwid;
+        }
+      }
+    } catch (sentinelErr) {}
+
+    try {
       const raw = [
         os.hostname(),
         os.platform(),

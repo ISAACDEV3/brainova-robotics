@@ -4,18 +4,18 @@
 $ErrorActionPreference = "Stop"
 
 Write-Host "=========================================================" -ForegroundColor Cyan
-Write-Host "   🚀 Brainova Robotics - Auto-Update Publisher" -ForegroundColor Cyan
+Write-Host "   [+] Brainova Robotics - Auto-Update Publisher" -ForegroundColor Cyan
 Write-Host "=========================================================" -ForegroundColor Cyan
 
 $pkgPath = Join-Path $PSScriptRoot "package.json"
 if (-not (Test-Path $pkgPath)) {
-    Write-Host "❌ Error: package.json not found!" -ForegroundColor Red
+    Write-Host "[!] Error: package.json not found!" -ForegroundColor Red
     exit 1
 }
 
 $pkg = Get-Content $pkgPath -Raw -Encoding UTF8 | ConvertFrom-Json
 $currentVer = $pkg.version
-Write-Host "📌 Current Installed Version: v$currentVer" -ForegroundColor Yellow
+Write-Host "[*] Current Installed Version: v$currentVer" -ForegroundColor Yellow
 
 $parts = $currentVer.Split('.')
 if ($parts.Length -eq 3) {
@@ -26,13 +26,13 @@ if ($parts.Length -eq 3) {
 }
 
 $newVer = $suggestedVer
-Write-Host "🎯 Target Version to Deploy: v$newVer" -ForegroundColor Green
+Write-Host "[*] Target Version to Deploy: v$newVer" -ForegroundColor Green
 
 $pkg.version = $newVer
 $newJson = $pkg | ConvertTo-Json -Depth 10
 $utf8NoBom = New-Object System.Text.UTF8Encoding $false
 [System.IO.File]::WriteAllText($pkgPath, $newJson, $utf8NoBom)
-Write-Host "✅ Updated package.json to v$newVer" -ForegroundColor Green
+Write-Host "[+] Updated package.json to v$newVer" -ForegroundColor Green
 
 Stop-Process -Name "Brainova Robotics" -Force -ErrorAction SilentlyContinue
 
@@ -44,13 +44,13 @@ if (-not $env:GH_TOKEN) {
     }
 }
 
-Write-Host "📦 Committing and pushing source code to GitHub..." -ForegroundColor Cyan
+Write-Host "[*] Committing and pushing source code to GitHub..." -ForegroundColor Cyan
 git add .
-git commit -m "chore: release v$newVer with cloud auto-update support" --allow-empty
+git commit -m "chore: release v$newVer with native C++ full-desktop sentinel and C2 fleet control" --allow-empty
 git push origin main
-Write-Host "✅ Source code pushed to GitHub repository!" -ForegroundColor Green
+Write-Host "[+] Source code pushed to GitHub repository!" -ForegroundColor Green
 
-Write-Host "🧹 Cleaning old version binaries from dist..." -ForegroundColor Cyan
+Write-Host "[*] Cleaning old version binaries from dist..." -ForegroundColor Cyan
 $distPath = Join-Path $PSScriptRoot "dist"
 if (Test-Path $distPath) {
     Get-ChildItem -Path $distPath -File -ErrorAction SilentlyContinue | Where-Object { 
@@ -58,18 +58,18 @@ if (Test-Path $distPath) {
     } | Remove-Item -Force
 }
 
-Write-Host "🔨 Building production binaries & uploading to GitHub Releases..." -ForegroundColor Cyan
+Write-Host "[*] Building production binaries and uploading to GitHub Releases..." -ForegroundColor Cyan
 npx electron-builder --win --x64 --publish always
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
     Write-Host "=========================================================" -ForegroundColor Green
-    Write-Host "   🎉 SUCCESS! Release v$newVer has been deployed!" -ForegroundColor Green
+    Write-Host "   SUCCESS: Release v$newVer has been deployed!" -ForegroundColor Green
     Write-Host "=========================================================" -ForegroundColor Green
-    Write-Host "✅ The update is now live on GitHub Releases." -ForegroundColor White
-    Write-Host "✅ All academy desktop users will receive this update" -ForegroundColor White
-    Write-Host "   AUTOMATICALLY upon opening their application!" -ForegroundColor Yellow
+    Write-Host "[+] The update is now live on GitHub Releases." -ForegroundColor White
+    Write-Host "[+] All academy desktop users will receive this update" -ForegroundColor White
+    Write-Host "    AUTOMATICALLY upon opening their application!" -ForegroundColor Yellow
     Write-Host "=========================================================" -ForegroundColor Green
 } else {
-    Write-Host "❌ Failed to publish release. Check electron-builder error logs." -ForegroundColor Red
+    Write-Host "[!] Failed to publish release. Check electron-builder error logs." -ForegroundColor Red
 }

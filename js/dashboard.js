@@ -12616,7 +12616,8 @@ ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
 
   window.checkLicenseNowBtn = async function() {
     if (window.electronAPI && window.electronAPI.checkRemoteLicenseNow) {
-      const cmds = await window.electronAPI.checkRemoteLicenseNow();
+      const res = await window.electronAPI.checkRemoteLicenseNow();
+      const cmds = (res && res.commands) ? res.commands : res;
       applyRemoteLicenseStatus(cmds);
       const isLocked = cmds && (cmds.licenseStatus === 'locked' || isLicenseExpired(cmds));
       if (!isLocked) {

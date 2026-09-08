@@ -1,16 +1,16 @@
 {
     "name":  "brainova-robotics",
-    "version":  "1.1.0",
+    "version":  "1.1.1",
     "description":  "Brainova Robotics Academy — Desktop Management Panel",
     "main":  "electron/main.js",
     "author":  "Brainova Robotics",
     "license":  "MIT",
     "scripts":  {
                     "start":  "electron .",
-                    "clean-old-dist":  "powershell -Command \"$ver = (Get-Content package.json | ConvertFrom-Json).version; Get-ChildItem -Path dist -File -ErrorAction SilentlyContinue | Where-Object { ($_.Extension -in '.exe', '.blockmap') -and ($_.Name -notlike ('*' + $ver + '*')) } | Remove-Item -Force\"",
+                    "clean-old-dist":  "powershell -Command \"$ver = (Get-Content package.json | ConvertFrom-Json).version; Get-ChildItem -Path dist -File -ErrorAction SilentlyContinue | Where-Object { ($_.Extension -in \u0027.exe\u0027, \u0027.blockmap\u0027) -and ($_.Name -notlike (\u0027*\u0027 + $ver + \u0027*\u0027)) } | Remove-Item -Force\"",
                     "prebuild":  "npm run clean-old-dist",
                     "build":  "electron-builder --win --x64",
-                    "build-portable":  "npm run clean-old-dist && electron-builder --win portable --x64",
+                    "build-portable":  "npm run clean-old-dist \u0026\u0026 electron-builder --win portable --x64",
                     "deploy":  "powershell -ExecutionPolicy Bypass -File ./deploy-update.ps1"
                 },
     "devDependencies":  {
