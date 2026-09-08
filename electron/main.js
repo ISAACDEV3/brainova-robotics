@@ -149,7 +149,7 @@ function setupAutoUpdater() {
     
     dialog.showMessageBox(mainWindow, {
       type: 'info',
-      title: 'تحديث جديد متوفر 🚀',
+      title: 'تحديث جديد متوفر',
       message: `تم تحميل الإصدار الجديد v${info.version} بنجاح!`,
       detail: 'هل ترغب في إعادة تشغيل التطبيق الآن لتثبيت التحديث؟ لن تفقد أي بيانات.',
       buttons: ['نعم، إعادة التشغيل والتثبيت', 'لاحقاً (عند إغلاق البرنامج)'],
