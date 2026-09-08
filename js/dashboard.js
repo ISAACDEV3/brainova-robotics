@@ -12633,23 +12633,57 @@ ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
     const el = document.getElementById('centralBroadcastBanner');
     const textEl = document.getElementById('centralBroadcastBannerText');
     if (!el || !textEl) return;
-    if (banner && banner.active && banner.text) {
-      textEl.textContent = banner.text;
+
+    let text = '';
+    let type = 'info';
+    let active = true;
+
+    if (typeof banner === 'string') {
+      text = banner.trim();
+      active = !!text;
+    } else if (banner && typeof banner === 'object') {
+      text = (banner.text || banner.message || '').trim();
+      type = banner.type || 'info';
+      active = (banner.active !== false) && !!text;
+    } else {
+      active = false;
+    }
+
+    if (active && text) {
+      textEl.textContent = text;
       el.style.display = 'flex';
-      if (banner.type === 'warning') {
+      const badge = el.querySelector('span');
+      if (type === 'warning' || type === 'alert' || type === 'danger') {
         el.style.background = 'linear-gradient(90deg, #7F1D1D, #991B1B)';
         el.style.borderColor = '#EF4444';
-      } else if (banner.type === 'success') {
+        if (badge) {
+          badge.textContent = 'تنبيه إداري هام';
+          badge.style.background = 'rgba(239,68,68,0.3)';
+          badge.style.borderColor = 'rgba(239,68,68,0.5)';
+        }
+      } else if (type === 'success') {
         el.style.background = 'linear-gradient(90deg, #064E3B, #065F46)';
         el.style.borderColor = '#10B981';
+        if (badge) {
+          badge.textContent = 'إعلان رسمي';
+          badge.style.background = 'rgba(16,185,129,0.3)';
+          badge.style.borderColor = 'rgba(16,185,129,0.5)';
+        }
       } else {
         el.style.background = 'linear-gradient(90deg, #1E1B4B, #312E81)';
         el.style.borderColor = '#6366F1';
+        if (badge) {
+          badge.textContent = 'تعميم مركزي';
+          badge.style.background = 'rgba(99,102,241,0.3)';
+          badge.style.borderColor = 'rgba(99,102,241,0.5)';
+        }
       }
     } else {
       el.style.display = 'none';
+      textEl.textContent = '';
     }
   }
+  window.applyBroadcastBanner = applyBroadcastBanner;
 
   function applyFeatureFlags(flags) {
     if (!flags) return;

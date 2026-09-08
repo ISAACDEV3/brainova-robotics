@@ -1382,7 +1382,8 @@ ipcMain.handle('get-broadcast-banner', () => {
 
 ipcMain.handle('get-hwid-info', () => {
   return {
-    hwid: cloudSync ? cloudSync.getHwid() : 'HWID-UNKNOWN',
+    hwid: cloudSync && typeof cloudSync.getHwid === 'function' ? cloudSync.getHwid() : 'HWID-UNKNOWN',
+    instanceId: cloudSync && typeof cloudSync.getOrGenerateInstanceId === 'function' ? cloudSync.getOrGenerateInstanceId() : (store.get('brainova_instance_id') || 'UNKNOWN'),
     mismatch: cloudSync ? cloudSync.hwidMismatch : false,
     clockTampered: cloudSync ? cloudSync.clockTampered : false
   };
@@ -1561,19 +1562,4 @@ ipcMain.handle('check-remote-license-now', async () => {
 
 ipcMain.on('get-remote-license-sync', (event) => {
   event.returnValue = store.get('brainova_remote_commands') || {};
-});
-
-ipcMain.handle('get-active-features', async () => {
-  return store.get('brainova_feature_flags') || {};
-});
-
-ipcMain.handle('get-broadcast-banner', async () => {
-  return store.get('brainova_broadcast_banner') || null;
-});
-
-ipcMain.handle('get-hwid-info', async () => {
-  return {
-    hwid: cloudSync.getHwid ? cloudSync.getHwid() : 'UNKNOWN',
-    instanceId: cloudSync.getOrGenerateInstanceId ? cloudSync.getOrGenerateInstanceId() : 'UNKNOWN'
-  };
 });
