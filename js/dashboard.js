@@ -643,7 +643,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Last 6 Months Executive SVG Area Chart
     const chartContainer = document.getElementById('overviewRevenueChart');
     if (chartContainer) {
-      const monthNames = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+      const monthNames = ['جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
       const last6 = [];
       for (let i = 5; i >= 0; i--) {
         const d = new Date();
