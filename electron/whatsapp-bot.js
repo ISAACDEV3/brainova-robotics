@@ -286,12 +286,14 @@ class WhatsAppBot {
     const attendance = db.attendance || [];
     const schedule = db.schedule || [];
     const educators = db.educators || [];
+    const groupLessons = db.groupLessons || [];
 
     const matchedStudent = this.matchStudent(students, remoteJid);
     let studentGroup = null;
     let studentSchedule = [];
     let latestAttendance = null;
     let studentEducator = null;
+    let latestLesson = null;
 
     if (matchedStudent) {
       studentGroup = groups.find(g => g.name === matchedStudent.group || g.id === matchedStudent.groupId);
@@ -305,6 +307,17 @@ class WhatsAppBot {
       if (studentGroup && studentGroup.educatorName) {
         studentEducator = educators.find(e => e.name === studentGroup.educatorName);
       }
+
+      if (matchedStudent.group) {
+        const lessons = groupLessons.filter(l => 
+          (l.groupName && l.groupName.trim() === matchedStudent.group.trim()) ||
+          (studentGroup && l.groupId === studentGroup.id)
+        );
+        if (lessons.length > 0) {
+          lessons.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+          latestLesson = lessons[0];
+        }
+      }
     }
 
     // ── ATTEMPT 1: GOOGLE GEMINI CLOUD LLM (If API Key is provided) ──
@@ -316,6 +329,7 @@ class WhatsAppBot {
           studentSchedule,
           latestAttendance,
           studentEducator,
+          latestLesson,
           allGroups: groups,
           allEducators: educators
         });
@@ -335,6 +349,7 @@ class WhatsAppBot {
       studentSchedule,
       latestAttendance,
       studentEducator,
+      latestLesson,
       allGroups: groups
     });
 
@@ -342,6 +357,14 @@ class WhatsAppBot {
   }
 
   async callGeminiCloudApi(userQuery, ctx) {
+    const lessonInfoStr = ctx.latestLesson ? `
+- آخر درس درسه الفوج:
+  • اسم/موضوع الدرس: "${ctx.latestLesson.lessonTitle}" بتاريخ ${ctx.latestLesson.date} (حصة رقم ${ctx.latestLesson.sessionNumber || '—'})
+  • ملخص ما تعلمه التلاميذ في الحصة: ${ctx.latestLesson.summary || 'تطبيق عملي وبرمجة'}
+  • العتاد والمشروع المستخدم: ${ctx.latestLesson.kit || 'مكونات روبوتيك'}
+  • ملاحظات الأستاذ المشرف: ${ctx.latestLesson.notes || 'تفاعل ممتاز'}` : `
+- لا يوجد درس أخير مسجل بعد لهذا الفوج في النظام.`;
+
     const studentContextStr = ctx.matchedStudent ? `
 بيانات التلميذ التابع لهذا الرقم:
 - الاسم الكامل: ${ctx.matchedStudent.name} (المعرف: ${ctx.matchedStudent.id})
@@ -349,7 +372,7 @@ class WhatsAppBot {
 - رصيد الحصص المتبقي: ${ctx.matchedStudent.sessionsRemaining !== undefined ? ctx.matchedStudent.sessionsRemaining : '4'} حصص
 - آخر حصة مسجلة: ${ctx.latestAttendance ? `${ctx.latestAttendance.date} (${ctx.latestAttendance.status === 'present' ? 'حاضر' : (ctx.latestAttendance.status === 'late' ? 'متأخر' : 'غائب')}) - ملاحظة: ${ctx.latestAttendance.note || 'عادية'}` : 'لا توجد غيابات مسجلة مؤخراً'}
 - مواعيد حصص فوجه: ${ctx.studentSchedule.map(s => `${s.day} من ${s.startTime} إلى ${s.endTime} بالقاعة ${s.room || ''}`).join('، ') || 'السبت صباحاً'}
-- الأستاذ المشرف: ${ctx.studentEducator ? ctx.studentEducator.name : 'طاقم تدريس Brainova'}
+- الأستاذ المشرف: ${ctx.studentEducator ? ctx.studentEducator.name : 'طاقم تدريس Brainova'}${lessonInfoStr}
 ` : `هذا الرقم لا يعود لتلميذ مسجل بعد، بل هو ولي أمر جديد أو زائر يستفسر عن الأكاديمية والتسجيلات.`;
 
     const systemPrompt = `
@@ -406,8 +429,8 @@ ${this.customInstructions ? `تعليمات إضافية من الإدارة: ${
 
     const stu = ctx.matchedStudent;
 
-    // 1. INQUIRY: ABSENCE & WHAT WAS STUDIED (الغياب وما تم شرحه في الحصة)
-    const absenceKeywords = ['غاب', 'غياب', 'غيابات', 'حضر', 'حضور', 'واش دارو', 'واش قراو', 'الدرس', 'الحصه', 'فاتو', 'فاتت', 'السمانه اللي فاتت', 'الاسبوع الماضي', 'غيابو'];
+    // 1. INQUIRY: ABSENCE & WHAT WAS STUDIED (الغياب وما تم شرحه في الحصة والدروس)
+    const absenceKeywords = ['غاب', 'غياب', 'غيابات', 'حضر', 'حضور', 'واش دارو', 'واش قراو', 'الدرس', 'درس اليوم', 'درس البارح', 'الحصه', 'فاتو', 'فاتت', 'السمانه اللي فاتت', 'الاسبوع الماضي', 'غيابو', 'ماذا درس', 'واش راهم يقراو', 'واش دار'];
     if (absenceKeywords.some(k => q.includes(k))) {
       if (stu) {
         const lastAtt = ctx.latestAttendance;
@@ -421,14 +444,21 @@ ${this.customInstructions ? `تعليمات إضافية من الإدارة: ${
           attStatusText = `التحق متأخراً بالحصة الأخيرة بتاريخ ${lastAtt.date || 'مؤخراً'}.`;
         }
 
-        const noteText = (lastAtt && lastAtt.note) ? `\n• ملاحظة المؤطر: "${lastAtt.note}"` : '';
+        const noteText = (lastAtt && lastAtt.note) ? `\n• ملاحظة الحضور: "${lastAtt.note}"` : '';
+
+        let lessonText = '';
+        if (ctx.latestLesson) {
+          lessonText = `\n• موضوع آخر درس: "${ctx.latestLesson.lessonTitle}" بتاريخ ${ctx.latestLesson.date} (حصة #${ctx.latestLesson.sessionNumber || '—'})` +
+            (ctx.latestLesson.summary ? `\n• المحاور المنجزة: ${ctx.latestLesson.summary}` : '') +
+            (ctx.latestLesson.kit ? `\n• المشروع والعتاد: ${ctx.latestLesson.kit}` : '');
+        }
 
         return (
           `أهلاً بحضرتك ولي أمر التلميذ ${stu.name} 🌸\n` +
           `بخصوص استفساركم: التلميذ مسجل في (${groupName}) بإشراف ${eduName}.\n` +
-          `• حالة الحضور: ${attStatusText}${noteText}\n` +
+          `• حالة الحضور: ${attStatusText}${noteText}${lessonText}\n` +
           `• رصيد الحصص المتبقي: ${stu.sessionsRemaining !== undefined ? stu.sessionsRemaining : 4} حصص.\n` +
-          `يمكن للتلميذ استدراك ما فاته ومتابعة التطبيق في الحصة القادمة إن شاء الله، ويسعدنا دوماً تواصلكم!`
+          `يسعدنا دوماً تواصلكم وحرصكم على متابعة مسار بطلنا الصغير!`
         );
       } else {
         return (

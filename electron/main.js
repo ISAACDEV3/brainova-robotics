@@ -581,7 +581,8 @@ function createMain(splash) {
             courses: store.get('brainova_courses') || [],
             schedule: store.get('brainova_schedule') || [],
             rooms: store.get('brainova_rooms') || [],
-            educators: store.get('brainova_educators') || []
+            educators: store.get('brainova_educators') || [],
+            groupLessons: store.get('brainova_group_lessons') || []
           })
         );
         if (fs.existsSync(waAuthDir) && fs.readdirSync(waAuthDir).length > 0) {

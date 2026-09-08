@@ -78,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
       brainova_schedule: [],
       brainova_attendance: [],
       brainova_payments: [],
+      brainova_group_lessons: [],
       brainova_settings: {
         schoolName: "Brainova Robotics",
         adminName: "إدارة الأكاديمية",
@@ -6370,18 +6371,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnCases = document.getElementById('dossierTabBtnCases');
     const btnMatrix = document.getElementById('dossierTabBtnMatrix');
     const btnSessions = document.getElementById('dossierTabBtnSessions');
+    const btnLessons = document.getElementById('dossierTabBtnLessons');
 
     const secCases = document.getElementById('dossierSectionCases');
     const secMatrix = document.getElementById('dossierSectionMatrix');
     const secSessions = document.getElementById('dossierSectionSessions');
+    const secLessons = document.getElementById('dossierSectionLessons');
 
     if (btnCases) btnCases.className = tabName === 'cases' ? 'btn btn--small btn--primary' : 'btn btn--small btn--outline';
     if (btnMatrix) btnMatrix.className = tabName === 'matrix' ? 'btn btn--small btn--primary' : 'btn btn--small btn--outline';
     if (btnSessions) btnSessions.className = tabName === 'sessions' ? 'btn btn--small btn--primary' : 'btn btn--small btn--outline';
+    if (btnLessons) btnLessons.className = tabName === 'lessons' ? 'btn btn--small btn--primary' : 'btn btn--small btn--outline';
 
     if (secCases) secCases.style.display = tabName === 'cases' ? 'block' : 'none';
     if (secMatrix) secMatrix.style.display = tabName === 'matrix' ? 'block' : 'none';
     if (secSessions) secSessions.style.display = tabName === 'sessions' ? 'block' : 'none';
+    if (secLessons) secLessons.style.display = tabName === 'lessons' ? 'block' : 'none';
 
     if (tabName === 'cases') {
       renderGroupDossierTable();
@@ -6389,6 +6394,8 @@ document.addEventListener('DOMContentLoaded', () => {
       renderGroupDossierMatrix();
     } else if (tabName === 'sessions') {
       renderGroupDossierSessions();
+    } else if (tabName === 'lessons') {
+      renderGroupDossierLessons();
     }
   };
 
@@ -6969,6 +6976,641 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     window.__preserveAttDate = true;
     renderAttendance();
+  };
+
+  // =========================================================
+  // GROUP LESSONS JOURNAL (دفتر الدروس والمنهاج المنجز للفوج)
+  // =========================================================
+  window.renderGroupDossierLessons = function() {
+    const groupName = window.__currentDossierGroupName;
+    const container = document.getElementById('dossierLessonsContainer');
+    if (!groupName || !container) return;
+
+    const allLessons = getData('brainova_group_lessons') || [];
+    let groupLessons = allLessons.filter(l => l.groupName && l.groupName.trim() === groupName.trim());
+
+    const query = document.getElementById('dossierLessonSearch')?.value.trim().toLowerCase() || '';
+    if (query) {
+      groupLessons = groupLessons.filter(l => 
+        (l.lessonTitle && l.lessonTitle.toLowerCase().includes(query)) ||
+        (l.summary && l.summary.toLowerCase().includes(query)) ||
+        (l.kit && l.kit.toLowerCase().includes(query)) ||
+        (l.notes && l.notes.toLowerCase().includes(query)) ||
+        (l.educatorName && l.educatorName.toLowerCase().includes(query)) ||
+        (l.date && l.date.includes(query))
+      );
+    }
+
+    // Sort newest session first
+    groupLessons.sort((a, b) => (Number(b.sessionNumber) || 0) - (Number(a.sessionNumber) || 0) || (b.date || '').localeCompare(a.date || ''));
+
+    if (groupLessons.length === 0) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 48px 16px; color: var(--color-text-muted);">
+          <div style="margin-bottom: 10px;">${UI_ICONS.book(36)}</div>
+          <strong style="display:block; font-size:1rem; color:#fff; margin-bottom:6px;">لم يتم تدوين أي درس لهذا الفوج بعد</strong>
+          <p style="font-size:0.82rem; max-width:460px; margin:0 auto 16px auto; color:#94A3B8; line-height:1.6;">
+            يمكنك تسجيل ما تم تقديمه للتلاميذ في كل حصة (عنوان الدرس، محاور الشرح، العتاد المستخدم، والملاحظات) لحفظ الأثر البيداغوجي، مراسلة الأولياء عبر واتساب، وتغذية بوت الرد الآلي.
+          </p>
+          <button type="button" class="btn btn--primary btn--small" onclick="openAddGroupLessonModal()" style="display:inline-flex; align-items:center; gap:6px; background:#0284C7; border-color:#0284C7; font-weight:700;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            + تدوين أول درس الآن
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = groupLessons.map(lesson => {
+      const dayName = getArabicDayName(lesson.date);
+
+      return `
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--color-border); border-radius: 10px; padding: 14px 16px; transition: border-color 0.2s ease;">
+          <!-- Card Header -->
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:36px; height:36px; border-radius:8px; background:rgba(2,132,199,0.15); color:#38BDF8; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.9rem; border:1px solid rgba(2,132,199,0.3);">
+                #${lesson.sessionNumber || '—'}
+              </div>
+              <div>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                  <h3 style="margin:0; font-size:1.02rem; font-weight:800; color:#fff;">${escapeHtml(lesson.lessonTitle)}</h3>
+                  <span class="status-pill status-pill--active" style="font-size:0.7rem; padding:2px 8px;">حصة #${lesson.sessionNumber || '—'}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px; font-size:0.75rem; color:#94A3B8; margin-top:3px; flex-wrap:wrap;">
+                  <span style="display:inline-flex; align-items:center; gap:4px; font-family:monospace; color:#38BDF8;">
+                    ${UI_ICONS.calendar(12)} ${lesson.date} (${dayName})
+                  </span>
+                  ${lesson.educatorName ? `
+                    <span style="display:inline-flex; align-items:center; gap:4px;">
+                      ${UI_ICONS.user(12)} الأستاذ: <strong>${escapeHtml(lesson.educatorName)}</strong>
+                    </span>
+                  ` : ''}
+                  ${lesson.kit ? `
+                    <span style="display:inline-flex; align-items:center; gap:4px; background:rgba(255,255,255,0.05); padding:1px 6px; border-radius:4px; border:1px solid rgba(255,255,255,0.08);">
+                      ${UI_ICONS.shield(12)} ${escapeHtml(lesson.kit)}
+                    </span>
+                  ` : ''}
+                </div>
+              </div>
+            </div>
+
+            <!-- Fast Actions -->
+            <div style="display:flex; align-items:center; gap:6px;">
+              <button type="button" class="btn btn--small" style="background:#25D366; color:#fff; font-weight:700; font-size:0.75rem; padding:4px 10px; display:inline-flex; align-items:center; gap:5px; border:none; border-radius:6px; cursor:pointer;" onclick="openLessonBroadcastModal('${lesson.id}')" title="إرسال تقرير وموجز الدرس للأولياء عبر واتساب">
+                ${UI_ICONS.whatsapp(13)}
+                إرسال للأولياء
+              </button>
+              <button type="button" class="btn btn--outline btn--small" style="padding:4px 8px; font-size:0.74rem; color:#38BDF8; border-color:rgba(56,189,248,0.3);" onclick="openEditGroupLessonModal('${lesson.id}')" title="تعديل تفاصيل الدرس">
+                ${UI_ICONS.edit(12)}
+              </button>
+              <button type="button" class="btn btn--outline btn--small" style="padding:4px 8px; font-size:0.74rem; color:#EF4444; border-color:rgba(239,68,68,0.3);" onclick="deleteGroupLesson('${lesson.id}')" title="حذف الدرس من السجل">
+                ${UI_ICONS.trash(12)}
+              </button>
+            </div>
+          </div>
+
+          <!-- Lesson Summary Content -->
+          ${lesson.summary ? `
+            <div style="background:rgba(0,0,0,0.22); border-radius:8px; padding:10px 12px; margin-bottom:8px; border:1px solid rgba(255,255,255,0.04);">
+              <div style="font-size:0.75rem; font-weight:700; color:#38BDF8; margin-bottom:4px; display:flex; align-items:center; gap:5px;">
+                ${UI_ICONS.book(12)} المحاور التطبيقية وما تم إنجازه في الورشة:
+              </div>
+              <div style="font-size:0.8rem; color:#E2E8F0; line-height:1.55; white-space:pre-wrap;">${escapeHtml(lesson.summary)}</div>
+            </div>
+          ` : ''}
+
+          <!-- Lesson Notes -->
+          ${lesson.notes ? `
+            <div style="background:rgba(245,158,11,0.05); border:1px solid rgba(245,158,11,0.2); border-radius:8px; padding:8px 12px; font-size:0.78rem; color:#FCD34D;">
+              <strong style="display:inline-flex; align-items:center; gap:4px; margin-left:6px;">
+                ${UI_ICONS.alert(12)} ملاحظة بيداغوجية:
+              </strong>
+              <span>${escapeHtml(lesson.notes)}</span>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+  };
+
+  window.openAddGroupLessonModal = function() {
+    const groupName = window.__currentDossierGroupName;
+    if (!groupName) return;
+
+    const modal = document.getElementById('groupLessonModal');
+    if (!modal) return;
+
+    document.getElementById('groupLessonModalTitle').textContent = 'تسجيل درس جديد للحصة';
+    document.getElementById('groupLessonId').value = '';
+    document.getElementById('groupLessonGroupName').value = groupName;
+    document.getElementById('groupLessonGroupDisplay').value = groupName;
+
+    // Calculate next session number automatically
+    const allLessons = getData('brainova_group_lessons') || [];
+    const groupLessons = allLessons.filter(l => l.groupName && l.groupName.trim() === groupName.trim());
+    const maxSessionNum = groupLessons.reduce((max, l) => Math.max(max, Number(l.sessionNumber) || 0), 0);
+    document.getElementById('groupLessonSessionNumber').value = maxSessionNum + 1;
+
+    // Default educator from group
+    const allGroups = getData('brainova_groups') || [];
+    const matched = allGroups.find(g => g.name === groupName || g.id === groupName);
+    document.getElementById('groupLessonEducator').value = (matched ? (matched.educator || matched.educatorName) : '') || '';
+
+    // Date
+    document.getElementById('groupLessonDate').value = new Date().toISOString().slice(0, 10);
+
+    // Reset inputs
+    document.getElementById('groupLessonTitle').value = '';
+    document.getElementById('groupLessonSummary').value = '';
+    document.getElementById('groupLessonKit').value = '';
+    document.getElementById('groupLessonNotes').value = '';
+
+    modal.classList.add('active');
+  };
+
+  window.openEditGroupLessonModal = function(lessonId) {
+    const allLessons = getData('brainova_group_lessons') || [];
+    const lesson = allLessons.find(l => l.id === lessonId);
+    if (!lesson) {
+      showToast('لم يتم العثور على بيانات الدرس المحدد!', 'error');
+      return;
+    }
+
+    const modal = document.getElementById('groupLessonModal');
+    if (!modal) return;
+
+    document.getElementById('groupLessonModalTitle').textContent = 'تعديل بيانات الدرس المسجل';
+    document.getElementById('groupLessonId').value = lesson.id;
+    document.getElementById('groupLessonGroupName').value = lesson.groupName;
+    document.getElementById('groupLessonGroupDisplay').value = lesson.groupName;
+    document.getElementById('groupLessonSessionNumber').value = lesson.sessionNumber || 1;
+    document.getElementById('groupLessonDate').value = lesson.date || new Date().toISOString().slice(0, 10);
+    document.getElementById('groupLessonEducator').value = lesson.educatorName || '';
+    document.getElementById('groupLessonTitle').value = lesson.lessonTitle || '';
+    document.getElementById('groupLessonSummary').value = lesson.summary || '';
+    document.getElementById('groupLessonKit').value = lesson.kit || '';
+    document.getElementById('groupLessonNotes').value = lesson.notes || '';
+
+    modal.classList.add('active');
+  };
+
+  window.closeGroupLessonModal = function() {
+    const modal = document.getElementById('groupLessonModal');
+    if (modal) modal.classList.remove('active');
+  };
+
+  window.submitSaveGroupLesson = function(e) {
+    e.preventDefault();
+
+    const lessonId = document.getElementById('groupLessonId')?.value.trim();
+    const groupName = document.getElementById('groupLessonGroupName')?.value.trim() || window.__currentDossierGroupName;
+    const sessionNumber = Number(document.getElementById('groupLessonSessionNumber')?.value) || 1;
+    const date = document.getElementById('groupLessonDate')?.value.trim();
+    const educator = document.getElementById('groupLessonEducator')?.value.trim();
+    const title = document.getElementById('groupLessonTitle')?.value.trim();
+    const summary = document.getElementById('groupLessonSummary')?.value.trim();
+    const kit = document.getElementById('groupLessonKit')?.value.trim();
+    const notes = document.getElementById('groupLessonNotes')?.value.trim();
+
+    if (!groupName || !title || !date) {
+      showToast('يرجى كتابة عنوان الدرس وتاريخ الحصة!', 'warning');
+      return;
+    }
+
+    let allLessons = getData('brainova_group_lessons') || [];
+
+    if (lessonId) {
+      // Edit existing
+      const idx = allLessons.findIndex(l => l.id === lessonId);
+      if (idx !== -1) {
+        allLessons[idx] = {
+          ...allLessons[idx],
+          groupName,
+          sessionNumber,
+          date,
+          educatorName: educator,
+          lessonTitle: title,
+          summary,
+          kit,
+          notes,
+          updatedAt: new Date().toISOString()
+        };
+        saveData('brainova_group_lessons', allLessons);
+        showToast(`تم تحديث درس (${title}) بنجاح!`, 'success');
+      }
+    } else {
+      // Create new
+      const newLesson = {
+        id: 'lesson_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        groupName,
+        sessionNumber,
+        date,
+        educatorName: educator,
+        lessonTitle: title,
+        summary,
+        kit,
+        notes,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      allLessons.push(newLesson);
+      saveData('brainova_group_lessons', allLessons);
+      showToast(`تم تدوين درس (${title}) وحفظه في سجل الفوج بنجاح!`, 'success');
+    }
+
+    closeGroupLessonModal();
+    renderGroupDossierLessons();
+  };
+
+  window.deleteGroupLesson = function(lessonId) {
+    if (!lessonId) return;
+    if (!confirm('هل أنت متأكد من حذف هذا الدرس من سجل المنهاج؟ لا يمكن التراجع عن هذا الإجراء.')) return;
+
+    let allLessons = getData('brainova_group_lessons') || [];
+    allLessons = allLessons.filter(l => l.id !== lessonId);
+    saveData('brainova_group_lessons', allLessons);
+
+    showToast('تم حذف الدرس من دفتر الفوج بنجاح', 'info');
+    renderGroupDossierLessons();
+  };
+
+  // ── PRINT GROUP LESSONS JOURNAL (A4 LANDSCAPE OFFICIAL RECORD) ──
+  window.printGroupLessonsJournal = function() {
+    const groupName = window.__currentDossierGroupName;
+    if (!groupName) return;
+
+    const allGroups = getData('brainova_groups') || [];
+    const matchedGroup = allGroups.find(g => g.name === groupName || g.id === groupName) || {
+      name: groupName,
+      level: 'دورة الروبوتيك',
+      educator: '',
+      educatorName: '',
+      room: '',
+      ageCategory: '8 - 11 سنة'
+    };
+
+    const schedules = getData('brainova_schedule') || [];
+    const sch = schedules.find(s => s.groupId === matchedGroup.id || isStudentInGroup({ group: s.groupName }, groupName));
+
+    const allLessons = getData('brainova_group_lessons') || [];
+    const groupLessons = allLessons.filter(l => l.groupName && l.groupName.trim() === groupName.trim());
+    groupLessons.sort((a, b) => (Number(a.sessionNumber) || 0) - (Number(b.sessionNumber) || 0) || (a.date || '').localeCompare(b.date || ''));
+
+    const printDate = new Date().toLocaleDateString('ar-DZ', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    let rowsHtml = '';
+    if (groupLessons.length === 0) {
+      rowsHtml = `<tr><td colspan="7" style="text-align:center; padding:20px; color:#64748B;">لم يتم تسجيل أي دروس في هذا الفوج حتى الآن.</td></tr>`;
+    } else {
+      rowsHtml = groupLessons.map((l, idx) => {
+        const dayName = getArabicDayName(l.date);
+        return `
+          <tr>
+            <td style="font-weight:800; font-family:monospace; font-size:11px;">#${l.sessionNumber || (idx + 1)}</td>
+            <td style="font-size:10px; white-space:nowrap;"><strong>${l.date}</strong><br><span style="color:#64748B;">${dayName}</span></td>
+            <td style="text-align:right; font-weight:800; font-size:11px; color:#0F172A;">${escapeHtml(l.lessonTitle)}</td>
+            <td style="text-align:right; font-size:10px; line-height:1.4;">${escapeHtml(l.summary || '—')}</td>
+            <td style="text-align:right; font-size:9.5px;">${escapeHtml(l.kit || '—')}</td>
+            <td style="text-align:right; font-size:9.5px; color:#475569;">${escapeHtml(l.notes || '—')}</td>
+            <td style="height:32px;"></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    const printHtml = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>دفتر الدروس والمنهاج المنجز — ${groupName}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    @page { size: A4 landscape; margin: 10mm; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { font-family: 'Cairo', Tahoma, sans-serif; color: #0F172A; background: #fff; margin: 0; padding: 10px; font-size: 11px; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0284C7; padding-bottom: 10px; margin-bottom: 12px; }
+    .title { font-size: 18px; font-weight: 900; color: #0284C7; margin: 0; }
+    .meta-box { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; background: #F8FAFC; border: 1px solid #CBD5E1; padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; font-size: 11px; }
+    .table { width: 100%; border-collapse: collapse; border: 1.5px solid #0F172A; }
+    .table th { background: #0F172A; color: #fff; border: 1px solid #334155; padding: 6px 4px; font-size: 10.5px; text-align: center; }
+    .table td { border: 1px solid #94A3B8; padding: 5px 6px; font-size: 10px; vertical-align: middle; }
+    .signatures { display: flex; justify-content: space-between; margin-top: 24px; padding: 0 40px; }
+    .sig-box { text-align: center; width: 220px; border-top: 1px dashed #64748B; padding-top: 8px; font-weight: 700; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1 class="title">أكاديمية براينوفا للروبوتيك والذكاء الاصطناعي — BRAINOVA ROBOTICS</h1>
+      <div style="font-size:13px; font-weight:700; color:#334155; margin-top:2px;">دفتر الدروس والمنهاج البيداغوجي المنجز (Curriculum Logbook)</div>
+    </div>
+    <div style="text-align:left; font-size:10.5px; color:#64748B;">
+      <div>تاريخ الاستخراج: <strong>${printDate}</strong></div>
+      <div>الحالة: <strong>معتمد رسمياً للأرشيف</strong></div>
+    </div>
+  </div>
+
+  <div class="meta-box">
+    <div>اسم الفوج: <strong>${groupName}</strong></div>
+    <div>المستوى: <strong>${matchedGroup.level || 'دورة الروبوتيك'}</strong></div>
+    <div>المدرب المشرف: <strong>${matchedGroup.educator || matchedGroup.educatorName || (sch ? (sch.educator || sch.educatorName) : '') || 'غير محدد'}</strong></div>
+    <div>القاعة والمخبر: <strong>${matchedGroup.room || (sch ? sch.room : '') || 'غير محدد'}</strong></div>
+    <div>الحصص المنجزة: <strong>${groupLessons.length} حصص</strong></div>
+  </div>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th style="width:45px;">الحصة</th>
+        <th style="width:85px;">التاريخ واليوم</th>
+        <th style="width:200px;">موضوع وعنوان الدرس المنجز</th>
+        <th>المحاور التطبيقية والمكتسبات العملية</th>
+        <th style="width:130px;">الحقيبة / العتاد والمشروع</th>
+        <th style="width:130px;">ملاحظات المؤطر</th>
+        <th style="width:75px;">تأشيرة الأستاذ</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rowsHtml}
+    </tbody>
+  </table>
+
+  <div class="signatures">
+    <div class="sig-box">
+      توقيع وختم الأستاذ / المدرب المشرف
+    </div>
+    <div class="sig-box">
+      توقيع وختم إدارة الأكاديمية
+    </div>
+  </div>
+
+  <script>
+    window.onload = function() {
+      setTimeout(function() {
+        window.print();
+      }, 500);
+    };
+  </script>
+</body>
+</html>`;
+
+    if (window.electronAPI && window.electronAPI.printDocument) {
+      window.electronAPI.printDocument({
+        title: `دفتر دروس فوج ${groupName}`,
+        html: printHtml
+      });
+      showToast(`جاري فتح دفتر المنهاج (${groupName}) للطباعة الرسمية...`, 'success');
+    } else {
+      const w = window.open('', '_blank');
+      if (w) {
+        w.document.write(printHtml);
+        w.document.close();
+      } else {
+        showToast('يرجى السماح بالنوافذ المنبثقة لطباعة الدفتر', 'error');
+      }
+    }
+  };
+
+  // ── GROUP LESSON WHATSAPP BROADCAST SYSTEM ───────────────
+  window.__activeBroadcastLessonId = null;
+
+  window.openLessonBroadcastModal = function(lessonId) {
+    const allLessons = getData('brainova_group_lessons') || [];
+    const lesson = allLessons.find(l => l.id === lessonId);
+    if (!lesson) {
+      showToast('لم يتم العثور على الدرس المحدد لإرساله!', 'error');
+      return;
+    }
+
+    window.__activeBroadcastLessonId = lessonId;
+
+    const modal = document.getElementById('groupLessonBroadcastModal');
+    if (!modal) return;
+
+    // Set highlights
+    document.getElementById('broadcastLessonTitleDisplay').textContent = `الدرس: ${lesson.lessonTitle}`;
+    document.getElementById('broadcastLessonMetaBadge').textContent = `الفوج: ${lesson.groupName} • حصة #${lesson.sessionNumber || '—'} • ${lesson.date}`;
+
+    // Fill message template
+    const defaultTemplate = `السلام عليكم ورحمة الله وبركاته،
+ولي أمر التلميذ(ة) {studentName} المحترم 🌸
+
+يسعدنا إعلامكم بما تعلّمه وأنجزه بطلنا اليوم في ورشة الروبوتيك لفوج (${lesson.groupName}) في أكاديمية Brainova Robotics:
+
+📌 موضوع الدرس: ${lesson.lessonTitle}
+📅 تاريخ الحصة: ${lesson.date} (حصة رقم #${lesson.sessionNumber || '—'})
+${lesson.summary ? `🛠️ المحاور المنجزة: ${lesson.summary}\n` : ''}${lesson.kit ? `🤖 العتاد والمشروع: ${lesson.kit}\n` : ''}${lesson.notes ? `📝 ملاحظة المؤطر: ${lesson.notes}\n` : ''}
+نحيي شغف وتفاعل أبطالنا المستمر ويسعدنا دوماً تواصلكم!
+أكاديمية Brainova Robotics`;
+
+    document.getElementById('broadcastLessonMsgTemplate').value = defaultTemplate;
+
+    // Reset progress container
+    const progressContainer = document.getElementById('broadcastProgressContainer');
+    if (progressContainer) progressContainer.style.display = 'none';
+
+    // Populate students table
+    const allStudents = getData('brainova_students') || [];
+    const groupStudents = allStudents.filter(s => isStudentInGroup(s, lesson.groupName));
+    groupStudents.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ar'));
+
+    const tbody = document.getElementById('groupLessonBroadcastTableBody');
+    if (tbody) {
+      if (groupStudents.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:18px; color:#94A3B8;">لا يوجد تلاميذ مسجلين في هذا الفوج حالياً.</td></tr>`;
+      } else {
+        tbody.innerHTML = groupStudents.map(stu => {
+          const rawPhone = (stu.parentPhone || '').trim();
+          const hasPhone = (rawPhone && rawPhone !== '—' && rawPhone.length >= 8);
+
+          return `
+            <tr id="broadcastRow_${stu.id}">
+              <td style="font-weight:700; color:#fff;">${stu.name}</td>
+              <td style="color:#94A3B8;">${stu.parentName || 'ولي الأمر'}</td>
+              <td><span dir="ltr" style="font-family:monospace; color:${hasPhone ? '#38BDF8' : '#EF4444'}; font-size:0.75rem;">${rawPhone || 'غير مسجل'}</span></td>
+              <td style="text-align:center;" id="broadcastStatus_${stu.id}">
+                ${hasPhone 
+                  ? `<span class="status-pill status-pill--neutral" style="font-size:0.7rem; padding:2px 8px;">جاهز للإرسال</span>` 
+                  : `<span class="status-pill status-pill--danger" style="font-size:0.7rem; padding:2px 8px;">بدون رقم</span>`}
+              </td>
+              <td style="text-align:center;">
+                ${hasPhone ? `
+                  <button type="button" class="btn btn--small" style="background:#25D366; color:#fff; font-size:0.72rem; padding:3px 8px; display:inline-flex; align-items:center; gap:4px; border:none; border-radius:4px; cursor:pointer;" onclick="sendSingleLessonWhatsApp('${stu.id}')">
+                    ${UI_ICONS.whatsapp(11)} إرسال
+                  </button>
+                ` : `<span style="color:#64748B; font-size:0.72rem;">—</span>`}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    const btnBroadcastAll = document.getElementById('btnBroadcastAllLessons');
+    if (btnBroadcastAll) {
+      btnBroadcastAll.disabled = false;
+      btnBroadcastAll.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        إرسال تلقائي لجميع أولياء الفوج دفعة واحدة
+      `;
+    }
+
+    modal.classList.add('active');
+  };
+
+  window.closeLessonBroadcastModal = function() {
+    const modal = document.getElementById('groupLessonBroadcastModal');
+    if (modal) modal.classList.remove('active');
+    window.__activeBroadcastLessonId = null;
+  };
+
+  window.sendSingleLessonWhatsApp = async function(studentId) {
+    const lessonId = window.__activeBroadcastLessonId;
+    if (!lessonId || !studentId) return;
+
+    const allStudents = getData('brainova_students') || [];
+    const stu = allStudents.find(s => s.id === studentId);
+    if (!stu) return;
+
+    const rawPhone = (stu.parentPhone || '').trim();
+    if (!rawPhone || rawPhone === '—' || rawPhone.length < 8) {
+      showToast(`لا يوجد رقم هاتف مسجل لولي أمر ${stu.name}!`, 'warning');
+      return;
+    }
+
+    const phone = formatAlgerianPhoneForWhatsApp(rawPhone);
+    const template = document.getElementById('broadcastLessonMsgTemplate')?.value || '';
+    const personalizedMsg = template.replace(/{studentName}/g, stu.name);
+
+    const statusCell = document.getElementById(`broadcastStatus_${stu.id}`);
+    if (statusCell) {
+      statusCell.innerHTML = `<span style="color:#38BDF8; font-weight:700; font-size:0.72rem;">جاري الإرسال...</span>`;
+    }
+
+    // Attempt direct send via connected WhatsApp bot
+    if (window.electronAPI && window.electronAPI.whatsapp) {
+      try {
+        const waStatus = await window.electronAPI.whatsapp.getStatus();
+        if (waStatus && waStatus.connected) {
+          const res = await window.electronAPI.whatsapp.sendMessage(rawPhone, personalizedMsg);
+          if (res && res.success) {
+            if (statusCell) {
+              statusCell.innerHTML = `<span style="color:#10B981; font-weight:700; font-size:0.72rem; display:inline-flex; align-items:center; gap:3px;">${UI_ICONS.check(11)} تم الإرسال</span>`;
+            }
+            showToast(`تم إرسال ملخص الدرس لولي أمر ${stu.name} بنجاح!`, 'success');
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Bot direct send fallback to external WhatsApp:', err);
+      }
+    }
+
+    // Fallback: wa.me
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(personalizedMsg)}`;
+    if (window.electronAPI && window.electronAPI.openExternal) {
+      window.electronAPI.openExternal(url);
+    } else {
+      window.open(url, '_blank');
+    }
+
+    if (statusCell) {
+      statusCell.innerHTML = `<span style="color:#38BDF8; font-weight:700; font-size:0.72rem;">تم فتح نافذة واتساب</span>`;
+    }
+  };
+
+  window.broadcastLessonToAllGroupParents = async function() {
+    const lessonId = window.__activeBroadcastLessonId;
+    if (!lessonId) return;
+
+    const allLessons = getData('brainova_group_lessons') || [];
+    const lesson = allLessons.find(l => l.id === lessonId);
+    if (!lesson) return;
+
+    const allStudents = getData('brainova_students') || [];
+    const groupStudents = allStudents.filter(s => isStudentInGroup(s, lesson.groupName));
+    const eligibleStudents = groupStudents.filter(s => {
+      const p = (s.parentPhone || '').trim();
+      return p && p !== '—' && p.length >= 8;
+    });
+
+    if (eligibleStudents.length === 0) {
+      showToast('لا يوجد أولياء أمور مسجلين بأرقام هواتف صالحة في هذا الفوج لإرسال الرسائل إليهم!', 'warning');
+      return;
+    }
+
+    const template = document.getElementById('broadcastLessonMsgTemplate')?.value || '';
+    const progressContainer = document.getElementById('broadcastProgressContainer');
+    const progressBar = document.getElementById('broadcastProgressBar');
+    const statusText = document.getElementById('broadcastProgressStatusText');
+    const countText = document.getElementById('broadcastProgressCountText');
+    const btnBroadcast = document.getElementById('btnBroadcastAllLessons');
+
+    if (progressContainer) progressContainer.style.display = 'block';
+    if (btnBroadcast) btnBroadcast.disabled = true;
+
+    let sentSuccessCount = 0;
+    const total = eligibleStudents.length;
+
+    for (let i = 0; i < total; i++) {
+      const stu = eligibleStudents[i];
+      const pct = Math.round(((i + 1) / total) * 100);
+
+      if (progressBar) progressBar.style.width = `${pct}%`;
+      if (countText) countText.textContent = `${i + 1} / ${total}`;
+      if (statusText) statusText.textContent = `جاري إرسال ملخص الدرس لولي أمر: ${stu.name}...`;
+
+      const personalizedMsg = template.replace(/{studentName}/g, stu.name);
+      const statusCell = document.getElementById(`broadcastStatus_${stu.id}`);
+
+      let sent = false;
+      if (window.electronAPI && window.electronAPI.whatsapp) {
+        try {
+          const res = await window.electronAPI.whatsapp.sendMessage(stu.parentPhone, personalizedMsg);
+          if (res && res.success) {
+            sent = true;
+          }
+        } catch (err) {
+          console.warn(`Failed broadcast to ${stu.name}:`, err);
+        }
+      }
+
+      if (sent) {
+        sentSuccessCount++;
+        if (statusCell) {
+          statusCell.innerHTML = `<span style="color:#10B981; font-weight:700; font-size:0.72rem; display:inline-flex; align-items:center; gap:3px;">${UI_ICONS.check(11)} تم الإرسال</span>`;
+        }
+      } else {
+        // Fallback for this student
+        const phone = formatAlgerianPhoneForWhatsApp(stu.parentPhone);
+        if (phone) {
+          const url = `https://wa.me/${phone}?text=${encodeURIComponent(personalizedMsg)}`;
+          if (window.electronAPI && window.electronAPI.openExternal) {
+            window.electronAPI.openExternal(url);
+          }
+        }
+        if (statusCell) {
+          statusCell.innerHTML = `<span style="color:#F59E0B; font-weight:700; font-size:0.72rem;">تم فتح الرابط</span>`;
+        }
+      }
+
+      // Small pause between messages to avoid WhatsApp spam/anti-flood blocks
+      if (i < total - 1) {
+        await new Promise(r => setTimeout(r, 1200));
+      }
+    }
+
+    if (statusText) statusText.textContent = `اكتمل إرسال تقرير الدرس لجميع أولياء الفوج بنجاح! (${sentSuccessCount}/${total})`;
+    if (progressBar) progressBar.style.background = '#10B981';
+    if (btnBroadcast) {
+      btnBroadcast.disabled = false;
+      btnBroadcast.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        تم الإرسال بنجاح
+      `;
+    }
+    showToast(`تم إرسال تقرير الدرس لأولياء أمور الفوج بنجاح!`, 'success');
   };
 
   // ── STUDENT ATTENDANCE TIMELINE MODAL ────────────────────
