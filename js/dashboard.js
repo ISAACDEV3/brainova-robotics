@@ -6456,22 +6456,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const mName = getArabicMonthYearName(m);
         return `
           <button type="button" class="btn btn--small" onclick="setDossierMatrixMonth('${m}')"
-            style="${isActive ? 'background:#0284C7; color:#fff; font-weight:800; border:1px solid #38BDF8; box-shadow:0 0 10px rgba(2,132,199,0.35);' : 'background:rgba(255,255,255,0.05); color:#94A3B8; border:1px solid var(--color-border); font-weight:600;'} padding:4px 12px; font-size:0.78rem; border-radius:6px; cursor:pointer; transition:all 0.15s ease;">
-            📅 ${mName} <span style="opacity:0.75; font-size:0.7rem; margin-right:4px;">(${mCount} حصص)</span>
+            style="${isActive ? 'background:#0284C7; color:#fff; font-weight:800; border:1px solid #38BDF8; box-shadow:0 0 10px rgba(2,132,199,0.35);' : 'background:rgba(255,255,255,0.05); color:#94A3B8; border:1px solid var(--color-border); font-weight:600;'} padding:5px 12px; font-size:0.78rem; border-radius:6px; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all 0.15s ease;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" x2="10"/></svg>
+            <span>${mName}</span>
+            <span style="opacity:0.75; font-size:0.7rem;">(${mCount} حصص)</span>
           </button>
         `;
       }).join('');
 
       const allIsActive = (currentMonth === 'all');
       filterContainer.innerHTML = `
-        <div style="display:flex; align-items:center; gap:8px; font-size:0.78rem; color:#94A3B8; margin-left:8px; font-weight:700;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" x2="10"/></svg>
+        <div style="display:flex; align-items:center; gap:6px; font-size:0.78rem; color:#94A3B8; margin-left:8px; font-weight:700;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" x2="10"/></svg>
           تصفح الشهر:
         </div>
         ${monthButtonsHtml}
         <button type="button" class="btn btn--small" onclick="setDossierMatrixMonth('all')"
-          style="${allIsActive ? 'background:#0284C7; color:#fff; font-weight:800; border:1px solid #38BDF8; box-shadow:0 0 10px rgba(2,132,199,0.35);' : 'background:rgba(255,255,255,0.05); color:#94A3B8; border:1px solid var(--color-border); font-weight:600;'} padding:4px 12px; font-size:0.78rem; border-radius:6px; cursor:pointer; transition:all 0.15s ease;">
-          كل الأشهر (${dates.length} حصة)
+          style="${allIsActive ? 'background:#0284C7; color:#fff; font-weight:800; border:1px solid #38BDF8; box-shadow:0 0 10px rgba(2,132,199,0.35);' : 'background:rgba(255,255,255,0.05); color:#94A3B8; border:1px solid var(--color-border); font-weight:600;'} padding:5px 12px; font-size:0.78rem; border-radius:6px; cursor:pointer; display:inline-flex; align-items:center; gap:5px; transition:all 0.15s ease;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          <span>كل الأشهر</span>
+          <span style="opacity:0.75; font-size:0.7rem;">(${dates.length} حصة)</span>
         </button>
       `;
     }
