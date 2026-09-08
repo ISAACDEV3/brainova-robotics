@@ -4443,15 +4443,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     activeQuickNoteStudentId = studentId;
-    document.getElementById('quickNoteStudentName').textContent = stu.name;
-    document.getElementById('quickNoteStudentMeta').textContent = `${stu.group || 'بدون فوج'} • ${stu.level} • ولي الأمر: ${stu.parentName || 'غير مسجل'}`;
-    document.getElementById('quickNoteText').value = stu.teacherNote || '';
+    const nameEl = document.getElementById('quickNoteStudentName');
+    if (nameEl) nameEl.textContent = stu.name;
+    const metaEl = document.getElementById('quickNoteStudentMeta');
+    if (metaEl) metaEl.textContent = `${stu.group || 'بدون فوج'} • ${stu.level} • ولي الأمر: ${stu.parentName || 'غير مسجل'}`;
+    const textEl = document.getElementById('quickNoteText');
+    if (textEl) textEl.value = stu.teacherNote || '';
 
-    document.getElementById('quickNoteModal').classList.add('active');
+    const modal = document.getElementById('quickNoteModal');
+    if (modal) modal.classList.add('active');
   };
 
   window.closeQuickNoteModal = function() {
-    document.getElementById('quickNoteModal').classList.remove('active');
+    const modal = document.getElementById('quickNoteModal');
+    if (modal) modal.classList.remove('active');
     activeQuickNoteStudentId = null;
   };
 

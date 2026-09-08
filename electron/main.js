@@ -870,6 +870,7 @@ ipcMain.on('win-toggle-maximize', () => {
 ipcMain.on('win-close',           () => mainWindow && mainWindow.close());
 ipcMain.on('win-hide',            () => mainWindow && mainWindow.hide());
 ipcMain.on('open-main-site',      () => openWindow('index.html', 1300, 800));
+ipcMain.on('open-parent-portal',   () => shell.openExternal(`http://localhost:${PARENT_PORT}`));
 ipcMain.handle('win-is-maximized', () => (mainWindow && isAppLaunched) ? mainWindow.isMaximized() : false);
 ipcMain.handle('open-external', async (_, url) => {
   try {
