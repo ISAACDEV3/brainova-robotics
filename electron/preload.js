@@ -45,8 +45,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     deleteFile: (filePath) => ipcRenderer.invoke('backup-delete-file', filePath),
   },
 
-  // ── Parent Portal
-  getPortalInfo: () => ipcRenderer.invoke('get-portal-info'),
+  // ── Parent & Registration Portal
+  getPortalInfo:             () => ipcRenderer.invoke('get-portal-info'),
+  getRegistrationPortalInfo: () => ipcRenderer.invoke('get-registration-portal-info'),
+  getNetworkInfo:            () => ipcRenderer.invoke('get-network-info'),
+  onNewRegistration:         (callback) => ipcRenderer.on('new-registration', (_, reg) => callback(reg)),
 
   // ── User Management
   getUsers:  ()      => ipcRenderer.invoke('get-users'),

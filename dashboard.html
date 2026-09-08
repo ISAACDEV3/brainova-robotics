@@ -376,7 +376,13 @@
               <h1 class="page-title" data-i18n="dash_registrations">التسجيلات</h1>
               <p class="page-subtitle">إدارة جميع طلبات التسجيل.</p>
             </div>
-            <button class="btn btn--outline btn--small" data-i18n="dash_export_csv" onclick="exportData('brainova_registrations', 'registrations')">تصدير CSV</button>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <button class="btn btn--primary btn--small" onclick="openRegistrationQrModal()" style="display:inline-flex; align-items:center; gap:6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                كود ورابط التسجيل (QR)
+              </button>
+              <button class="btn btn--outline btn--small" data-i18n="dash_export_csv" onclick="exportData('brainova_registrations', 'registrations')">تصدير CSV</button>
+            </div>
           </div>
           <div class="table-container">
             <table class="data-table">
@@ -3403,6 +3409,39 @@
 
       <div id="regDetailsModalBody" style="padding: 10px 0;">
         <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== REGISTRATION QR & NETWORK LINK MODAL ===== -->
+  <div class="modal-overlay" id="regQrModal">
+    <div class="modal" style="max-width: 520px; text-align:center;">
+      <div class="modal__header" style="text-align:right;">
+        <h2 class="modal__title">كود ورابط التسجيل الإلكتروني للأولياء</h2>
+        <button class="modal__close" onclick="closeRegistrationQrModal()">×</button>
+      </div>
+
+      <div style="padding: 16px 0;">
+        <p style="font-size:0.85rem; color:var(--color-text-muted); margin-bottom:14px; line-height:1.5;">
+          امسح كود QR بهاتف ولي الأمر عبر شبكة الواي فاي للتسجيل الفوري، وتصل بياناته لحظياً هنا على الحاسوب:
+        </p>
+
+        <div style="background:#FFFFFF; padding:16px; border-radius:12px; display:inline-block; box-shadow:0 4px 14px rgba(0,0,0,0.15); margin-bottom:16px;">
+          <img id="regQrModalImg" src="" alt="QR Code" style="width:220px; height:220px; display:block; object-fit:contain;">
+        </div>
+
+        <div style="background:var(--color-bg-darker); border:1px solid var(--color-border); border-radius:8px; padding:10px 14px; margin-bottom:16px; text-align:left;" dir="ltr">
+          <div style="font-size:0.75rem; color:#94A3B8; margin-bottom:3px; text-align:right;" dir="rtl">رابط الاستمارة على الشبكة المحلية:</div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="text" id="regQrModalUrlInput" readonly class="form-input" style="font-family:var(--font-mono); font-size:0.82rem; color:#38BDF8; flex:1;" value="">
+            <button type="button" class="btn btn--small btn--outline" onclick="copyRegistrationQrUrl()" style="white-space:nowrap;">نسخ الرابط</button>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:center; gap:10px;">
+          <button type="button" class="btn btn--outline" onclick="closeRegistrationQrModal()">إغلاق</button>
+          <button type="button" class="btn btn--primary" onclick="openRegistrationUrlInBrowser()">فتح الاستمارة في المتصفح</button>
+        </div>
       </div>
     </div>
   </div>

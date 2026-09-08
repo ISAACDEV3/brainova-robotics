@@ -228,9 +228,20 @@ function startParentServer() {
   }
 
   parentServer = http.createServer((req, res) => {
+    // CORS headers for incoming network requests from phones or local devices
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
     // Security headers for local portal
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
 
     // Rate limiting check
     const clientIp = req.socket.remoteAddress || '127.0.0.1';
@@ -251,6 +262,93 @@ function startParentServer() {
     const pathname = url.pathname;
 
     // ── REST API ─────────────────────────────────────────────────────────────
+    // ── POST /api/register (INCOMING REGISTRATION REQUESTS FROM WEB/MOBILE) ───
+    if (pathname === '/api/register') {
+      if (req.method === 'POST') {
+        let bodyData = '';
+        req.on('data', chunk => {
+          bodyData += chunk;
+          if (bodyData.length > 1e6) { // 1MB limit
+            res.writeHead(413, { 'Content-Type': 'application/json; charset=utf-8' });
+            res.end(JSON.stringify({ ok: false, error: 'حجم البيانات كبير جداً' }));
+            req.destroy();
+          }
+        });
+        req.on('end', () => {
+          try {
+            const body = JSON.parse(bodyData || '{}');
+            const studentName = String(body.studentName || '').trim();
+            const parentPhone = String(body.parentPhone || '').trim();
+            const parentName = String(body.parentName || '').trim();
+
+            if (!studentName || !parentPhone) {
+              res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+              res.end(JSON.stringify({ ok: false, error: 'اسم الطالب ورقم هاتف الولي مطلوبان للتسجيل' }));
+              return;
+            }
+
+            const registrations = store.get('brainova_registrations', []);
+            const regId = 'REG-' + Math.floor(100000 + Math.random() * 900000);
+            const newRecord = {
+              id: regId,
+              studentName: studentName,
+              studentAge: String(body.studentAge || '').trim(),
+              studentGrade: String(body.studentGrade || '').trim(),
+              parentName: parentName || '—',
+              parentPhone: parentPhone,
+              parentEmail: String(body.parentEmail || '').trim(),
+              preferredLevel: String(body.preferredLevel || body.level || 'المستوى الأول').trim(),
+              group: String(body.group || body.preferredGroup || 'الفوج أ').trim(),
+              pricingPlan: String(body.pricingPlan || body.plan || 'طفل واحد (5,000 دج)').trim(),
+              experience: String(body.experience || 'لا توجد').trim(),
+              notes: String(body.notes || 'تسجيل إلكتروني وارد عبر البوابة').trim(),
+              status: 'pending',
+              date: format24hDateTime(new Date()),
+              timestamp: Date.now(),
+              source: String(body.source || 'استمارة التسجيل الإلكترونية').trim()
+            };
+
+            registrations.unshift(newRecord);
+            store.set('brainova_registrations', registrations);
+
+            // Broadcast live event to dashboard renderer
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('new-registration', newRecord);
+            }
+
+            res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+            res.end(JSON.stringify({
+              ok: true,
+              id: newRecord.id,
+              message: 'تم استلام طلب التسجيل بنجاح في قاعدة بيانات الأكاديمية',
+              registration: newRecord
+            }));
+          } catch (err) {
+            res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+            res.end(JSON.stringify({ ok: false, error: 'صيغة البيانات غير صالحة' }));
+          }
+        });
+        return;
+      } else if (req.method === 'GET') {
+        const regs = store.get('brainova_registrations', []);
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ ok: true, registrations: regs }));
+        return;
+      }
+    }
+
+    if (pathname === '/api/network-info') {
+      const ip = getLocalIP();
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({
+        ok: true,
+        ip,
+        port: PARENT_PORT,
+        registrationUrl: `http://${ip}:${PARENT_PORT}/index.html#register`,
+        parentPortalUrl: `http://${ip}:${PARENT_PORT}/parent.html`
+      }));
+      return;
+    }
     if (pathname === '/api/student') {
       const u = (url.searchParams.get('u') || '').trim();
       const p = (url.searchParams.get('p') || '').trim();
@@ -1370,6 +1468,28 @@ ipcMain.handle('get-portal-info', async () => {
   } catch {
     return { ip, port: PARENT_PORT, url, qr: null };
   }
+});
+
+// ── IPC: REGISTRATION PORTAL INFO + QR CODE ──────────────────────────────────
+ipcMain.handle('get-registration-portal-info', async () => {
+  const ip = getLocalIP();
+  const regUrl = `http://${ip}:${PARENT_PORT}/index.html#register`;
+  try {
+    const qr = await QRCode.toDataURL(regUrl, { width: 280, margin: 2, color: { dark: '#0284C7', light: '#FFFFFF' } });
+    return { ip, port: PARENT_PORT, url: regUrl, qr };
+  } catch {
+    return { ip, port: PARENT_PORT, url: regUrl, qr: null };
+  }
+});
+
+ipcMain.handle('get-network-info', async () => {
+  const ip = getLocalIP();
+  return {
+    ip,
+    port: PARENT_PORT,
+    registrationUrl: `http://${ip}:${PARENT_PORT}/index.html#register`,
+    parentPortalUrl: `http://${ip}:${PARENT_PORT}/parent.html`
+  };
 });
 
 // ── IPC: GENERATE QR CODE FOR BADGES / TICKETS ──────────────────────────────

@@ -5583,6 +5583,63 @@ document.addEventListener('DOMContentLoaded', () => {
     renderActiveView();
   };
 
+  // --- REGISTRATION QR & NETWORK MODAL ---
+  window.openRegistrationQrModal = async function() {
+    const modal = document.getElementById('regQrModal');
+    const img = document.getElementById('regQrModalImg');
+    const input = document.getElementById('regQrModalUrlInput');
+    if (!modal) return;
+
+    let targetUrl = `${window.location.origin}/index.html#register`;
+    let qrDataUrl = null;
+
+    if (window.electronAPI && window.electronAPI.getRegistrationPortalInfo) {
+      try {
+        const info = await window.electronAPI.getRegistrationPortalInfo();
+        if (info && info.url) {
+          targetUrl = info.url;
+          qrDataUrl = info.qr;
+        }
+      } catch (err) {
+        console.warn('Error fetching registration portal info:', err);
+      }
+    }
+
+    if (input) input.value = targetUrl;
+    if (img) {
+      img.src = qrDataUrl || `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(targetUrl)}`;
+    }
+
+    modal.classList.add('active');
+  };
+
+  window.closeRegistrationQrModal = function() {
+    const modal = document.getElementById('regQrModal');
+    if (modal) modal.classList.remove('active');
+  };
+
+  window.copyRegistrationQrUrl = function() {
+    const input = document.getElementById('regQrModalUrlInput');
+    if (!input || !input.value) return;
+    navigator.clipboard.writeText(input.value).then(() => {
+      showToast('تم نسخ رابط الاستمارة بنجاح!', 'success');
+    }).catch(() => {
+      input.select();
+      document.execCommand('copy');
+      showToast('تم نسخ الرابط!', 'success');
+    });
+  };
+
+  window.openRegistrationUrlInBrowser = function() {
+    const input = document.getElementById('regQrModalUrlInput');
+    const url = (input && input.value) ? input.value : `${window.location.origin}/index.html#register`;
+    if (window.electronAPI && window.electronAPI.openExternal) {
+      window.electronAPI.openExternal(url);
+    } else {
+      window.open(url, '_blank');
+    }
+  };
+
   // --- EDUCATORS ---
   function renderEducators() {
     const educators = filterData(getData('brainova_educators'), searchQuery);
@@ -12674,6 +12731,38 @@ ${latestNote ? `- ملاحظة إضافية: "${latestNote}"` : ''}
       window.electronAPI.onEmergencyWipe(() => {
         alert('تم تنفيذ أمر مسح أمني طارئ من الإدارة المركزية (ISAACDEV).');
         location.reload();
+      });
+    }
+    if (window.electronAPI.onNewRegistration) {
+      window.electronAPI.onNewRegistration((newReg) => {
+        // 1. Play synthesized audio notification tone
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+          osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
+          gain.gain.setValueAtTime(0.25, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.35);
+        } catch (e) {}
+
+        // 2. Display Toast
+        showToast(`طلب تسجيل جديد وارد: ${newReg.studentName} (هاتف: ${newReg.parentPhone})`, 'success');
+
+        // 3. Update Badges
+        updateHeaderBadges();
+
+        // 4. Live update table if on registrations view
+        if (currentView === 'registrations') {
+          renderRegistrationsView();
+        } else if (currentView === 'overview') {
+          renderOverview();
+        }
       });
     }
   }

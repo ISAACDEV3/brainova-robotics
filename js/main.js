@@ -120,7 +120,7 @@
     if (targetStep) targetStep.classList.add('active');
   };
 
-  window.handleMultiStepRegistration = function(e) {
+  window.handleMultiStepRegistration = async function(e) {
     e.preventDefault();
     const parentName   = document.getElementById('parentName').value.trim();
     const parentPhone  = document.getElementById('parentPhone').value.trim();
@@ -133,9 +133,47 @@
     const pricingPlan  = document.getElementById('pricingPlan') ? document.getElementById('pricingPlan').value : '5000';
     const planLabel    = pricingPlan === '8000' ? 'طفلين (8,000 دج)' : (pricingPlan === '11000' ? '3 أطفال (11,000 دج)' : 'طفل واحد (5,000 دج)');
     const notes        = document.getElementById('notes').value.trim();
+    const expEl        = document.querySelector('input[name="experience"]:checked');
+    const experience   = expEl ? expEl.value : 'no';
 
     const successEl = document.getElementById('formSuccess');
 
+    const regId = "REG-" + Math.floor(100000 + Math.random() * 900000);
+    const newRecord = {
+      id: regId,
+      studentName: studentName,
+      studentAge: studentAge,
+      studentGrade: studentGrade,
+      parentName: parentName,
+      parentPhone: parentPhone,
+      parentEmail: parentEmail,
+      preferredLevel: level,
+      group: group,
+      pricingPlan: planLabel,
+      experience: experience === 'yes' ? 'توجد خبرة سابقة' : 'مبتدئ تماماً',
+      notes: notes || 'تسجيل إلكتروني عبر الموقع الرسمي',
+      status: 'pending',
+      date: new Date().toLocaleDateString('ar-DZ') + ' ' + new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' }),
+      timestamp: Date.now(),
+      source: 'الموقع الرسمي'
+    };
+
+    // 1. Post to local / network API server
+    try {
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newRecord)
+      });
+      const resData = await response.json();
+      if (resData && resData.ok && resData.id) {
+        newRecord.id = resData.id;
+      }
+    } catch (apiErr) {
+      console.warn("API registration endpoint unavailable, saving locally:", apiErr);
+    }
+
+    // 2. Also save to local storage & electron store
     try {
       let regs = [];
       try {
@@ -143,40 +181,26 @@
       } catch (err) {
         regs = [];
       }
-
-      const newRecord = {
-        id: "REG-" + Math.floor(100000 + Math.random() * 900000),
-        studentName: studentName,
-        studentAge: studentAge,
-        studentGrade: studentGrade,
-        parentName: parentName,
-        parentPhone: parentPhone,
-        parentEmail: parentEmail,
-        preferredLevel: level,
-        group: group,
-        pricingPlan: planLabel,
-        notes: notes || 'تسجيل عبر الموقع الرسمي',
-        status: 'pending',
-        date: new Date().toLocaleDateString('ar-DZ') + ' ' + new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' }),
-        source: 'الموقع الرسمي'
-      };
-
-      regs.unshift(newRecord);
-      localStorage.setItem('brainova_registrations', JSON.stringify(regs));
+      if (!regs.some(r => r.id === newRecord.id)) {
+        regs.unshift(newRecord);
+        localStorage.setItem('brainova_registrations', JSON.stringify(regs));
+      }
 
       if (window.electronAPI && window.electronAPI.store) {
         window.electronAPI.store.set('brainova_registrations', regs);
       }
-
-      if (successEl) {
-        successEl.style.display = 'block';
-        successEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
-
-      document.getElementById('regForm').reset();
     } catch (err) {
-      alert('تم استلام طلب التسجيل بنجاح! شكراً لك.');
+      console.warn("Local storage fallback error:", err);
     }
+
+    // 3. Show success confirmation
+    if (successEl) {
+      successEl.style.display = 'block';
+      successEl.innerHTML = `تم استلام طلب التسجيل بنجاح! رقم الطلب: <code style="color:#38BDF8; font-family:monospace; font-weight:800;">${newRecord.id}</code>.<br>سنتواصل معكم لتأكيد موعد وبداية الفوج.`;
+      successEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    document.getElementById('regForm').reset();
   };
 
   // ── 6. FAQ ACCORDION ────────────────────────────────────────────────────
