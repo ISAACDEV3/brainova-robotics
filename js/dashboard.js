@@ -331,8 +331,6 @@ document.addEventListener('DOMContentLoaded', () => {
         'payments': 'المدفوعات والوصولات',
         'registrations': 'طلبات التسجيل الجديدة',
         'educators': 'طاقم التدريس',
-        'whatsapp': 'بوت واتساب الآلي',
-        'guide': 'إرشادات الاستخدام والتشغيل',
         'settings': 'إعدادات النظام'
       };
       const titleEl = document.getElementById('topbarViewTitle');
@@ -537,7 +535,6 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (currentView === 'courses') renderCourses();
     else if (currentView === 'schedule') renderSchedule();
     else if (currentView === 'whatsapp') renderWhatsAppView();
-    else if (currentView === 'guide') renderGuideView();
     else if (currentView === 'settings') renderSettingsView();
     
     const currentLang = document.documentElement.lang;
@@ -4905,7 +4902,6 @@ document.addEventListener('DOMContentLoaded', () => {
       { id: 'nav_registrations', label: 'طلبات التسجيل الجديدة', sub: 'مراجعة طلبات التسجيل الواردة وقبولها في الأفواج', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>', type: 'nav', target: 'registrations', keywords: 'تسجيلات طلبات جديدة registrations' },
       { id: 'nav_settings', label: 'مركز الأمان والنسخ الاحتياطي (Vault)', sub: 'إدارة النسخ الاحتياطية وسجل تدقيق العمليات والأمان المشفر', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>', type: 'nav', target: 'settings', keywords: 'امان نسخ احتياطي اعدادات سحابي vault backup security' },
       { id: 'nav_whatsapp_hub', label: 'الوصي الآلي لواتساب (Guardian)', sub: 'إدارة محادثات واتساب الآلية وإشعارات الأولياء', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>', type: 'nav', target: 'whatsapp', keywords: 'واتساب بوت وصي guardian whatsapp' },
-      { id: 'nav_guide', label: 'دليل وإرشادات الاستخدام والتشغيل', sub: 'شرح فني وإداري مفصل لكافة الأزرار، محرك الحضور، الوصلات، والأمان', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 1-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>', type: 'nav', target: 'guide', keywords: 'دليل ارشادات استخدام ازرار شرح مساعدة guide help' },
       { id: 'act_batch_badges', label: 'طباعة بطاقات الفوج (A4 Badges)', sub: 'توليد ورقة A4 مجمعة لبطاقات طلاب الفوج للطباعة', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>', type: 'action', run: () => openBatchBadgesModal(), keywords: 'بطاقات طباعة badges a4' },
       { id: 'act_backup_export', label: 'تصدير نسخة احتياطية فورية', sub: 'حفظ ملف قاعدة البيانات بالكامل (JSON)', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>', type: 'action', run: () => doBackupExport(), keywords: 'تصدير نسخة احتياطية حفظ بيانات' }
     ];
@@ -10348,7 +10344,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fr: {
       dash_overview: "Aperçu", dash_students: "Étudiants", dash_educators: "Enseignants", dash_registrations: "Inscriptions",
       dash_groups: "Groupes & Âges", dash_rooms: "Salles", dash_courses: "Cours", dash_schedule: "Emploi du temps", dash_schedule_sub: "Gérer l'emploi du temps hebdomadaire.",
-      dash_attendance: "Présences", dash_payments: "Paiements & Reçus", dash_guide: "Guide d'utilisation", dash_settings: "Paramètres",
+      dash_attendance: "Présences", dash_payments: "Paiements & Reçus", dash_settings: "Paramètres",
       dash_search: "Rechercher...", dash_admin: "Directeur", dash_total_students: "Total Étudiants",
       dash_students_sub: "Gérer tous les étudiants actuellement inscrits.", dash_add_student: "+ Ajouter",
       dash_id: "ID", dash_student_name: "Nom de l'étudiant", dash_group_name: "Groupe", dash_level_name: "Niveau", dash_action: "Action",
@@ -10364,7 +10360,7 @@ document.addEventListener('DOMContentLoaded', () => {
     en: {
       dash_overview: "Overview", dash_students: "Students", dash_educators: "Educators", dash_registrations: "Registrations",
       dash_groups: "Cohorts & Ages", dash_rooms: "Rooms", dash_courses: "Courses", dash_schedule: "Schedule", dash_schedule_sub: "Manage the weekly timetable.",
-      dash_attendance: "Attendance", dash_payments: "Payments & Receipts", dash_guide: "User Manual", dash_settings: "Settings",
+      dash_attendance: "Attendance", dash_payments: "Payments & Receipts", dash_settings: "Settings",
       dash_search: "Search...", dash_admin: "Admin", dash_total_students: "Total Students",
       dash_students_sub: "Manage all currently enrolled students.", dash_add_student: "+ Add Student",
       dash_id: "ID", dash_student_name: "Student Name", dash_group_name: "Group", dash_level_name: "Level", dash_action: "Action",
@@ -10380,7 +10376,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ar: {
       dash_overview: "نظرة عامة", dash_students: "الطلاب", dash_educators: "المعلمون", dash_registrations: "التسجيلات",
       dash_groups: "الأفواج والفئات", dash_rooms: "القاعات", dash_courses: "الدورات", dash_schedule: "الجدول", dash_schedule_sub: "تنظيم الحصص الأسبوعية للأفواج.",
-      dash_attendance: "الحضور والغياب", dash_payments: "المدفوعات والوصولات", dash_guide: "إرشادات الاستخدام", dash_settings: "الإعدادات",
+      dash_attendance: "الحضور والغياب", dash_payments: "المدفوعات والوصولات", dash_settings: "الإعدادات",
       dash_search: "ابحث...", dash_admin: "المدير", dash_total_students: "إجمالي الطلاب",
       dash_students_sub: "إدارة جميع الطلاب المسجلين حالياً.", dash_add_student: "+ إضافة طالب",
       dash_id: "رقم التعريف", dash_student_name: "اسم الطالب", dash_group_name: "الفوج", dash_level_name: "المستوى", dash_action: "الإجراء",
@@ -10790,57 +10786,6 @@ document.addEventListener('DOMContentLoaded', () => {
   window.renderSettingsView = function() {
     loadVaultBackupsList();
     renderSecurityAuditLog();
-  };
-
-  window.renderGuideView = function() {
-    const input = document.getElementById('guideSearchInput');
-    if (input) input.value = '';
-    const tabs = document.querySelectorAll('#guideFilterTabs .guide-tab-btn');
-    tabs.forEach((b, i) => {
-      if (i === 0) b.classList.add('active');
-      else b.classList.remove('active');
-    });
-    const cards = document.querySelectorAll('#guideCardsGrid .guide-card');
-    cards.forEach(card => card.style.display = '');
-  };
-
-  window.filterGuideCategory = function(cat, btn) {
-    if (btn) {
-      document.querySelectorAll('#guideFilterTabs .guide-tab-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-    }
-    const cards = document.querySelectorAll('#guideCardsGrid .guide-card');
-    cards.forEach(card => {
-      if (cat === 'all' || card.dataset.category === cat) {
-        card.style.display = '';
-      } else {
-        card.style.display = 'none';
-      }
-    });
-  };
-
-  window.onGuideSearchInput = function(query) {
-    const q = (query || '').toLowerCase().trim();
-    const cards = document.querySelectorAll('#guideCardsGrid .guide-card');
-    cards.forEach(card => {
-      if (!q) {
-        card.style.display = '';
-        return;
-      }
-      const text = card.textContent.toLowerCase();
-      if (text.includes(q)) {
-        card.style.display = '';
-      } else {
-        card.style.display = 'none';
-      }
-    });
-  };
-
-  window.switchView = function(viewName) {
-    const targetLink = document.querySelector(`.sidebar__nav a[data-view="${viewName}"]`);
-    if (targetLink) {
-      targetLink.click();
-    }
   };
 
   function autoSaveLocalBackupSnapshot() {
