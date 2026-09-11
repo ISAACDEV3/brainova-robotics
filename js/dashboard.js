@@ -1049,23 +1049,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- DYNAMIC GROUP ATTENDANCE CYCLE & SCHEDULE CALCULATION ---
   const daysMap = {
-    'الأحد': 0, 'الاحد': 0, 'sunday': 0, 'sun': 0, 'dimanche': 0,
+    'الأحد': 0, 'الاحد': 0, 'احد': 0, 'أحد': 0, 'sunday': 0, 'sun': 0, 'dimanche': 0,
     'الإثنين': 1, 'الاثنين': 1, 'إثنين': 1, 'اثنين': 1, 'monday': 1, 'mon': 1, 'lundi': 1,
     'الثلاثاء': 2, 'ثلاثاء': 2, 'tuesday': 2, 'tue': 2, 'mardi': 2,
     'الأربعاء': 3, 'الاربعاء': 3, 'أربعاء': 3, 'اربعاء': 3, 'wednesday': 3, 'wed': 3, 'mercredi': 3,
     'الخميس': 4, 'خميس': 4, 'thursday': 4, 'thu': 4, 'jeudi': 4,
-    'الجمعة': 5, 'جمعة': 5, 'friday': 5, 'fri': 5, 'vendredi': 5,
+    'الجمعة': 5, 'جمعة': 5, 'الجمعه': 5, 'جمعه': 5, 'friday': 5, 'fri': 5, 'vendredi': 5,
     'السبت': 6, 'سبت': 6, 'saturday': 6, 'sat': 6, 'samedi': 6
   };
 
   function getDayIndex(dayStr) {
     if (dayStr === null || dayStr === undefined) return -1;
-    const clean = String(dayStr).trim().toLowerCase()
+    const raw = String(dayStr).trim().toLowerCase();
+    if (daysMap[raw] !== undefined) return daysMap[raw];
+    const clean = raw
       .replace(/[أإآ]/g, 'ا')
       .replace(/ة/g, 'ه');
     if (daysMap[clean] !== undefined) return daysMap[clean];
+    const cleanTaa = raw
+      .replace(/[أإآ]/g, 'ا')
+      .replace(/ه$/g, 'ة');
+    if (daysMap[cleanTaa] !== undefined) return daysMap[cleanTaa];
     for (const k in daysMap) {
-      if (clean === k || clean.startsWith(k) || k.startsWith(clean)) return daysMap[k];
+      if (clean === k || clean.startsWith(k) || k.startsWith(clean) || raw.includes(k) || k.includes(raw)) return daysMap[k];
     }
     const num = parseInt(clean, 10);
     if (!isNaN(num) && num >= 0 && num <= 6) return num;
@@ -3283,7 +3289,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Subscription Validity, First Session Date, and Expected Renewal Date
-    const daysMap = { 'الأحد': 0, 'الاحد': 0, 'الإثنين': 1, 'الاثنين': 1, 'الثلاثاء': 2, 'الأربعاء': 3, 'الاربعاء': 3, 'الخميس': 4, 'الجمعة': 5, 'السبت': 6 };
     const payBaseDate = parseBrainovaDate(payment.paidAtIso || payment.date) || new Date();
     const purchasedSessions = payment.sessionsPurchased || 4;
 
@@ -3302,8 +3307,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (elFirstSession) {
       const dayName = (stu && stu.day) ? stu.day : 'السبت';
       const timeStr = (stu && stu.sessionTime) ? stu.sessionTime : (stu && stu.startTime ? `${stu.startTime} - ${stu.endTime || ''}` : '14:00 - 16:00');
-      if (daysMap[dayName] !== undefined) {
-        const targetDay = daysMap[dayName];
+      const targetDay = typeof getDayIndex === 'function' ? getDayIndex(dayName) : -1;
+      if (targetDay !== -1) {
         const d = new Date(payBaseDate);
         d.setHours(12, 0, 0, 0);
         const currentDay = d.getDay();

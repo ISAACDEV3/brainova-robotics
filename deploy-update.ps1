@@ -46,7 +46,7 @@ if (-not $env:GH_TOKEN) {
 
 Write-Host "[*] Committing and pushing source code to GitHub..." -ForegroundColor Cyan
 git add .
-git commit -m "chore: release v$newVer with native C++ full-desktop sentinel and C2 fleet control" --allow-empty
+git commit -m "chore: release v$newVer with Friday schedule sync, payment receipts and startup HQ snapshot" --allow-empty
 git push origin main
 Write-Host "[+] Source code pushed to GitHub repository!" -ForegroundColor Green
 

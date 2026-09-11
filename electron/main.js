@@ -991,7 +991,25 @@ ipcMain.on('print-receipt', (event, payload) => {
     const balanceStr = isUnpaid ? `دين معلق: ${debtAmountNum.toLocaleString()} دج` : `${remainingSessions} حصص متاحة / ${Number(balanceNum).toLocaleString()} دج`;
 
     // Subscription Validity, First Session Date, and Expected Renewal Date
-    const daysMap = { 'الأحد': 0, 'الاحد': 0, 'الإثنين': 1, 'الاثنين': 1, 'الثلاثاء': 2, 'الأربعاء': 3, 'الاربعاء': 3, 'الخميس': 4, 'الجمعة': 5, 'السبت': 6 };
+    const daysMap = {
+      'الأحد': 0, 'الاحد': 0, 'احد': 0, 'أحد': 0, 'sunday': 0, 'sun': 0,
+      'الإثنين': 1, 'الاثنين': 1, 'إثنين': 1, 'اثنين': 1, 'monday': 1, 'mon': 1,
+      'الثلاثاء': 2, 'ثلاثاء': 2, 'tuesday': 2, 'tue': 2,
+      'الأربعاء': 3, 'الاربعاء': 3, 'أربعاء': 3, 'اربعاء': 3, 'wednesday': 3, 'wed': 3,
+      'الخميس': 4, 'خميس': 4, 'thursday': 4, 'thu': 4,
+      'الجمعة': 5, 'جمعة': 5, 'الجمعه': 5, 'جمعه': 5, 'friday': 5, 'fri': 5,
+      'السبت': 6, 'سبت': 6, 'saturday': 6, 'sat': 6
+    };
+    function getCleanDayIdx(str) {
+      if (!str) return -1;
+      const raw = String(str).trim().toLowerCase();
+      if (daysMap[raw] !== undefined) return daysMap[raw];
+      const c = raw.replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه');
+      if (daysMap[c] !== undefined) return daysMap[c];
+      const ct = raw.replace(/[أإآ]/g, 'ا').replace(/ه$/g, 'ة');
+      if (daysMap[ct] !== undefined) return daysMap[ct];
+      return -1;
+    }
     let payBaseDate = new Date();
     if (pay && pay.paidAtIso) {
       payBaseDate = new Date(pay.paidAtIso);
@@ -1007,8 +1025,8 @@ ipcMain.on('print-receipt', (event, payload) => {
     let firstSessionStr = '';
     const dayName = (stu && stu.day) ? stu.day : 'السبت';
     const timeStr = (stu && stu.sessionTime) ? stu.sessionTime : (stu && stu.startTime ? `${stu.startTime} - ${stu.endTime || ''}` : '14:00 - 16:00');
-    if (daysMap[dayName] !== undefined) {
-      const targetDay = daysMap[dayName];
+    const targetDay = getCleanDayIdx(dayName);
+    if (targetDay !== -1) {
       const d = new Date(payBaseDate);
       d.setHours(12, 0, 0, 0);
       const currentDay = d.getDay();
