@@ -1711,7 +1711,7 @@
           </div>
           <div class="form-group">
             <label>قيمة الاشتراك الشهري (دج)</label>
-            <input type="number" id="editStudentMonthlyFee" min="0" step="500" class="form-input" style="font-weight:700;" oninput="recalcEditStudentDebtAmount()">
+            <input type="number" id="editStudentMonthlyFee" min="0" step="any" class="form-input" style="font-weight:700;" oninput="recalcEditStudentDebtAmount()">
           </div>
         </div>
 
@@ -1749,7 +1749,7 @@
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
               <div class="form-group" style="margin-bottom:0;">
                 <label style="font-size:0.78rem; color:#FCA5A5;">إجمالي المبلغ المستحق / الدين (دج)</label>
-                <input type="number" id="editStudentDebtAmount" min="0" step="100" value="5000" class="form-input" style="border-color:rgba(239,68,68,0.5); font-weight:800; color:#EF4444;">
+                <input type="number" id="editStudentDebtAmount" min="0" step="any" value="5000" class="form-input" style="border-color:rgba(239,68,68,0.5); font-weight:800; color:#EF4444;">
               </div>
               <div class="form-group" style="margin-bottom:0;">
                 <label style="font-size:0.78rem; color:#FCA5A5;">سبب التأخر / ملاحظة الإدارة</label>
@@ -3241,7 +3241,7 @@
       </div>
       <input type="hidden" id="payModalType" value="paid">
 
-      <form id="recordPaymentForm" onsubmit="submitRecordPayment(event)">
+      <form id="recordPaymentForm" onsubmit="submitRecordPayment(event)" novalidate>
         <div class="form-group">
           <label>اختر الطالب المسجل</label>
           <select id="payStudentSelect" onchange="onPaymentStudentSelected()" required class="form-input">
@@ -3249,23 +3249,26 @@
           </select>
         </div>
 
-        <!-- 1. PAID MODE SECTION (PRESETS) -->
+        <!-- 1. PAID MODE SECTION (PRESETS & CUSTOM SESSIONS) -->
         <div id="payPaidSection">
           <!-- Pricing Presets -->
           <div class="form-group" style="margin-bottom:12px;">
-            <label style="font-size:0.8rem; color:var(--color-text-muted); font-weight:700;">مدة وعدد أشهر الاشتراك المسددة:</label>
-            <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-top:4px;">
-              <button type="button" class="btn btn--outline btn--small" onclick="setPaymentMonths(1)" id="btnMonthPreset1" style="padding:6px; font-size:0.75rem; text-align:center; border-color:var(--color-primary); color:var(--color-primary);">
-                <strong>شهر (1)</strong><br><span style="font-size:0.7rem;">4 حصص</span>
+            <label style="font-size:0.8rem; color:var(--color-text-muted); font-weight:700;">باقات الحصص والأشهر السريعة:</label>
+            <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:6px; margin-top:4px;">
+              <button type="button" class="btn btn--outline btn--small" onclick="setPaymentSessions(4)" id="btnMonthPreset1" style="padding:6px 2px; font-size:0.75rem; text-align:center; border-color:var(--color-primary); color:var(--color-primary);">
+                <strong>4 حصص</strong><br><span style="font-size:0.7rem;">(شهر 1)</span>
               </button>
-              <button type="button" class="btn btn--outline btn--small" onclick="setPaymentMonths(2)" id="btnMonthPreset2" style="padding:6px; font-size:0.75rem; text-align:center;">
-                <strong>شهران (2)</strong><br><span style="font-size:0.7rem; color:var(--color-text-dim);">8 حصص</span>
+              <button type="button" class="btn btn--outline btn--small" onclick="setPaymentSessions(6)" id="btnMonthPreset6s" style="padding:6px 2px; font-size:0.75rem; text-align:center;">
+                <strong>6 حصص</strong><br><span style="font-size:0.7rem; color:var(--color-text-dim);">(شهر ونصف)</span>
               </button>
-              <button type="button" class="btn btn--outline btn--small" onclick="setPaymentMonths(3)" id="btnMonthPreset3" style="padding:6px; font-size:0.75rem; text-align:center;">
-                <strong>3 أشهر</strong><br><span style="font-size:0.7rem; color:var(--color-text-dim);">12 حصة</span>
+              <button type="button" class="btn btn--outline btn--small" onclick="setPaymentSessions(8)" id="btnMonthPreset2" style="padding:6px 2px; font-size:0.75rem; text-align:center;">
+                <strong>8 حصص</strong><br><span style="font-size:0.7rem; color:var(--color-text-dim);">(شهران)</span>
               </button>
-              <button type="button" class="btn btn--outline btn--small" onclick="setPaymentMonths(6)" id="btnMonthPreset6" style="padding:6px; font-size:0.75rem; text-align:center;">
-                <strong>6 أشهر</strong><br><span style="font-size:0.7rem; color:var(--color-text-dim);">24 حصة</span>
+              <button type="button" class="btn btn--outline btn--small" onclick="setPaymentSessions(12)" id="btnMonthPreset3" style="padding:6px 2px; font-size:0.75rem; text-align:center;">
+                <strong>12 حصة</strong><br><span style="font-size:0.7rem; color:var(--color-text-dim);">(3 أشهر)</span>
+              </button>
+              <button type="button" class="btn btn--outline btn--small" onclick="setPaymentSessions(24)" id="btnMonthPreset6" style="padding:6px 2px; font-size:0.75rem; text-align:center;">
+                <strong>24 حصة</strong><br><span style="font-size:0.7rem; color:var(--color-text-dim);">(6 أشهر)</span>
               </button>
             </div>
             <input type="hidden" id="payMonthsCount" value="1">
@@ -3303,12 +3306,12 @@
 
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
             <div class="form-group" id="groupDebtSessions">
-              <label style="font-size:0.78rem;">عدد الحصص غير المدفوعة</label>
-              <input type="number" id="payDebtSessionsInput" min="1" max="48" value="4" class="form-input" oninput="recalcPaymentDebt('sessions')">
+              <label style="font-size:0.78rem;">عدد الحصص غير المدفوعة (يمكنك كتابة أي عدد)</label>
+              <input type="number" id="payDebtSessionsInput" min="1" max="120" step="1" value="4" class="form-input" oninput="recalcPaymentDebt('sessions')">
             </div>
             <div class="form-group" id="groupDebtMonths">
               <label style="font-size:0.78rem;">عدد الأشهر غير المدفوعة</label>
-              <input type="number" id="payDebtMonthsInput" min="1" max="12" value="1" class="form-input" oninput="recalcPaymentDebt('months')">
+              <input type="number" id="payDebtMonthsInput" min="1" max="36" step="1" value="1" class="form-input" oninput="recalcPaymentDebt('months')">
             </div>
           </div>
 
@@ -3320,7 +3323,7 @@
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
             <div class="form-group">
               <label style="font-size:0.78rem; color:#EF4444; font-weight:800;">المبلغ المستحق للدفع (الدين دج)</label>
-              <input type="number" id="payDebtAmount" min="0" step="100" value="5000" class="form-input" style="border-color:#EF4444; color:#EF4444; font-weight:800;">
+              <input type="number" id="payDebtAmount" min="0" step="any" value="5000" class="form-input" style="border-color:#EF4444; color:#EF4444; font-weight:800;">
             </div>
             <div class="form-group">
               <label style="font-size:0.78rem;">المبلغ المدفوع حالياً</label>
@@ -3332,13 +3335,16 @@
         </div>
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;" id="payAmountGroup">
-          <div class="form-group">
-            <label>المبلغ المدفوع (دج)</label>
-            <input type="number" id="payAmount" min="0" step="100" value="5000" class="form-input">
-          </div>
           <div class="form-group" id="paySessionsGroup">
-            <label>عدد الحصص المشتراة</label>
-            <input type="number" id="paySessions" min="1" max="50" value="4" class="form-input">
+            <label style="display:flex; justify-content:space-between; align-items:center;">
+              <span>عدد الحصص المدفوعة</span>
+              <small style="color:#38BDF8; font-size:0.75rem;">(اكتب أي عدد تحبه)</small>
+            </label>
+            <input type="number" id="paySessions" min="1" max="120" step="1" value="4" class="form-input" style="font-weight:800; color:#38BDF8;" oninput="onPaySessionsChange()">
+          </div>
+          <div class="form-group">
+            <label>المبلغ الإجمالي للدفع (دج)</label>
+            <input type="number" id="payAmount" min="0" step="any" value="5000" class="form-input" style="font-weight:800; color:#10B981;">
           </div>
         </div>
 
@@ -3365,7 +3371,7 @@
 
         <div style="display:flex; align-items:center; gap:8px; margin: 16px 0;">
           <input type="checkbox" id="autoPrintReceiptCheck" checked style="width:16px; height:16px; cursor:pointer;">
-          <label for="autoPrintReceiptCheck" style="cursor:pointer; font-weight:600; font-size:0.85rem; color:var(--color-text);">فتح ومعاينة الوصل فوراً بعد الحفظ (Google Chrome / 80mm)</label>
+          <label for="autoPrintReceiptCheck" style="cursor:pointer; font-weight:600; font-size:0.85rem; color:var(--color-text);">فتح ومعاينة وطباعة الوصل فوراً بعد الحفظ (Google Chrome / 80mm)</label>
         </div>
 
         <div class="modal__actions">

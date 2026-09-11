@@ -2763,6 +2763,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const payMethodGroup = document.getElementById('payMethodGroup');
     const submitBtn = document.getElementById('paySubmitBtn');
 
+    const payAmountInput = document.getElementById('payAmount');
+    const paySessionsInput = document.getElementById('paySessions');
+    const payMethodInput = document.getElementById('payMethod');
+
+    const debtSessionsInput = document.getElementById('payDebtSessionsInput');
+    const debtMonthsInput = document.getElementById('payDebtMonthsInput');
+    const debtAmountInput = document.getElementById('payDebtAmount');
+    const debtDescInput = document.getElementById('payDebtPeriodDesc');
+
     if (mode === 'debt') {
       if (tabPaid) {
         tabPaid.style.background = 'transparent';
@@ -2778,6 +2787,17 @@ document.addEventListener('DOMContentLoaded', () => {
       if (debtSection) debtSection.style.display = 'block';
       if (payAmountGroup) payAmountGroup.style.display = 'none';
       if (payMethodGroup) payMethodGroup.style.display = 'none';
+
+      // Disable paid inputs, enable debt inputs
+      if (payAmountInput) payAmountInput.disabled = true;
+      if (paySessionsInput) paySessionsInput.disabled = true;
+      if (payMethodInput) payMethodInput.disabled = true;
+
+      if (debtSessionsInput) debtSessionsInput.disabled = false;
+      if (debtMonthsInput) debtMonthsInput.disabled = false;
+      if (debtAmountInput) debtAmountInput.disabled = false;
+      if (debtDescInput) debtDescInput.disabled = false;
+
       if (submitBtn) {
         submitBtn.innerHTML = `${UI_ICONS.alert(13)} حفظ حالة التأخر وإصدار وصل دين (غير مدفوع)`;
         submitBtn.style.background = '#EF4444';
@@ -2799,11 +2819,23 @@ document.addEventListener('DOMContentLoaded', () => {
       if (debtSection) debtSection.style.display = 'none';
       if (payAmountGroup) payAmountGroup.style.display = 'grid';
       if (payMethodGroup) payMethodGroup.style.display = 'block';
+
+      // Enable paid inputs, disable debt inputs
+      if (payAmountInput) payAmountInput.disabled = false;
+      if (paySessionsInput) paySessionsInput.disabled = false;
+      if (payMethodInput) payMethodInput.disabled = false;
+
+      if (debtSessionsInput) debtSessionsInput.disabled = true;
+      if (debtMonthsInput) debtMonthsInput.disabled = true;
+      if (debtAmountInput) debtAmountInput.disabled = true;
+      if (debtDescInput) debtDescInput.disabled = true;
+
       if (submitBtn) {
         submitBtn.innerHTML = 'تسجيل الدفعة وإصدار الوصل';
         submitBtn.style.background = 'var(--color-primary)';
         submitBtn.style.borderColor = 'var(--color-primary)';
       }
+      if (window.onPaySessionsChange) window.onPaySessionsChange();
     }
   };
 
@@ -2878,23 +2910,38 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('recordPaymentModal').classList.remove('active');
   };
 
-  window.setPaymentMonths = function(months) {
-    const monthsInput = document.getElementById('payMonthsCount');
-    if (monthsInput) monthsInput.value = months;
-
+  window.onPaySessionsChange = function() {
     const studentId = document.getElementById('payStudentSelect')?.value;
     const stu = (getData('brainova_students') || []).find(s => s.id === studentId);
-    const feePerMonth = (stu && stu.monthlyFee) ? stu.monthlyFee : 5000;
+    const feePerMonth = Number(stu && stu.monthlyFee) || 5000;
+    const perSession = Math.round(feePerMonth / 4);
 
-    const amountInput = document.getElementById('payAmount');
     const sessionsInput = document.getElementById('paySessions');
-    if (amountInput) amountInput.value = months * feePerMonth;
-    if (sessionsInput) sessionsInput.value = months * 4;
+    const amountInput = document.getElementById('payAmount');
+    const monthsInput = document.getElementById('payMonthsCount');
 
-    [1, 2, 3, 6].forEach(m => {
-      const btn = document.getElementById(`btnMonthPreset${m}`);
+    let sessions = parseInt(sessionsInput?.value, 10);
+    if (isNaN(sessions) || sessions <= 0) sessions = 4;
+
+    if (amountInput) {
+      amountInput.value = sessions * perSession;
+    }
+    if (monthsInput) {
+      monthsInput.value = Math.max(1, Math.round(sessions / 4));
+    }
+
+    // Highlight matching preset button if any
+    const presetMap = {
+      'btnMonthPreset1': 4,
+      'btnMonthPreset6s': 6,
+      'btnMonthPreset2': 8,
+      'btnMonthPreset3': 12,
+      'btnMonthPreset6': 24
+    };
+    Object.entries(presetMap).forEach(([btnId, count]) => {
+      const btn = document.getElementById(btnId);
       if (btn) {
-        if (m === months) {
+        if (sessions === count) {
           btn.style.borderColor = 'var(--color-primary)';
           btn.style.color = 'var(--color-primary)';
         } else {
@@ -2905,22 +2952,44 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
+  window.setPaymentSessions = function(sessions) {
+    const sessionsInput = document.getElementById('paySessions');
+    if (sessionsInput) sessionsInput.value = sessions;
+    window.onPaySessionsChange();
+  };
+
+  window.setPaymentMonths = function(months) {
+    window.setPaymentSessions(months * 4);
+  };
+
+  window.setPaymentPreset = function(amount, sessions) {
+    const amountInput = document.getElementById('payAmount');
+    const sessionsInput = document.getElementById('paySessions');
+    const monthsInput = document.getElementById('payMonthsCount');
+    if (amountInput) amountInput.value = amount;
+    if (sessionsInput) sessionsInput.value = sessions;
+    if (monthsInput) monthsInput.value = Math.max(1, Math.round(sessions / 4));
+
+    ['btnMonthPreset1', 'btnMonthPreset6s', 'btnMonthPreset2', 'btnMonthPreset3', 'btnMonthPreset6'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) { btn.style.borderColor = ''; btn.style.color = ''; }
+    });
+  };
+
   window.onPaymentStudentSelected = function() {
     const studentId = document.getElementById('payStudentSelect')?.value;
     const stu = (getData('brainova_students') || []).find(s => s.id === studentId);
     if (!stu) return;
 
-    const months = parseInt(document.getElementById('payMonthsCount')?.value, 10) || 1;
-    const feePerMonth = Number(stu.monthlyFee) || 5000;
-    const perSession = Math.round(feePerMonth / 4);
-
-    const amountInput = document.getElementById('payAmount');
-    if (amountInput) amountInput.value = feePerMonth * months;
+    window.onPaySessionsChange();
 
     // Check debt status
     const allAtt = getData('brainova_attendance') || [];
     const stuAtt = allAtt.filter(a => a.studentId === studentId || (stu.name && a.studentName === stu.name));
     const actualAttended = stuAtt.filter(a => a.status === 'present' || a.status === 'late').length;
+
+    const feePerMonth = Number(stu.monthlyFee) || 5000;
+    const perSession = Math.round(feePerMonth / 4);
 
     const hasDebt = !!(stu.hasDebt || Number(stu.debtAmount) > 0 || Number(stu.unpaidSessions) > 0 || Number(stu.unpaidMonths) > 0 || (stu.unpaidAttendedSessions && stu.unpaidAttendedSessions > 0));
     const attendedUnpaid = (stu.unpaidAttendedSessions !== undefined && stu.unpaidAttendedSessions !== null && Number(stu.unpaidAttendedSessions) > 0)
@@ -3026,10 +3095,15 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast('تم تسجيل تأخر الدفع وإصدار إشعار دين غير مدفوع بنجاح!', 'warning');
       renderActiveView();
 
+      if (window.__lastOpenStudentProfileId === stu.id) {
+        openStudentProfile(stu.id, 'payments');
+      }
+
+      openReceiptModal(newPayment.id);
       if (autoPrint) {
         setTimeout(() => {
-          openReceiptModal(newPayment.id);
-        }, 200);
+          triggerAppPrint(newPayment.id);
+        }, 250);
       }
       return;
     }
@@ -3115,10 +3189,15 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast('تم تسجيل الدفعة بنجاح وشطب حالة التأخر تماماً!', 'success');
     renderActiveView();
 
+    if (window.__lastOpenStudentProfileId === stu.id) {
+      openStudentProfile(stu.id, 'payments');
+    }
+
+    openReceiptModal(newPayment.id);
     if (autoPrint) {
       setTimeout(() => {
-        openReceiptModal(newPayment.id);
-      }, 200);
+        triggerAppPrint(newPayment.id);
+      }, 250);
     }
   };
 
@@ -3396,10 +3475,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 250);
   };
 
-  window.triggerAppPrint = function() {
+  window.triggerAppPrint = function(targetPaymentId = null) {
+    const pId = targetPaymentId || currentActiveReceiptPaymentId;
     const payments = getData('brainova_payments') || [];
-    const payment = payments.find(p => p.id === currentActiveReceiptPaymentId) || payments[0];
+    const payment = payments.find(p => p.id === pId) || payments[0];
     if (!payment) return;
+    currentActiveReceiptPaymentId = payment.id;
 
     // When printing a paid receipt: guarantee that student debt is wiped clean and late status removed
     const isUnpaid = payment.status === 'unpaid' || payment.isDebt || Number(payment.amountPaid) === 0;
@@ -3429,6 +3510,13 @@ document.addEventListener('DOMContentLoaded', () => {
     window.open(`print-receipt.html?id=${encodeURIComponent(currentActiveReceiptPaymentId || '')}`, '_blank');
   };
 
+  window.printReceiptDirectly = function(paymentId) {
+    openReceiptModal(paymentId);
+    setTimeout(() => {
+      triggerAppPrint(paymentId);
+    }, 200);
+  };
+
   window.closeReceiptModal = function() {
     document.getElementById('receiptModal').classList.remove('active');
   };
@@ -3440,6 +3528,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function openStudentProfile(studentId, activeTab = 'sessions', sessionFilter = 'all') {
     const stu = getData('brainova_students').find(s => s.id === studentId);
     if (!stu) return;
+    window.__lastOpenStudentProfileId = stu.id;
 
     const allPayments = getData('brainova_payments') || [];
     const payments = allPayments.filter(p => p.studentId === studentId).sort((a, b) => {
